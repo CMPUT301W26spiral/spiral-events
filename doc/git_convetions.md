@@ -1,6 +1,4 @@
 # Git Conventions
-### Android Studio Team of 7 — CMPUT 301
-
 ---
 
 ## 1. Branch Naming
