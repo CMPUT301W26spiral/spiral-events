@@ -47,7 +47,7 @@ public class QRCodeActivity extends AppCompatActivity {
     private void generateQRCode(String text) {
         try {
             BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
-            // In a real app, this would be a link to the event in the app
+            // In future app development, this would be a link to the event in the app
             String qrContent = "spiral-events://event/" + text.replaceAll("\\s+", "_").toLowerCase();
             Bitmap bitmap = barcodeEncoder.encodeBitmap(qrContent, BarcodeFormat.QR_CODE, 512, 512);
             ivQRCode.setImageBitmap(bitmap);

@@ -75,9 +75,12 @@
                 android:id="@+id/et_event_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/input_background"
-                android:padding="8dp"
-                android:layout_marginBottom="12dp" />
+                android:background="@drawable/edit_text_background"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="12dp"
+                android:inputType="textCapWords" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -89,8 +92,10 @@
                 android:id="@+id/et_location"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/input_background"
-                android:padding="8dp"
+                android:background="@drawable/edit_text_background"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp" />
 
             <TextView
@@ -103,8 +108,10 @@
                 android:id="@+id/et_interests"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/input_background"
-                android:padding="8dp"
+                android:background="@drawable/edit_text_background"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp" />
 
             <TextView
@@ -117,6 +124,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp">
 
                 <EditText
@@ -125,9 +133,10 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="@string/dd"
-                    android:background="@color/input_background"
-                    android:padding="8dp"
-                    android:gravity="center" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
 
                 <EditText
                     android:id="@+id/et_event_month"
@@ -135,10 +144,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="@string/mm"
-                    android:background="@color/input_background"
-                    android:padding="8dp"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
                     android:gravity="center"
-                    android:layout_marginStart="8dp" />
+                    android:layout_marginStart="8dp"
+                    android:inputType="number" />
 
                 <EditText
                     android:id="@+id/et_event_year"
@@ -146,10 +156,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
                     android:hint="@string/yyyy"
-                    android:background="@color/input_background"
-                    android:padding="8dp"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
                     android:gravity="center"
-                    android:layout_marginStart="8dp" />
+                    android:layout_marginStart="8dp"
+                    android:inputType="number" />
             </LinearLayout>
 
             <TextView
@@ -163,13 +174,17 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp">
 
                 <EditText
-                    android:layout_width="40dp"
+                    android:id="@+id/et_event_start_hour"
+                    android:layout_width="56dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/input_background"
-                    android:padding="8dp" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -177,10 +192,13 @@
                     android:text=" : " />
 
                 <EditText
-                    android:layout_width="40dp"
+                    android:id="@+id/et_event_start_min"
+                    android:layout_width="56dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/input_background"
-                    android:padding="8dp" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -189,10 +207,13 @@
                     android:layout_marginHorizontal="8dp" />
 
                 <EditText
-                    android:layout_width="40dp"
+                    android:id="@+id/et_event_end_hour"
+                    android:layout_width="56dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/input_background"
-                    android:padding="8dp" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -200,13 +221,15 @@
                     android:text=" : " />
 
                 <EditText
-                    android:layout_width="40dp"
+                    android:id="@+id/et_event_end_min"
+                    android:layout_width="56dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/input_background"
-                    android:padding="8dp" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
             </LinearLayout>
 
-            <!-- Repeat for Day of Draw and Time of Draw -->
              <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -217,36 +240,43 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp">
 
                 <EditText
+                    android:id="@+id/et_draw_day"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="@string/dd"
-                    android:background="@color/input_background"
-                    android:padding="8dp"
-                    android:gravity="center" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
 
                 <EditText
+                    android:id="@+id/et_draw_month"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="@string/mm"
-                    android:background="@color/input_background"
-                    android:padding="8dp"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
                     android:gravity="center"
-                    android:layout_marginStart="8dp" />
+                    android:layout_marginStart="8dp"
+                    android:inputType="number" />
 
                 <EditText
+                    android:id="@+id/et_draw_year"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
                     android:hint="@string/yyyy"
-                    android:background="@color/input_background"
-                    android:padding="8dp"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
                     android:gravity="center"
-                    android:layout_marginStart="8dp" />
+                    android:layout_marginStart="8dp"
+                    android:inputType="number" />
             </LinearLayout>
 
             <TextView
@@ -260,13 +290,17 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp">
 
                 <EditText
-                    android:layout_width="40dp"
+                    android:id="@+id/et_draw_start_hour"
+                    android:layout_width="56dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/input_background"
-                    android:padding="8dp" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -274,10 +308,13 @@
                     android:text=" : " />
 
                 <EditText
-                    android:layout_width="40dp"
+                    android:id="@+id/et_draw_start_min"
+                    android:layout_width="56dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/input_background"
-                    android:padding="8dp" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -286,10 +323,13 @@
                     android:layout_marginHorizontal="8dp" />
 
                 <EditText
-                    android:layout_width="40dp"
+                    android:id="@+id/et_draw_end_hour"
+                    android:layout_width="56dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/input_background"
-                    android:padding="8dp" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -297,10 +337,13 @@
                     android:text=" : " />
 
                 <EditText
-                    android:layout_width="40dp"
+                    android:id="@+id/et_draw_end_min"
+                    android:layout_width="56dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/input_background"
-                    android:padding="8dp" />
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:inputType="number" />
             </LinearLayout>
 
             <TextView
@@ -314,8 +357,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/enable_disable"
-                android:background="@color/input_background"
-                android:padding="8dp"
+                android:background="@drawable/edit_text_background"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp" />
 
             <TextView
@@ -328,8 +373,10 @@
                 android:id="@+id/et_max_entrants"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/input_background"
-                android:padding="8dp"
+                android:background="@drawable/edit_text_background"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:layout_marginTop="4dp"
                 android:inputType="number"
                 android:layout_marginBottom="12dp" />
 
@@ -343,9 +390,10 @@
                 android:id="@+id/et_description"
                 android:layout_width="match_parent"
                 android:layout_height="100dp"
-                android:background="@color/input_background"
-                android:padding="8dp"
+                android:background="@drawable/edit_text_background"
+                android:padding="12dp"
                 android:gravity="top"
+                android:layout_marginTop="4dp"
                 android:layout_marginBottom="24dp" />
 
             <Button

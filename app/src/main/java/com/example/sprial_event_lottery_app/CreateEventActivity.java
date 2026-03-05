@@ -2,6 +2,8 @@ package com.example.sprial_event_lottery_app;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -9,9 +11,16 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+/**
+ * Activity for organizers to create and configure new lottery events.
+ */
 public class CreateEventActivity extends AppCompatActivity {
 
-    private EditText etEventName, etLocation, etDescription;
+    private EditText etEventName, etLocation, etInterests, etDescription, etGeolocation, etMaxEntrants;
+    private EditText etEventDay, etEventMonth, etEventYear;
+    private EditText etEventStartHour, etEventStartMin, etEventEndHour, etEventEndMin;
+    private EditText etDrawDay, etDrawMonth, etDrawYear;
+    private EditText etDrawStartHour, etDrawStartMin, etDrawEndHour, etDrawEndMin;
     private Button btnCreate;
 
     @Override
@@ -19,28 +28,126 @@ public class CreateEventActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_event);
 
-        etEventName = findViewById(R.id.et_event_name);
-        etLocation = findViewById(R.id.et_location);
-        etDescription = findViewById(R.id.et_description);
-        btnCreate = findViewById(R.id.btn_create);
+        initializeViews();
+        setupInputRestrictions();
 
         btnCreate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String eventName = etEventName.getText().toString().trim();
-                if (eventName.isEmpty()) {
-                    Toast.makeText(CreateEventActivity.this, "Please enter an event name", Toast.LENGTH_SHORT).show();
-                    return;
+                if (validateForm()) {
+                    String eventName = etEventName.getText().toString().trim();
+                    Intent intent = new Intent(CreateEventActivity.this, QRCodeActivity.class);
+                    intent.putExtra("EVENT_NAME", eventName);
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(CreateEventActivity.this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
                 }
-
-                // In a real app, you'd save the event data to Firebase here.
-                // For now, we just pass the name to the next activity.
-                Intent intent = new Intent(CreateEventActivity.this, QRCodeActivity.class);
-                intent.putExtra("EVENT_NAME", eventName);
-                startActivity(intent);
             }
         });
 
         findViewById(R.id.toolbar).setOnClickListener(v -> finish());
+    }
+
+    private void initializeViews() {
+        etEventName = findViewById(R.id.et_event_name);
+        etLocation = findViewById(R.id.et_location);
+        etInterests = findViewById(R.id.et_interests);
+        etDescription = findViewById(R.id.et_description);
+        etGeolocation = findViewById(R.id.et_geolocation);
+        etMaxEntrants = findViewById(R.id.et_max_entrants);
+        
+        etEventDay = findViewById(R.id.et_event_day);
+        etEventMonth = findViewById(R.id.et_event_month);
+        etEventYear = findViewById(R.id.et_event_year);
+        
+        etEventStartHour = findViewById(R.id.et_event_start_hour);
+        etEventStartMin = findViewById(R.id.et_event_start_min);
+        etEventEndHour = findViewById(R.id.et_event_end_hour);
+        etEventEndMin = findViewById(R.id.et_event_end_min);
+        
+        etDrawDay = findViewById(R.id.et_draw_day);
+        etDrawMonth = findViewById(R.id.et_draw_month);
+        etDrawYear = findViewById(R.id.et_draw_year);
+        
+        etDrawStartHour = findViewById(R.id.et_draw_start_hour);
+        etDrawStartMin = findViewById(R.id.et_draw_start_min);
+        etDrawEndHour = findViewById(R.id.et_draw_end_hour);
+        etDrawEndMin = findViewById(R.id.et_draw_end_min);
+        
+        btnCreate = findViewById(R.id.btn_create);
+    }
+
+    private void setupInputRestrictions() {
+        addRangeWatcher(etEventDay, 1, 31);
+        addRangeWatcher(etDrawDay, 1, 31);
+        addRangeWatcher(etEventMonth, 1, 12);
+        addRangeWatcher(etDrawMonth, 1, 12);
+        addRangeWatcher(etEventStartHour, 0, 23);
+        addRangeWatcher(etEventEndHour, 0, 23);
+        addRangeWatcher(etDrawStartHour, 0, 23);
+        addRangeWatcher(etDrawEndHour, 0, 23);
+        addRangeWatcher(etEventStartMin, 0, 59);
+        addRangeWatcher(etEventEndMin, 0, 59);
+        addRangeWatcher(etDrawStartMin, 0, 59);
+        addRangeWatcher(etDrawEndMin, 0, 59);
+    }
+
+    private void addRangeWatcher(EditText et, int min, int max) {
+        et.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (s.length() > 0) {
+                    try {
+                        int val = Integer.parseInt(s.toString());
+                        if (val < min || val > max) {
+                            et.setText(s.toString().substring(0, s.length() - 1));
+                            et.setSelection(et.getText().length());
+                        }
+                    } catch (NumberFormatException e) {
+                        et.setText("");
+                    }
+                }
+            }
+        });
+    }
+
+    private boolean validateForm() {
+        boolean isValid = true;
+
+        isValid &= checkEmpty(etEventName);
+        isValid &= checkEmpty(etLocation);
+        isValid &= checkEmpty(etEventDay);
+        isValid &= checkEmpty(etEventMonth);
+        isValid &= checkEmpty(etEventYear);
+        isValid &= checkEmpty(etEventStartHour);
+        isValid &= checkEmpty(etEventStartMin);
+        isValid &= checkEmpty(etEventEndHour);
+        isValid &= checkEmpty(etEventEndMin);
+        isValid &= checkEmpty(etDescription);
+        
+        isValid &= checkEmpty(etDrawDay);
+        isValid &= checkEmpty(etDrawMonth);
+        isValid &= checkEmpty(etDrawYear);
+        isValid &= checkEmpty(etDrawStartHour);
+        isValid &= checkEmpty(etDrawStartMin);
+        isValid &= checkEmpty(etDrawEndHour);
+        isValid &= checkEmpty(etDrawEndMin);
+        isValid &= checkEmpty(etGeolocation);
+
+        return isValid;
+    }
+
+    private boolean checkEmpty(EditText et) {
+        if (et.getText().toString().trim().isEmpty()) {
+            et.setBackgroundResource(R.drawable.edit_text_error_background);
+            return false;
+        } else {
+            et.setBackgroundResource(R.drawable.edit_text_background);
+            return true;
+        }
     }
 }

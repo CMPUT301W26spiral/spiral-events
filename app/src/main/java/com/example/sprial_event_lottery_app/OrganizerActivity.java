@@ -17,8 +17,7 @@ public class OrganizerActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_organizer);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btn_go_to_create).getParent() instanceof android.view.View ? (android.view.View) findViewById(R.id.btn_go_to_create).getParent() : null, (v, insets) -> {
-            if (v == null) return insets;
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.organizer_main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;

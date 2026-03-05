@@ -1,3 +1,27 @@
 <resources>
-    <string name="app_name">sprial_event_lottery_app</string>
+    <string name="app_name">Spiral Events</string>
+    <string name="create_an_event">Create an Event</string>
+    <string name="add_posters">Add posters</string>
+    <string name="event_name">Event Name</string>
+    <string name="location">Location</string>
+    <string name="related_interests">Related Interests (to help with filtering)</string>
+    <string name="day_of_event">Day of Event</string>
+    <string name="time_of_event">Time of Event</string>
+    <string name="day_of_draw">Day of Draw</string>
+    <string name="time_of_draw">Time of Draw</string>
+    <string name="geolocation_requirement">Geolocation Requirement</string>
+    <string name="enable_disable">Enable/Disable</string>
+    <string name="max_entrants">Max Amount of Entrants (optional)</string>
+    <string name="event_description">Event Description</string>
+    <string name="create">Create</string>
+    <string name="successfully_created">Successfully created\n%1$s!</string>
+    <string name="qr_code_description">Here is a QR code that links to your event description and event poster in the app</string>
+    <string name="save_qr_code">Save QR Code</string>
+    <string name="confirm">Confirm</string>
+    <string name="share">Share</string>
+
+    <string name="dd">DD</string>
+    <string name="mm">MM</string>
+    <string name="yyyy">YYYY</string>
+    <string name="to">to</string>
 </resources>
