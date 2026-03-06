@@ -1,7 +1,6 @@
-package com.example.sprial_event_lottery_app;
+package com.example.spiral_event_lottery_app;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -13,12 +12,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.spiral_event_lottery_app.MainActivity;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.firestore.FirebaseFirestore;
-
-import java.util.HashMap;
-import java.util.Map;
 
 
 public class RegisterScreen extends AppCompatActivity {
