@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "633952854444",
+    "project_id": "spiral-events",
+    "storage_bucket": "spiral-events.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633952854444:android:bc51e17c184b925e9a5a09",
+        "android_client_info": {
+          "package_name": "com.example.sprial_event_lottery_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBysGanQiNMbx26_46zFdfLMJwa7vR4sKw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
