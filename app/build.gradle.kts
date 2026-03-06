@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.sprial_event_lottery_app"
+    namespace = "com.example.spiral_event_lottery_app"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.sprial_event_lottery_app"
+        applicationId = "com.example.spiral_event_lottery_app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
