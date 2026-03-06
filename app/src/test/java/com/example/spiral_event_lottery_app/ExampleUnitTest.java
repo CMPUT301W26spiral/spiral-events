@@ -1,4 +1,4 @@
-package com.example.sprial_event_lottery_app;
+package com.example.spiral_event_lottery_app;
 
 import org.junit.Test;
 

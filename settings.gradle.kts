@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "sprial_event_lottery_app"
+rootProject.name = "spiral_event_lottery_app"
 include(":app")
