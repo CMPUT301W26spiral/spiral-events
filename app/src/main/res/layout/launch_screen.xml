@@ -10,11 +10,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="212dp"
-        android:fontFamily="@font/instrument_sans"
         android:text="Event Lottery App"
         android:textColor="#2D713E"
         android:textSize="34sp"
         android:textStyle="bold"
+        android:fontFamily="sans-serif"
         app:layout_constraintBottom_toTopOf="@+id/get_started"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -30,6 +30,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/title_app" />
-        />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
