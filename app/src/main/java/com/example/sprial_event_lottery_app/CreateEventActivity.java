@@ -35,10 +35,7 @@ public class CreateEventActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (validateForm()) {
-                    String eventName = etEventName.getText().toString().trim();
-                    Intent intent = new Intent(CreateEventActivity.this, QRCodeActivity.class);
-                    intent.putExtra("EVENT_NAME", eventName);
-                    startActivity(intent);
+                    saveEvent();
                 } else {
                     Toast.makeText(CreateEventActivity.this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
                 }
@@ -46,6 +43,39 @@ public class CreateEventActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.toolbar).setOnClickListener(v -> finish());
+    }
+
+    private void saveEvent() {
+        String eventName = etEventName.getText().toString().trim();
+        String location = etLocation.getText().toString().trim();
+        String interests = etInterests.getText().toString().trim();
+        String description = etDescription.getText().toString().trim();
+        String geolocation = etGeolocation.getText().toString().trim();
+        
+        String maxEntrantsStr = etMaxEntrants.getText().toString().trim();
+        Integer maxEntrants = maxEntrantsStr.isEmpty() ? null : Integer.parseInt(maxEntrantsStr);
+
+        String eventDate = etEventDay.getText().toString() + "/" + etEventMonth.getText().toString() + "/" + etEventYear.getText().toString();
+        String eventStartTime = etEventStartHour.getText().toString() + ":" + etEventStartMin.getText().toString();
+        String eventEndTime = etEventEndHour.getText().toString() + ":" + etEventEndMin.getText().toString();
+
+        String drawDate = etDrawDay.getText().toString() + "/" + etDrawMonth.getText().toString() + "/" + etDrawYear.getText().toString();
+        String drawStartTime = etDrawStartHour.getText().toString() + ":" + etDrawStartMin.getText().toString();
+        String drawEndTime = etDrawEndHour.getText().toString() + ":" + etDrawEndMin.getText().toString();
+
+        Event newEvent = new Event(
+                eventName, location, interests, description, geolocation, maxEntrants,
+                eventDate, eventStartTime, eventEndTime,
+                drawDate, drawStartTime, drawEndTime
+        );
+
+        // Store event in local list
+        EventManager.getInstance().addEvent(newEvent);
+
+        // Navigate to QR code generation
+        Intent intent = new Intent(CreateEventActivity.this, QRCodeActivity.class);
+        intent.putExtra("EVENT_NAME", eventName);
+        startActivity(intent);
     }
 
     private void initializeViews() {
