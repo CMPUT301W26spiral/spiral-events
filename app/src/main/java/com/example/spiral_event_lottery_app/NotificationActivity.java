@@ -31,7 +31,7 @@ public class NotificationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notifications);
 
-        // Get the unique Android Device ID to identify this Entrant
+        // Get the unique Android Device ID
         currentUserId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
         recyclerView = findViewById(R.id.notifications_recycler_view);
@@ -44,6 +44,8 @@ public class NotificationActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
 
         SwitchMaterial optOutSwitch = findViewById(R.id.notification_opt_out_switch);
+        optOutSwitch.setChecked(true);
+
         optOutSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 listenForNotifications(currentUserId);
@@ -68,14 +70,14 @@ public class NotificationActivity extends AppCompatActivity {
                         return;
                     }
 
-                    notificationList.clear();
                     if (value != null) {
+                        notificationList.clear();
                         for (QueryDocumentSnapshot doc : value) {
                             Notification notification = doc.toObject(Notification.class);
                             notificationList.add(notification);
                         }
+                        adapter.notifyDataSetChanged();
                     }
-                    adapter.notifyDataSetChanged();
                 });
     }
 
