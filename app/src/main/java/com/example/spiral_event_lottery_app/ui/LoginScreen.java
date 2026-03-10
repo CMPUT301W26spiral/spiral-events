@@ -16,6 +16,11 @@ import com.example.spiral_event_lottery_app.MainActivity;
 import com.example.spiral_event_lottery_app.R;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * LoginScreen displays a personalized welcome message to returning users.
+ * It retrieves the user's name and profile picture from Firebase Firestore
+ * using the unique device ID stored in SharedPreferences.
+ */
 public class LoginScreen extends AppCompatActivity {
 
     private TextView welcomeText;
@@ -25,6 +30,12 @@ public class LoginScreen extends AppCompatActivity {
     private TextView footerIdText;
     private Button enterButton;
 
+    /**
+     * Initializes the welcome screen and triggers data loading.
+     * @param savedInstanceState If the activity is being re-initialized after
+     *     previously being shut down then this Bundle contains the data it most
+     *     recently supplied in {@link #onSaveInstanceState}. Otherwise it is null.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,6 +57,10 @@ public class LoginScreen extends AppCompatActivity {
         });
     }
 
+    /**
+     * Fetches user data from Firestore based on the stored device ID.
+     * Updates the UI with the user's name and photo upon success.
+     */
     private void loadUserData() {
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
         String deviceId = prefs.getString("device_id", "");

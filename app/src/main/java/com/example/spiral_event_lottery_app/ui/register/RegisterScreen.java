@@ -26,6 +26,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * RegisterScreen handles the initial user profile creation.
+ * It allows new users to enter their name, email, and optional phone number,
+ * and choose a profile picture. The data is persisted to Firebase Firestore
+ * and Storage, and a unique device ID is generated and saved locally.
+ */
 public class RegisterScreen extends AppCompatActivity {
 
     private ImageView profilePic;
@@ -45,6 +51,12 @@ public class RegisterScreen extends AppCompatActivity {
                 }
             });
 
+    /**
+     * Initializes the activity, sets up view bindings and click listeners.
+     * @param savedInstanceState If the activity is being re-initialized after
+     *     previously being shut down then this Bundle contains the data it most
+     *     recently supplied in {@link #onSaveInstanceState}. Otherwise it is null.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,6 +87,13 @@ public class RegisterScreen extends AppCompatActivity {
         });
     }
 
+    /**
+     * Validates user input fields for correctness.
+     * @param fullName The entered full name.
+     * @param emailAddress The entered email address.
+     * @param phoneNumber The entered phone number.
+     * @return true if all mandatory inputs are valid, false otherwise.
+     */
     private boolean validateInputs(String fullName, String emailAddress, String phoneNumber) {
         if (fullName.isEmpty()) {
             nameInput.setError("Full name is required");
@@ -94,6 +113,12 @@ public class RegisterScreen extends AppCompatActivity {
         return true;
     }
 
+    /**
+     * Orchestrates the saving process, uploading the photo if present then the Firestore document.
+     * @param fullName User's full name.
+     * @param emailAddress User's email.
+     * @param phoneNumber User's phone.
+     */
     private void saveProfileToFirebase(String fullName, String emailAddress, String phoneNumber) {
         confirmButton.setEnabled(false);
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -116,6 +141,15 @@ public class RegisterScreen extends AppCompatActivity {
         }
     }
 
+    /**
+     * Saves the final profile data to the 'users' collection in Firestore.
+     * @param db Firestore instance.
+     * @param uid Unique ID for the user document.
+     * @param name User's name.
+     * @param email User's email.
+     * @param phone User's phone.
+     * @param photoUrl URL of the uploaded photo, if any.
+     */
     private void saveToFirestore(FirebaseFirestore db, String uid, String name, String email, String phone, String photoUrl) {
         Map<String, Object> profile = new HashMap<>();
         profile.put("name", name);

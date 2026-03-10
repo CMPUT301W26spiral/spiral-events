@@ -1,403 +1,407 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F5F5"
     android:fillViewport="true">
 
-    <!-- ScrollView MUST have only one child, so we wrap everything in a FrameLayout -->
-    <FrameLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/profileContent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:paddingStart="20dp"
+        android:paddingTop="40dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="90dp">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/profileContent"
-            android:layout_width="match_parent"
+        <!-- Title -->
+        <TextView
+            android:id="@+id/profileTitle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingStart="20dp"
-            android:paddingTop="40dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="90dp">
+            android:text="My Profile"
+            android:textColor="#000000"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <!-- Title -->
+        <View
+            android:id="@+id/titleUnderline"
+            android:layout_width="88dp"
+            android:layout_height="3dp"
+            android:layout_marginTop="6dp"
+            android:background="#2D7FF9"
+            app:layout_constraintStart_toStartOf="@id/profileTitle"
+            app:layout_constraintTop_toBottomOf="@id/profileTitle" />
+
+        <!-- profile image -->
+        <ImageView
+            android:id="@+id/profileImage"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginTop="36dp"
+            android:contentDescription="Profile image"
+            android:src="@drawable/ellipse_1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/titleUnderline" />
+
+        <!-- small edit icon on image -->
+        <ImageButton
+            android:id="@+id/editPhotoButton"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="Edit photo"
+            android:padding="4dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/edit_2"
+            android:visibility="gone"
+            app:layout_constraintStart_toEndOf="@id/profileImage"
+            app:layout_constraintTop_toTopOf="@id/profileImage" />
+
+        <!-- name -->
+        <TextView
+            android:id="@+id/profileName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text=""
+            android:textColor="#000000"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@id/profileImage"
+            app:layout_constraintTop_toTopOf="@id/profileImage" />
+
+        <!-- device id -->
+        <TextView
+            android:id="@+id/deviceIdText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="6dp"
+            android:text=""
+            android:textColor="#777777"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/profileImage"
+            app:layout_constraintTop_toBottomOf="@id/profileName" />
+
+        <!-- Personal Information heading -->
+        <TextView
+            android:id="@+id/personalInfoHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            android:text="Personal Information"
+            android:textColor="#000000"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/profileImage" />
+
+        <!-- View mode text -->
+        <LinearLayout
+            android:id="@+id/personalInfoViewGroup"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/personalInfoHeader">
+
             <TextView
-                android:id="@+id/profileTitle"
+                android:id="@+id/fullNameText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="My Profile"
-                android:textColor="#000000"
-                android:textSize="32sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <!-- profile image -->
-            <ImageView
-                android:id="@+id/profileImage"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:contentDescription="Profile image"
-                android:src="@drawable/ellipse_1"
-                app:layout_constraintStart_toStartOf="parent"
-                tools:layout_editor_absoluteY="128dp" />
-
-            <!-- small edit icon on image -->
-            <ImageButton
-                android:id="@+id/editPhotoButton"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="Edit photo"
-                android:padding="4dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/edit_2"
-                android:visibility="gone"
-                app:layout_constraintStart_toEndOf="@id/profileImage"
-                app:layout_constraintTop_toTopOf="@id/profileImage" />
-
-            <!-- name -->
-            <TextView
-                android:id="@+id/profileName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
                 android:text=""
-                android:textColor="#000000"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toEndOf="@id/profileImage"
-                app:layout_constraintTop_toTopOf="@id/profileImage" />
+                android:textColor="#222222"
+                android:textSize="18sp" />
 
-            <!-- device id -->
             <TextView
-                android:id="@+id/deviceIdText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="6dp"
-                android:text=""
-                android:textColor="#777777"
-                android:textSize="14sp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/profileImage"
-                app:layout_constraintTop_toBottomOf="@id/profileName" />
-
-            <!-- Personal Information heading -->
-            <TextView
-                android:id="@+id/personalInfoHeader"
+                android:id="@+id/emailText"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="48dp"
-                android:text="Personal Information"
-                android:textColor="#000000"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/profileImage" />
-
-            <!-- View mode text -->
-            <LinearLayout
-                android:id="@+id/personalInfoViewGroup"
-                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/personalInfoHeader">
+                android:text=""
+                android:textColor="#222222"
+                android:textSize="18sp" />
 
-                <TextView
-                    android:id="@+id/fullNameText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=""
-                    android:textColor="#222222"
-                    android:textSize="18sp" />
-
-                <TextView
-                    android:id="@+id/emailText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text=""
-                    android:textColor="#222222"
-                    android:textSize="18sp" />
-
-                <TextView
-                    android:id="@+id/phoneText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text=""
-                    android:textColor="#222222"
-                    android:textSize="18sp" />
-            </LinearLayout>
-
-            <!-- Edit mode fields -->
-            <LinearLayout
-                android:id="@+id/personalInfoEditGroup"
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/phoneText"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:orientation="vertical"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/personalInfoHeader">
+                android:text=""
+                android:textColor="#222222"
+                android:textSize="18sp" />
+        </LinearLayout>
 
-                <EditText
-                    android:id="@+id/editFullName"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/input_box_bg"
-                    android:hint="Full Name"
-                    android:minHeight="48dp"
-                    android:padding="12dp"
-                    android:textColor="#000000"
-                    android:textColorHint="#555555" />
+        <!-- Edit mode fields -->
+        <LinearLayout
+            android:id="@+id/personalInfoEditGroup"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/personalInfoHeader">
 
-                <EditText
-                    android:id="@+id/editEmail"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/input_box_bg"
-                    android:hint="Email address"
-                    android:inputType="textEmailAddress"
-                    android:minHeight="48dp"
-                    android:padding="12dp"
-                    android:textColor="#000000"
-                    android:textColorHint="#555555" />
-
-                <EditText
-                    android:id="@+id/editPhone"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/input_box_bg"
-                    android:hint="Phone (optional)"
-                    android:inputType="phone"
-                    android:minHeight="48dp"
-                    android:padding="12dp"
-                    android:textColor="#000000"
-                    android:textColorHint="#555555" />
-            </LinearLayout>
-
-            <Button
-                android:id="@+id/editProfileButton"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/profile_green_button_bg"
-                android:text="Edit"
-                android:textAllCaps="false"
-                android:textColor="#3F3F3F"
-                android:textSize="14sp"
-                app:backgroundTint="@null"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/personalInfoViewGroup" />
-
-            <LinearLayout
-                android:id="@+id/profileEditActions"
-                android:layout_width="wrap_content"
+            <EditText
+                android:id="@+id/editFullName"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/personalInfoEditGroup">
-
-                <Button
-                    android:id="@+id/cancelProfileEdit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:background="@drawable/profile_red_button_bg"
-                    android:text="Cancel"
-                    android:textAllCaps="false"
-                    android:textColor="#5A2B2B"
-                    android:textSize="14sp"
-                    app:backgroundTint="@null" />
-
-                <Button
-                    android:id="@+id/saveProfileEdit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginStart="24dp"
-                    android:background="@drawable/profile_grey_button_bg"
-                    android:text="Save"
-                    android:textAllCaps="false"
-                    android:textColor="#555555"
-                    android:textSize="14sp"
-                    app:backgroundTint="@null" />
-            </LinearLayout>
-
-            <androidx.constraintlayout.widget.Barrier
-                android:id="@+id/profileActionsBarrier"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:barrierDirection="bottom"
-                app:constraint_referenced_ids="editProfileButton,profileEditActions" />
-
-            <!-- Notifications heading -->
-            <TextView
-                android:id="@+id/notificationsHeader"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="48dp"
-                android:text="Notifications"
+                android:background="@drawable/input_box_bg"
+                android:hint="Full Name"
+                android:minHeight="48dp"
+                android:padding="12dp"
                 android:textColor="#000000"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/profileActionsBarrier" />
+                android:textColorHint="#555555" />
 
-            <!-- notifications list -->
-            <LinearLayout
-                android:id="@+id/notificationsList"
-                android:layout_width="0dp"
+            <EditText
+                android:id="@+id/editEmail"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/notificationsHeader">
+                android:layout_marginTop="12dp"
+                android:background="@drawable/input_box_bg"
+                android:hint="Email address"
+                android:inputType="textEmailAddress"
+                android:minHeight="48dp"
+                android:padding="12dp"
+                android:textColor="#000000"
+                android:textColorHint="#555555" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
+            <EditText
+                android:id="@+id/editPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/input_box_bg"
+                android:hint="Phone (optional)"
+                android:inputType="phone"
+                android:minHeight="48dp"
+                android:padding="12dp"
+                android:textColor="#000000"
+                android:textColorHint="#555555" />
+        </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/whenChosenText"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="When chosen"
-                        android:textColor="#222222"
-                        android:textSize="18sp" />
+        <Button
+            android:id="@+id/editProfileButton"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/profile_green_button_bg"
+            android:text="Edit"
+            android:textAllCaps="false"
+            android:textColor="#3F3F3F"
+            android:textSize="14sp"
+            app:backgroundTint="@null"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/personalInfoViewGroup" />
 
-                    <CheckBox
-                        android:id="@+id/whenChosenCheck"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:buttonTint="@color/checkbox_tint"
-                        android:checked="true"
-                        android:scaleX="1.4"
-                        android:scaleY="1.4" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
-
-                    <TextView
-                        android:id="@+id/whenNotChosenText"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="When not chosen"
-                        android:textColor="#222222"
-                        android:textSize="18sp" />
-
-                    <CheckBox
-                        android:id="@+id/whenNotChosenCheck"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:buttonTint="@color/checkbox_tint"
-                        android:checked="true"
-                        android:scaleX="1.4"
-                        android:scaleY="1.4" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
-
-                    <TextView
-                        android:id="@+id/organizersAdminsText"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="From organizers and admins"
-                        android:textColor="#222222"
-                        android:textSize="18sp" />
-
-                    <CheckBox
-                        android:id="@+id/organizersAdminsCheck"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:buttonTint="@color/checkbox_tint"
-                        android:checked="true"
-                        android:scaleX="1.4"
-                        android:scaleY="1.4" />
-                </LinearLayout>
-            </LinearLayout>
+        <LinearLayout
+            android:id="@+id/profileEditActions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/personalInfoEditGroup">
 
             <Button
-                android:id="@+id/editNotificationsButton"
+                android:id="@+id/cancelProfileEdit"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/profile_green_button_bg"
-                android:text="Edit"
+                android:background="@drawable/profile_red_button_bg"
+                android:text="Cancel"
                 android:textAllCaps="false"
-                android:textColor="#3F3F3F"
+                android:textColor="#5A2B2B"
                 android:textSize="14sp"
-                app:backgroundTint="@null"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/notificationsList" />
+                app:backgroundTint="@null" />
+
+            <Button
+                android:id="@+id/saveProfileEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginStart="24dp"
+                android:background="@drawable/profile_grey_button_bg"
+                android:text="Save"
+                android:textAllCaps="false"
+                android:textColor="#555555"
+                android:textSize="14sp"
+                app:backgroundTint="@null" />
+        </LinearLayout>
+
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/profileActionsBarrier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="editProfileButton,profileEditActions" />
+
+        <!-- Notifications heading -->
+        <TextView
+            android:id="@+id/notificationsHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            android:text="Notifications"
+            android:textColor="#000000"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/profileActionsBarrier" />
+
+        <!-- notifications list -->
+        <LinearLayout
+            android:id="@+id/notificationsList"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/notificationsHeader">
 
             <LinearLayout
-                android:id="@+id/notificationEditActions"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:gravity="center"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/notificationsList">
+                android:paddingVertical="8dp">
 
-                <Button
-                    android:id="@+id/cancelNotificationsEdit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:background="@drawable/profile_red_button_bg"
-                    android:text="Cancel"
-                    android:textAllCaps="false"
-                    android:textColor="#5A2B2B"
-                    android:textSize="14sp"
-                    app:backgroundTint="@null" />
+                <TextView
+                    android:id="@+id/whenChosenText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="When chosen"
+                    android:textColor="#222222"
+                    android:textSize="18sp" />
 
-                <Button
-                    android:id="@+id/saveNotificationsEdit"
+                <CheckBox
+                    android:id="@+id/whenChosenCheck"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginStart="24dp"
-                    android:background="@drawable/profile_grey_button_bg"
-                    android:text="Save"
-                    android:textAllCaps="false"
-                    android:textColor="#555555"
-                    android:textSize="14sp"
-                    app:backgroundTint="@null" />
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/checkbox_tint"
+                    android:checked="true"
+                    android:scaleX="1.4"
+                    android:scaleY="1.4" />
             </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:id="@+id/whenNotChosenText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="When not chosen"
+                    android:textColor="#222222"
+                    android:textSize="18sp" />
+
+                <CheckBox
+                    android:id="@+id/whenNotChosenCheck"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/checkbox_tint"
+                    android:checked="true"
+                    android:scaleX="1.4"
+                    android:scaleY="1.4" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:id="@+id/organizersAdminsText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="From organizers and admins"
+                    android:textColor="#222222"
+                    android:textSize="18sp" />
+
+                <CheckBox
+                    android:id="@+id/organizersAdminsCheck"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/checkbox_tint"
+                    android:checked="true"
+                    android:scaleX="1.4"
+                    android:scaleY="1.4" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/editNotificationsButton"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/profile_green_button_bg"
+            android:text="Edit"
+            android:textAllCaps="false"
+            android:textColor="#3F3F3F"
+            android:textSize="14sp"
+            app:backgroundTint="@null"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/notificationsList" />
+
+        <LinearLayout
+            android:id="@+id/notificationEditActions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/notificationsList">
+
+            <Button
+                android:id="@+id/cancelNotificationsEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/profile_red_button_bg"
+                android:text="Cancel"
+                android:textAllCaps="false"
+                android:textColor="#5A2B2B"
+                android:textSize="14sp"
+                app:backgroundTint="@null" />
+
+            <Button
+                android:id="@+id/saveNotificationsEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginStart="24dp"
+                android:background="@drawable/profile_grey_button_bg"
+                android:text="Save"
+                android:textAllCaps="false"
+                android:textColor="#555555"
+                android:textSize="14sp"
+                app:backgroundTint="@null" />
+        </LinearLayout>
 
             <androidx.constraintlayout.widget.Barrier
                 android:id="@+id/notificationsActionsBarrier"
@@ -440,7 +444,5 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/logoutButton" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-    </FrameLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>
