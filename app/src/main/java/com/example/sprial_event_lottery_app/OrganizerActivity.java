@@ -2,30 +2,23 @@ package com.example.sprial_event_lottery_app;
 
 import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
+/**
+ * Activity representing the Organizer Dashboard.
+ * Currently redirects straight to CreateEventActivity as per requirement.
+ */
 public class OrganizerActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_organizer);
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.organizer_main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-
-        findViewById(R.id.btn_go_to_create).setOnClickListener(v -> {
-            Intent intent = new Intent(OrganizerActivity.this, CreateEventActivity.class);
-            startActivity(intent);
-        });
+        
+        // Launch straight into create an event
+        Intent intent = new Intent(this, CreateEventActivity.class);
+        startActivity(intent);
+        
+        // Finish this activity so the user doesn't come back to a blank screen
+        finish();
     }
 }

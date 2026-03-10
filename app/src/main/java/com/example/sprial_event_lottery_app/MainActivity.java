@@ -5,7 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * MainActivity is no longer the entry point of the app.
- * OrganizerActivity is configured as the launcher in the AndroidManifest.
+ * CreateEventActivity is configured as the launcher in the AndroidManifest.
  */
 public class MainActivity extends AppCompatActivity {
     @Override

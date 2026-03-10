@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -7,7 +8,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.sprial_event_lottery_app"
+        applicationId = "com.example.spiral_event_lottery_app"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -40,6 +41,12 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    implementation(libs.firebase.analytics)
+
     // QR Code Generation
     implementation(libs.zxing.core)
     implementation(libs.zxing.android.embedded)

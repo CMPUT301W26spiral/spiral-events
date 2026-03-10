@@ -1,9 +1,11 @@
 package com.example.sprial_event_lottery_app;
 
+import android.net.Uri;
 import java.io.Serializable;
 
 /**
- * Model class representing an event.
+ * Model class representing an event in the system.
+ * Contains details about the event location, timing, and lottery draw information.
  */
 public class Event implements Serializable {
     private String name;
@@ -21,11 +23,18 @@ public class Event implements Serializable {
     private String drawStartTime; // Format: HH:MM
     private String drawEndTime; // Format: HH:MM
 
+    private String posterUriString; // Store the URI as a string for serialization
+
+    /**
+     * Default constructor required for Firebase operations.
+     */
     public Event() {
-        // Default constructor for Firebase
     }
 
-    public Event(String name, String location, String interests, String description, String geolocation, Integer maxEntrants, String eventDate, String eventStartTime, String eventEndTime, String drawDate, String drawStartTime, String drawEndTime) {
+    /**
+     * Constructs a new Event with all details including poster.
+     */
+    public Event(String name, String location, String interests, String description, String geolocation, Integer maxEntrants, String eventDate, String eventStartTime, String eventEndTime, String drawDate, String drawStartTime, String drawEndTime, String posterUriString) {
         this.name = name;
         this.location = location;
         this.interests = interests;
@@ -38,6 +47,7 @@ public class Event implements Serializable {
         this.drawDate = drawDate;
         this.drawStartTime = drawStartTime;
         this.drawEndTime = drawEndTime;
+        this.posterUriString = posterUriString;
     }
 
     // Getters and Setters
@@ -76,4 +86,7 @@ public class Event implements Serializable {
 
     public String getDrawEndTime() { return drawEndTime; }
     public void setDrawEndTime(String drawEndTime) { this.drawEndTime = drawEndTime; }
+
+    public String getPosterUriString() { return posterUriString; }
+    public void setPosterUriString(String posterUriString) { this.posterUriString = posterUriString; }
 }

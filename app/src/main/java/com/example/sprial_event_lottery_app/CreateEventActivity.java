@@ -1,18 +1,25 @@
 package com.example.sprial_event_lottery_app;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * Activity for organizers to create and configure new lottery events.
+ * Handles input validation, event creation, and navigation to QR code generation.
  */
 public class CreateEventActivity extends AppCompatActivity {
 
@@ -23,6 +30,34 @@ public class CreateEventActivity extends AppCompatActivity {
     private EditText etDrawStartHour, etDrawStartMin, etDrawEndHour, etDrawEndMin;
     private Button btnCreate;
 
+    private FrameLayout postersContainer;
+    private ImageView ivEventPoster;
+    private LinearLayout llAddPosterPlaceholder;
+    private Uri selectedImageUri;
+
+    // Use GetContent for all image sources including Google Photos
+    private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    selectedImageUri = uri;
+                    ivEventPoster.setImageURI(selectedImageUri);
+                    llAddPosterPlaceholder.setVisibility(View.GONE);
+                    
+                    // Try to keep permissions for long-term access if supported by the provider
+                    try {
+                        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
+                        getContentResolver().takePersistableUriPermission(uri, takeFlags);
+                    } catch (Exception e) {
+                        // keep permissions might not be available for all URIs (e.g., from some cloud providers)
+                    }
+                }
+            }
+    );
+
+    /**
+     * Initializes the activity, views, and sets up click listeners.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,6 +65,16 @@ public class CreateEventActivity extends AppCompatActivity {
 
         initializeViews();
         setupInputRestrictions();
+
+        // Listener for selecting an image
+        View.OnClickListener posterClickListener = v -> {
+            imagePickerLauncher.launch("image/*");
+        };
+
+        // Set listener on both the container and the placeholder to ensure it captures clicks
+        postersContainer.setOnClickListener(posterClickListener);
+        llAddPosterPlaceholder.setOnClickListener(posterClickListener);
+        ivEventPoster.setOnClickListener(posterClickListener);
 
         btnCreate.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -45,6 +90,10 @@ public class CreateEventActivity extends AppCompatActivity {
         findViewById(R.id.toolbar).setOnClickListener(v -> finish());
     }
 
+    /**
+     * Collects data from input fields, creates a new Event object, 
+     * saves it to the EventManager, and navigates to the QRCodeActivity.
+     */
     private void saveEvent() {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
@@ -63,10 +112,13 @@ public class CreateEventActivity extends AppCompatActivity {
         String drawStartTime = etDrawStartHour.getText().toString() + ":" + etDrawStartMin.getText().toString();
         String drawEndTime = etDrawEndHour.getText().toString() + ":" + etDrawEndMin.getText().toString();
 
+        String posterUriString = (selectedImageUri != null) ? selectedImageUri.toString() : null;
+
         Event newEvent = new Event(
                 eventName, location, interests, description, geolocation, maxEntrants,
                 eventDate, eventStartTime, eventEndTime,
-                drawDate, drawStartTime, drawEndTime
+                drawDate, drawStartTime, drawEndTime,
+                posterUriString
         );
 
         // Store event in local list
@@ -78,7 +130,14 @@ public class CreateEventActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    /**
+     * Binds UI components from the layout XML to class variables.
+     */
     private void initializeViews() {
+        postersContainer = findViewById(R.id.posters_container);
+        ivEventPoster = findViewById(R.id.iv_event_poster);
+        llAddPosterPlaceholder = findViewById(R.id.ll_add_poster_placeholder);
+
         etEventName = findViewById(R.id.et_event_name);
         etLocation = findViewById(R.id.et_location);
         etInterests = findViewById(R.id.et_interests);
@@ -107,6 +166,9 @@ public class CreateEventActivity extends AppCompatActivity {
         btnCreate = findViewById(R.id.btn_create);
     }
 
+    /**
+     * Sets up text watchers to enforce numeric ranges for date and time fields.
+     */
     private void setupInputRestrictions() {
         addRangeWatcher(etEventDay, 1, 31);
         addRangeWatcher(etDrawDay, 1, 31);
@@ -122,6 +184,9 @@ public class CreateEventActivity extends AppCompatActivity {
         addRangeWatcher(etDrawEndMin, 0, 59);
     }
 
+    /**
+     * Utility method to restrict EditText input within a specified range.
+     */
     private void addRangeWatcher(EditText et, int min, int max) {
         et.addTextChangedListener(new TextWatcher() {
             @Override
@@ -145,9 +210,11 @@ public class CreateEventActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Validates that all required fields are filled.
+     */
     private boolean validateForm() {
         boolean isValid = true;
-
         isValid &= checkEmpty(etEventName);
         isValid &= checkEmpty(etLocation);
         isValid &= checkEmpty(etEventDay);
@@ -158,7 +225,6 @@ public class CreateEventActivity extends AppCompatActivity {
         isValid &= checkEmpty(etEventEndHour);
         isValid &= checkEmpty(etEventEndMin);
         isValid &= checkEmpty(etDescription);
-        
         isValid &= checkEmpty(etDrawDay);
         isValid &= checkEmpty(etDrawMonth);
         isValid &= checkEmpty(etDrawYear);
@@ -167,7 +233,6 @@ public class CreateEventActivity extends AppCompatActivity {
         isValid &= checkEmpty(etDrawEndHour);
         isValid &= checkEmpty(etDrawEndMin);
         isValid &= checkEmpty(etGeolocation);
-
         return isValid;
     }
 
