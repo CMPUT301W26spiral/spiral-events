@@ -15,6 +15,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -41,6 +42,9 @@ public class ProfileFragment extends Fragment {
     private FirebaseFirestore db;
     private FirebaseStorage storage;
     private String uid;
+
+    private View profileContent;
+    private ProgressBar profileLoading;
 
     private ImageView profileImage;
     private ImageButton editPhotoButton;
@@ -85,6 +89,9 @@ public class ProfileFragment extends Fragment {
     }
 
     private void bindViews(View view) {
+        profileContent = view.findViewById(R.id.profileContent);
+        profileLoading = view.findViewById(R.id.profileLoading);
+
         profileImage = view.findViewById(R.id.profileImage);
         editPhotoButton = view.findViewById(R.id.editPhotoButton);
         profileName = view.findViewById(R.id.profileName);
@@ -148,24 +155,39 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadProfileFromFirebase() {
-        if (uid.isEmpty()) return;
+        if (uid.isEmpty()) {
+            profileLoading.setVisibility(View.GONE);
+            profileContent.setVisibility(View.VISIBLE);
+            return;
+        }
         db.collection("users").document(uid).get()
-                .addOnSuccessListener(this::handleLoadedProfile);
+                .addOnSuccessListener(this::handleLoadedProfile)
+                .addOnFailureListener(e -> {
+                    if (isAdded()) {
+                        profileLoading.setVisibility(View.GONE);
+                        profileContent.setVisibility(View.VISIBLE);
+                    }
+                });
     }
 
     private void handleLoadedProfile(DocumentSnapshot doc) {
-        if (!doc.exists() || !isAdded()) return;
-        currentName = safeString(doc.getString("name"));
-        currentEmail = safeString(doc.getString("email"));
-        currentPhone = safeString(doc.getString("phone"));
-        currentPhotoUrl = safeString(doc.getString("photoUrl"));
-        currentNotifyWhenChosen = doc.getBoolean("notifyWhenChosen") != null && doc.getBoolean("notifyWhenChosen");
-        currentNotifyWhenNotChosen = doc.getBoolean("notifyWhenNotChosen") != null && doc.getBoolean("notifyWhenNotChosen");
-        currentNotifyOrganizersAdmins = doc.getBoolean("notifyOrganizersAdmins") != null && doc.getBoolean("notifyOrganizersAdmins");
-        updateProfileViews();
-        if (!currentPhotoUrl.isEmpty()) {
-            Glide.with(this).load(currentPhotoUrl).into(profileImage);
+        if (!isAdded()) return;
+        if (doc.exists()) {
+            currentName = safeString(doc.getString("name"));
+            currentEmail = safeString(doc.getString("email"));
+            currentPhone = safeString(doc.getString("phone"));
+            currentPhotoUrl = safeString(doc.getString("photoUrl"));
+            currentNotifyWhenChosen = doc.getBoolean("notifyWhenChosen") != null && doc.getBoolean("notifyWhenChosen");
+            currentNotifyWhenNotChosen = doc.getBoolean("notifyWhenNotChosen") != null && doc.getBoolean("notifyWhenNotChosen");
+            currentNotifyOrganizersAdmins = doc.getBoolean("notifyOrganizersAdmins") != null && doc.getBoolean("notifyOrganizersAdmins");
+            updateProfileViews();
+            if (!currentPhotoUrl.isEmpty()) {
+                Glide.with(this).load(currentPhotoUrl).into(profileImage);
+            }
         }
+        // Reveal content only AFTER data is applied to avoid flashing empty fields
+        profileLoading.setVisibility(View.GONE);
+        profileContent.setVisibility(View.VISIBLE);
     }
 
     private void updateProfileViews() {
@@ -216,8 +238,10 @@ public class ProfileFragment extends Fragment {
                     .continueWithTask(task -> ref.getDownloadUrl())
                     .addOnSuccessListener(uri -> saveProfileDocument(name, email, phone, uri.toString()))
                     .addOnFailureListener(e -> {
-                        saveProfileEdit.setEnabled(true);
-                        cancelProfileEdit.setEnabled(true);
+                        if (isAdded()) {
+                            saveProfileEdit.setEnabled(true);
+                            cancelProfileEdit.setEnabled(true);
+                        }
                     });
         }
     }

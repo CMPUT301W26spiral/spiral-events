@@ -3,6 +3,7 @@ package com.example.spiral_event_lottery_app;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.example.spiral_event_lottery_app.ui.ProfileFragment;
 import com.example.spiral_event_lottery_app.ui.events.MyEventsFragment;
@@ -11,6 +12,12 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
 
+    private final Fragment homeFragment = new HomeFragment();
+    private final Fragment eventsFragment = new MyEventsFragment();
+    private final Fragment profileFragment = new ProfileFragment();
+    private final FragmentManager fm = getSupportFragmentManager();
+    private Fragment active = homeFragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -18,36 +25,27 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
 
-        // Set default fragment
-        if (savedInstanceState == null) {
-            loadFragment(new HomeFragment());
-        }
+        // Pre-load fragments so they are ready instantly
+        fm.beginTransaction().add(R.id.fragmentContainer, profileFragment, "profile").hide(profileFragment).commit();
+        fm.beginTransaction().add(R.id.fragmentContainer, eventsFragment, "events").hide(eventsFragment).commit();
+        fm.beginTransaction().add(R.id.fragmentContainer, homeFragment, "home").commit();
 
         bottomNav.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
             int itemId = item.getItemId();
-
             if (itemId == R.id.nav_home) {
-                selectedFragment = new HomeFragment();
+                fm.beginTransaction().hide(active).show(homeFragment).commit();
+                active = homeFragment;
+                return true;
             } else if (itemId == R.id.nav_events) {
-                selectedFragment = new MyEventsFragment();
+                fm.beginTransaction().hide(active).show(eventsFragment).commit();
+                active = eventsFragment;
+                return true;
             } else if (itemId == R.id.nav_account) {
-                selectedFragment = new ProfileFragment();
-            }
-            // Add cases for nav_add and nav_notifications when fragments are ready
-
-            if (selectedFragment != null) {
-                loadFragment(selectedFragment);
+                fm.beginTransaction().hide(active).show(profileFragment).commit();
+                active = profileFragment;
                 return true;
             }
             return false;
         });
-    }
-
-    private void loadFragment(Fragment fragment) {
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.fragmentContainer, fragment)
-                .commit();
     }
 }
