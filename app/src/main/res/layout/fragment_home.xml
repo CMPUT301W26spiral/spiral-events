@@ -94,13 +94,15 @@
             android:layout_width="90dp"
             android:layout_height="44dp"
             android:layout_marginStart="10dp"
-            android:text="Scan"
+            android:text=""
+            android:gravity="center"
             android:textAllCaps="false"
             android:textStyle="bold"
             android:textColor="#1F1F1F"
             android:background="@drawable/bg_search"
             app:icon="@drawable/ic_qr"
-            app:iconPadding="6dp"/>
+            app:iconPadding="0dp"
+            app:iconGravity="textStart"/>
     </LinearLayout>
 
     <LinearLayout

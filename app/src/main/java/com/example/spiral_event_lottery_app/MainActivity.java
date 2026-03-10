@@ -2,11 +2,16 @@ package com.example.spiral_event_lottery_app;
 
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
-import com.example.spiral_event_lottery_app.data.EventStore;
+
 import com.example.spiral_event_lottery_app.ui.events.MyEventsFragment;
 import com.example.spiral_event_lottery_app.ui.home.HomeFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+/***
+ * Entry point of the application and manages the Navigation between the main screens of the app
+ * Navigation between screens is handled by the BottomNavigationView
+ * Fragments are loaded into the fragmentContainer when the user selects items from the bottom navigation menu
+ */
 public class MainActivity extends AppCompatActivity {
 
     @Override
