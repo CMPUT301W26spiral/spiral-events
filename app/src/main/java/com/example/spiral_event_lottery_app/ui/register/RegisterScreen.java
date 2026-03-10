@@ -7,8 +7,8 @@ import android.os.Bundle;
 import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -33,16 +33,15 @@ public class RegisterScreen extends AppCompatActivity {
     private EditText emailInput;
     private EditText phoneInput;
     private Button confirmButton;
-    private ImageButton editPhotoButton;
+    private TextView choosePhotoText;
 
     private Uri selectedImageUri;
 
-    // Lets the user pick an image from the phone
     private final ActivityResultLauncher<String> pickImage =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri != null) {
                     selectedImageUri = uri;
-                    profilePic.setImageURI(uri); // preview chosen image
+                    profilePic.setImageURI(uri);
                 }
             });
 
@@ -53,13 +52,15 @@ public class RegisterScreen extends AppCompatActivity {
         setContentView(R.layout.register_screen);
 
         profilePic = findViewById(R.id.profile_circle);
-        editPhotoButton = findViewById(R.id.edit_photo);
+        choosePhotoText = findViewById(R.id.edit_photo_text);
         nameInput = findViewById(R.id.name_input);
         emailInput = findViewById(R.id.email_input);
         phoneInput = findViewById(R.id.phone_input);
         confirmButton = findViewById(R.id.confirm);
 
-        editPhotoButton.setOnClickListener(v -> pickImage.launch("image/*"));
+        // Both the image and the text label trigger the picker
+        profilePic.setOnClickListener(v -> pickImage.launch("image/*"));
+        choosePhotoText.setOnClickListener(v -> pickImage.launch("image/*"));
 
         confirmButton.setOnClickListener(v -> {
             String fullName = nameInput.getText().toString().trim();
@@ -74,126 +75,63 @@ public class RegisterScreen extends AppCompatActivity {
         });
     }
 
-    /**
-     * Validates the text fields before saving.
-     */
     private boolean validateInputs(String fullName, String emailAddress, String phoneNumber) {
         if (fullName.isEmpty()) {
             nameInput.setError("Full name is required");
             nameInput.requestFocus();
             return false;
         }
-
-        if (emailAddress.isEmpty()) {
-            emailInput.setError("Email is required");
+        if (emailAddress.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(emailAddress).matches()) {
+            emailInput.setError("Valid email required");
             emailInput.requestFocus();
             return false;
         }
-
-        if (!Patterns.EMAIL_ADDRESS.matcher(emailAddress).matches()) {
-            emailInput.setError("Enter a valid email");
-            emailInput.requestFocus();
-            return false;
-        }
-
         if (!phoneNumber.isEmpty() && !Patterns.PHONE.matcher(phoneNumber).matches()) {
-            phoneInput.setError("Enter a valid phone number");
+            phoneInput.setError("Valid phone required");
             phoneInput.requestFocus();
             return false;
         }
-
         return true;
     }
 
-    /**
-     * Saves the user's profile to Firestore.
-     * If a photo was selected, uploads it to Firebase Storage first.
-     */
     private void saveProfileToFirebase(String fullName, String emailAddress, String phoneNumber) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        // Use SharedPreferences to keep a unique device-based id
-        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        String deviceId = prefs.getString("device_id", null);
-
-        if (deviceId == null) {
-            deviceId = UUID.randomUUID().toString();
-            prefs.edit().putString("device_id", deviceId).apply();
-        }
-
-        String uid = deviceId;
-
-        // Disable button while saving to avoid duplicate taps
         confirmButton.setEnabled(false);
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        String deviceId = prefs.getString("device_id", UUID.randomUUID().toString());
+        prefs.edit().putString("device_id", deviceId).apply();
 
         if (selectedImageUri == null) {
-            // Save only text fields
-            Map<String, Object> profile = new HashMap<>();
-            profile.put("name", fullName);
-            profile.put("email", emailAddress);
-            profile.put("phone", phoneNumber.isEmpty() ? null : phoneNumber);
-            profile.put("photoUrl", null);
-            profile.put("deviceId", uid);
-
-            db.collection("users")
-                    .document(uid)
-                    .set(profile)
-                    .addOnSuccessListener(unused -> {
-                        Toast.makeText(this, "Profile saved.", Toast.LENGTH_SHORT).show();
-                        goToMainActivity();
-                    })
+            saveToFirestore(db, deviceId, fullName, emailAddress, phoneNumber, null);
+        } else {
+            StorageReference ref = FirebaseStorage.getInstance().getReference().child("profile_photos/" + deviceId + ".jpg");
+            ref.putFile(selectedImageUri)
+                    .continueWithTask(task -> ref.getDownloadUrl())
+                    .addOnSuccessListener(uri -> saveToFirestore(db, deviceId, fullName, emailAddress, phoneNumber, uri.toString()))
                     .addOnFailureListener(e -> {
                         confirmButton.setEnabled(true);
-                        Toast.makeText(this, "Save failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "Upload failed", Toast.LENGTH_SHORT).show();
                     });
-
-            return;
         }
+    }
 
-        // Upload selected image to Firebase Storage
-        StorageReference photoRef = FirebaseStorage.getInstance()
-                .getReference()
-                .child("profile_photos/" + uid + ".jpg");
+    private void saveToFirestore(FirebaseFirestore db, String uid, String name, String email, String phone, String photoUrl) {
+        Map<String, Object> profile = new HashMap<>();
+        profile.put("name", name);
+        profile.put("email", email);
+        profile.put("phone", phone.isEmpty() ? null : phone);
+        profile.put("photoUrl", photoUrl);
+        profile.put("deviceId", uid);
 
-        photoRef.putFile(selectedImageUri)
-                .continueWithTask(task -> {
-                    if (!task.isSuccessful()) {
-                        throw task.getException();
-                    }
-                    return photoRef.getDownloadUrl();
-                })
-                .addOnSuccessListener(downloadUri -> {
-                    Map<String, Object> profile = new HashMap<>();
-                    profile.put("name", fullName);
-                    profile.put("email", emailAddress);
-                    profile.put("phone", phoneNumber.isEmpty() ? null : phoneNumber);
-                    profile.put("photoUrl", downloadUri.toString());
-                    profile.put("deviceId", uid);
-
-                    db.collection("users")
-                            .document(uid)
-                            .set(profile)
-                            .addOnSuccessListener(unused -> {
-                                Toast.makeText(this, "Profile and photo saved.", Toast.LENGTH_SHORT).show();
-                                goToMainActivity();
-                            })
-                            .addOnFailureListener(e -> {
-                                confirmButton.setEnabled(true);
-                                Toast.makeText(this, "Save failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                            });
+        db.collection("users").document(uid).set(profile)
+                .addOnSuccessListener(unused -> {
+                    startActivity(new Intent(this, MainActivity.class));
+                    finish();
                 })
                 .addOnFailureListener(e -> {
                     confirmButton.setEnabled(true);
-                    Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
                 });
-    }
-
-    /**
-     * Opens the main screen after successful save.
-     */
-    private void goToMainActivity() {
-        Intent intent = new Intent(RegisterScreen.this, MainActivity.class);
-        startActivity(intent);
-        finish();
     }
 }

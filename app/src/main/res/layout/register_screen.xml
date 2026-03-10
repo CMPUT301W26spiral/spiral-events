@@ -32,20 +32,31 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/create_profile_title" />
 
-    <!-- Edit icon -->
+    <!-- Choose Photo Text -->
+    <TextView
+        android:id="@+id/edit_photo_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Choose Photo"
+        android:textColor="#2D713E"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@id/profile_circle"
+        app:layout_constraintStart_toStartOf="@id/profile_circle"
+        app:layout_constraintTop_toBottomOf="@id/profile_circle" />
+        
+    <!-- Hidden button for logic compatibility or replace logic in Java -->
     <ImageButton
         android:id="@+id/edit_photo"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:layout_marginStart="2dp"
-        android:layout_marginTop="4dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:background="@android:color/transparent"
-        android:contentDescription="Edit profile picture"
-        android:padding="0dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/edit_2"
-        app:layout_constraintStart_toEndOf="@id/profile_circle"
-        app:layout_constraintTop_toTopOf="@id/profile_circle" />
+        android:visibility="invisible"
+        app:layout_constraintTop_toTopOf="@id/profile_circle"
+        app:layout_constraintBottom_toBottomOf="@id/edit_photo_text"
+        app:layout_constraintStart_toStartOf="@id/profile_circle"
+        app:layout_constraintEnd_toEndOf="@id/profile_circle" />
 
     <!-- Section heading -->
     <TextView
@@ -59,7 +70,7 @@
         android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/profile_circle" />
+        app:layout_constraintTop_toBottomOf="@id/edit_photo_text" />
 
     <!-- Full Name label -->
     <TextView
@@ -78,9 +89,10 @@
     <EditText
         android:id="@+id/name_input"
         android:layout_width="318dp"
-        android:layout_height="36dp"
+        android:layout_height="48dp"
         android:layout_marginTop="6dp"
-        android:background="@drawable/input_box_bg"        android:ems="10"
+        android:background="@drawable/input_box_bg"
+        android:ems="10"
         android:hint=""
         android:inputType="textPersonName"
         android:paddingStart="12dp"
@@ -109,9 +121,10 @@
     <EditText
         android:id="@+id/email_input"
         android:layout_width="318dp"
-        android:layout_height="36dp"
+        android:layout_height="48dp"
         android:layout_marginTop="6dp"
-        android:background="@drawable/input_box_bg"        android:ems="10"
+        android:background="@drawable/input_box_bg"
+        android:ems="10"
         android:hint=""
         android:inputType="textEmailAddress"
         android:paddingStart="12dp"
@@ -140,9 +153,10 @@
     <EditText
         android:id="@+id/phone_input"
         android:layout_width="318dp"
-        android:layout_height="36dp"
+        android:layout_height="48dp"
         android:layout_marginTop="6dp"
-        android:background="@drawable/input_box_bg"        android:ems="10"
+        android:background="@drawable/input_box_bg"
+        android:ems="10"
         android:hint=""
         android:inputType="phone"
         android:paddingStart="12dp"
@@ -157,15 +171,15 @@
     <!-- Confirm button -->
     <Button
         android:id="@+id/confirm"
-        android:layout_width="100dp"
-        android:layout_height="36dp"
+        android:layout_width="120dp"
+        android:layout_height="48dp"
         android:layout_marginTop="30dp"
         android:background="@drawable/confirm_button_bg"
         android:text="Confirm"
         android:textAllCaps="false"
         android:textColor="#FFFFFF"
         app:backgroundTint="@null"
-        android:textSize="12sp"
+        android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
