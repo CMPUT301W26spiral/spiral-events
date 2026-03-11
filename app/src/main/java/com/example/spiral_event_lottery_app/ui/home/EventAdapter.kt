@@ -9,6 +9,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.model.Event
 
+/**
+ * Recycler view adapter used to display the list of events that entrants can view and join
+ * Binds the model data to the UI layout
+ * Also provides a callback that allows the UI to respond when the user pressed Sign Up button
+ */
 class EventAdapter(
     private var events: List<Event>,
     private val onSignUpClicked: (Event) -> Unit
@@ -38,7 +43,6 @@ class EventAdapter(
         private val timeText: TextView = itemView.findViewById(R.id.timeText)
         private val waitingText: TextView = itemView.findViewById(R.id.waitingText)
         private val signUpButton: Button = itemView.findViewById(R.id.signUpButton)
-
         fun bind(event: Event, onSignUpClicked: (Event) -> Unit) {
             titleText.text = event.name
             locationText.text = event.locationName
