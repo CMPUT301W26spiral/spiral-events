@@ -22,7 +22,7 @@
             android:layout_centerVertical="true"
             android:layout_marginStart="8dp"
             android:text="Notifications"
-            android:textColor="#2E5A27"
+            android:textColor="#0F3D2E"
             android:textSize="24sp"
             android:textStyle="bold" />
 
