@@ -13,12 +13,14 @@ import com.example.spiral_event_lottery_app.ui.notifications.NotificationFragmen
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
-    private final Fragment homeFragment = new HomeFragment();
-    private final Fragment eventsFragment = new MyEventsFragment();
-    private final Fragment profileFragment = new ProfileFragment();
-    private final Fragment notificationFragment = new NotificationFragment();
+    private final HomeFragment homeFragment = new HomeFragment();
+    private final MyEventsFragment eventsFragment = new MyEventsFragment();
+    private final ProfileFragment profileFragment = new ProfileFragment();
+    private final NotificationFragment notificationFragment = new NotificationFragment();
     private final FragmentManager fm = getSupportFragmentManager();
     private Fragment activeTab = homeFragment;
 
@@ -29,11 +31,17 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
 
-        // Initial setup
         fm.beginTransaction().add(R.id.fragmentContainer, profileFragment, "profile").hide(profileFragment).commit();
         fm.beginTransaction().add(R.id.fragmentContainer, notificationFragment, "notifications").hide(notificationFragment).commit();
         fm.beginTransaction().add(R.id.fragmentContainer, eventsFragment, "events").hide(eventsFragment).commit();
         fm.beginTransaction().add(R.id.fragmentContainer, homeFragment, "home").commit();
+
+        // REFRESH LOGIC: When a 'Details' screen is closed (popped), refresh the visible tab
+        fm.addOnBackStackChangedListener(() -> {
+            if (activeTab instanceof MyEventsFragment) {
+                ((MyEventsFragment) activeTab).refreshMyEvents();
+            }
+        });
 
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -46,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
 
             if (target != null) {
                 if (activeTab == target) {
-                    // Double-tap on the same tab: reset to root list
                     fm.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
                 } else {
                     switchTab(target);
@@ -59,29 +66,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void switchTab(Fragment targetTab) {
         FragmentTransaction ft = fm.beginTransaction();
-        
-        // Hide the current main tab
         ft.hide(activeTab);
         
         Fragment details = fm.findFragmentByTag("details_screen");
 
-        // Logic: Moving between main tabs (Home <-> Events)
         if ((targetTab == homeFragment || targetTab == eventsFragment) && 
             (activeTab == homeFragment || activeTab == eventsFragment)) {
-            // Standard behavior: Close details when switching major sections
             fm.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
             details = null;
         } else if (details != null) {
-            // Just hide the details if moving to/from a utility tab (Notifications/Account)
             ft.hide(details);
         }
 
-        // Show the new tab
         ft.show(targetTab);
 
-        // Restore details if we are returning to a tab that had one open
         if (details != null && details.isAdded() && (targetTab == homeFragment || targetTab == eventsFragment)) {
-            // Only restore if we are coming from a utility tab
             if (activeTab == notificationFragment || activeTab == profileFragment) {
                 ft.show(details);
             }
@@ -89,5 +88,10 @@ public class MainActivity extends AppCompatActivity {
 
         ft.commit();
         activeTab = targetTab;
+        
+        // Refresh the list whenever we switch to the Events tab
+        if (targetTab instanceof MyEventsFragment) {
+            ((MyEventsFragment) targetTab).refreshMyEvents();
+        }
     }
 }

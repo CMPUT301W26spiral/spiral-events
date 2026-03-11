@@ -32,7 +32,6 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
         recyclerView = view.findViewById(R.id.currentEventsRecyclerView)
 
         adapter = MyEventsAdapter(emptyList()) { event ->
-            // FIXED: Use .add() and "details_screen" tag to match MainActivity logic
             parentFragmentManager.beginTransaction()
                 .add(R.id.fragmentContainer, EventDetailsLeaveFragment.newInstance(event.id), "details_screen")
                 .addToBackStack("details")
@@ -48,7 +47,10 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
         refreshMyEvents()
     }
 
-    private fun refreshMyEvents() {
+    /**
+     * Public method to allow MainActivity to trigger a list refresh
+     */
+    fun refreshMyEvents() {
         repository.fetchMyEvents(
             { events ->
                 adapter.submitList(events)
