@@ -11,5 +11,4 @@
     <string name="failed_to_load_profile">Failed to load profile: %1$s</string>
     <string name="failed_to_save_profile">Failed to save profile: %1$s</string>
     <string name="notification_settings_updated">Notification settings updated.</string>
-    <string name="app_name">spiral_event_lottery_app</string>
 </resources>
