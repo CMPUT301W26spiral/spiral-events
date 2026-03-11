@@ -11,9 +11,10 @@ public class NotificationManager {
      * @param title The title (e.g., "Accepted", "Denied").
      * @param message The content of the notification.
      * @param type The type (e.g., "ACCEPTED", "DENIED", "REQUESTED").
+     * @param eventName The name of the event this notification is about.
      */
-    public static void sendNotification(String recipientId, String title, String message, String type) {
-        Notification notification = new Notification(title, message, type, recipientId);
+    public static void sendNotification(String recipientId, String title, String message, String type, String eventName) {
+        Notification notification = new Notification(title, message, type, recipientId, eventName);
         
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection(COLLECTION_NAME)

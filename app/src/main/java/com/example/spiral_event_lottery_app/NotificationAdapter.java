@@ -32,26 +32,32 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Notification notification = notificationList.get(position);
-        holder.title.setText(notification.getTitle());
+        
+        // Show the Event Name if it exists, otherwise just show the title
+        String displayTitle = notification.getEventName() != null ? 
+            notification.getTitle() + ": " + notification.getEventName() : 
+            notification.getTitle();
+            
+        holder.title.setText(displayTitle);
         holder.message.setText(notification.getMessage());
         holder.date.setText(notification.getFormattedDate());
 
-        // Set background color and button visibility based on type
+        // Set colors based on type
         switch (notification.getType()) {
             case "ACCEPTED":
-                holder.background.setBackgroundColor(Color.parseColor("#E8F5E9")); // Light Green
+                holder.background.setBackgroundColor(Color.parseColor("#E8F5E9"));
                 holder.goButton.setVisibility(View.VISIBLE);
                 break;
             case "DENIED":
-                holder.background.setBackgroundColor(Color.parseColor("#FFEBEE")); // Light Red
+                holder.background.setBackgroundColor(Color.parseColor("#FFEBEE"));
                 holder.goButton.setVisibility(View.VISIBLE);
                 break;
             case "REQUESTED":
-                holder.background.setBackgroundColor(Color.parseColor("#FFFDE7")); // Light Yellow
+                holder.background.setBackgroundColor(Color.parseColor("#FFFDE7"));
                 holder.goButton.setVisibility(View.GONE);
                 break;
             case "ORGANIZER":
-                holder.background.setBackgroundColor(Color.parseColor("#F3E5F5")); // Light Purple
+                holder.background.setBackgroundColor(Color.parseColor("#F3E5F5"));
                 holder.goButton.setVisibility(View.VISIBLE);
                 break;
         }

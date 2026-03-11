@@ -11,25 +11,28 @@ public class Notification {
     private String message;
     private String type;
     private String recipientId;
+    private String eventName; // Added this field
     @ServerTimestamp
     private Timestamp timestamp;
 
     public Notification() {}
 
-    public Notification(String title, String message, String type, String recipientId) {
+    public Notification(String title, String message, String type, String recipientId, String eventName) {
         this.title = title;
         this.message = message;
         this.type = type;
         this.recipientId = recipientId;
+        this.eventName = eventName;
     }
 
     public String getTitle() { return title; }
     public String getMessage() { return message; }
     public String getType() { return type; }
     public String getRecipientId() { return recipientId; }
+    public String getEventName() { return eventName; }
     public Timestamp getTimestamp() { return timestamp; }
     
-    @Exclude // Tells Firebase to ignore this method when reading/writing to the database
+    @Exclude
     public String getFormattedDate() {
         if (timestamp == null) return "Just now";
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy h:mm a", Locale.getDefault());
