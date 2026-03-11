@@ -11,13 +11,13 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.example.spiral_event_lottery_app.R
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
+import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.google.firebase.firestore.ListenerRegistration
 
 /**
- * Fragment that disoplays the details of an event that they have already joined and allows leave
- * This screen is opened from the My Events page and when the user click the "Details" button for an event they are currently joined
- * Same logic and EventDetailsFragment, just reversed
+ * Fragment that displays the details of an event that they have already joined and allows leaving.
  */
 class EventDetailsLeaveFragment : Fragment() {
 
@@ -85,11 +85,19 @@ class EventDetailsLeaveFragment : Fragment() {
                                     .show()
                             } else {
                                 AlertDialog.Builder(requireContext())
-                                    .setTitle("You have successfully left the waiting list for:\n${event.name}")
+                                    .setTitle("You have successfully left the waiting list for ${event.name}")
                                     .setPositiveButton("Confirm") { _, _ ->
                                         repository.leaveWaitlist(
                                             eventId,
                                             {
+                                                // Trigger Notification
+                                                NotificationManager.sendNotification(
+                                                    DeviceIdProvider.getDeviceId(requireContext()),
+                                                    "Cancelled",
+                                                    "You have left the waiting list.",
+                                                    "DENIED",
+                                                    event.name
+                                                )
                                                 parentFragmentManager.popBackStack()
                                             },
                                             {

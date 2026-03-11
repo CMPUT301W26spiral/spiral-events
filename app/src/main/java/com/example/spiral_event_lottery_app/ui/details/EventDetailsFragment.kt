@@ -11,22 +11,18 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.example.spiral_event_lottery_app.R
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
+import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.google.firebase.firestore.ListenerRegistration
 
 /**
- * Fragment that displays the details of a specific event and allows an entrant to join the event's waiting list
- * This screen is opened when a user selects "Sign Up"
- * Communicates with EventRepository to retrieve data from Firebase Firestore
+ * Fragment that displays the details of a specific event and allows an entrant to join the event's waiting list.
  */
 class EventDetailsFragment : Fragment() {
     companion object {
         private const val ARG_EVENT_ID = "event_id"
 
-        /**
-         * Creates a new instance of EventDetailsFragment for a specific event
-         * The event ID is passed as a fragment argument so the fragment can retrieve the correct event
-         */
         fun newInstance(eventId: String): EventDetailsFragment {
             return EventDetailsFragment().apply {
                 arguments = Bundle().apply { putString(ARG_EVENT_ID, eventId) }
@@ -48,10 +44,6 @@ class EventDetailsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View = inflater.inflate(R.layout.fragment_event_details, container, false)
 
-    /**
-     * Initializes the UI and sets up the Firebase listener for the selected event
-     * Configures the Join Waiting List button logic and displays confirmation message when the user attempts to join
-     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         repository = EventRepository(requireContext())
 
@@ -71,10 +63,7 @@ class EventDetailsFragment : Fragment() {
             { event ->
                 if (event == null) {
                     title.text = "Event not found"
-                    location.text = ""
-                    time.text = ""
-                    waiting.text = ""
-                    joinBtn.isEnabled = false
+                    actionBtn.isEnabled = false
                     return@listenToEvent
                 }
 
@@ -105,7 +94,16 @@ class EventDetailsFragment : Fragment() {
                                     .setPositiveButton("Confirm") { _, _ ->
                                         repository.joinWaitlist(
                                             eventId,
-                                            {},
+                                            {
+                                                // Trigger Notification when successfully joined
+                                                NotificationManager.sendNotification(
+                                                    DeviceIdProvider.getDeviceId(requireContext()),
+                                                    "Requested",
+                                                    "Your entry for ${event.name} was received!",
+                                                    "REQUESTED",
+                                                    event.name
+                                                )
+                                            },
                                             {
                                                 AlertDialog.Builder(requireContext())
                                                     .setTitle("Already registered")
