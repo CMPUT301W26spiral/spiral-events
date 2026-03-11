@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">spiral_event_lottery_app</string>
+    <string name="instructionstoscan">Line up the QR Code with your camera</string>
 </resources>
