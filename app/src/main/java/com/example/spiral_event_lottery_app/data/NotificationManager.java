@@ -1,5 +1,6 @@
-package com.example.spiral_event_lottery_app;
+package com.example.spiral_event_lottery_app.data;
 
+import com.example.spiral_event_lottery_app.model.Notification;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class NotificationManager {

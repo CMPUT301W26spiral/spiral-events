@@ -1,4 +1,4 @@
-package com.example.spiral_event_lottery_app;
+package com.example.spiral_event_lottery_app.model;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
@@ -11,7 +11,7 @@ public class Notification {
     private String message;
     private String type;
     private String recipientId;
-    private String eventName; // Added this field
+    private String eventName;
     @ServerTimestamp
     private Timestamp timestamp;
 

@@ -1,5 +1,7 @@
 package com.example.spiral_event_lottery_app.ui.details
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -44,6 +46,10 @@ class EventDetailsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View = inflater.inflate(R.layout.fragment_event_details, container, false)
 
+    /**
+     * Initializes the UI and sets up the Firebase listener for the selected event
+     * Configures the Join Waiting List button logic and displays confirmation message when the user attempts to join
+     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         repository = EventRepository(requireContext())
 
@@ -63,14 +69,31 @@ class EventDetailsFragment : Fragment() {
             { event ->
                 if (event == null) {
                     title.text = "Event not found"
-                    actionBtn.isEnabled = false
+                    joinBtn.isEnabled = false
                     return@listenToEvent
                 }
 
-                title.text = event.name
+                // Capture the event name locally to ensure it's used correctly in dialogs
+                val currentEventName = event.name
+                title.text = currentEventName
                 location.text = event.locationName
                 time.text = event.timeText
                 waiting.text = "${event.waitingCount} People on Waiting List"
+
+                // Check join status to update button initially
+                repository.isJoined(
+                    eventId,
+                    { joined ->
+                        if (joined) {
+                            joinBtn.text = "You're in the waiting list"
+                            joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
+                        } else {
+                            joinBtn.text = "Join Waiting List"
+                            joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
+                        }
+                    },
+                    {}
+                )
 
                 joinBtn.setOnClickListener {
                     repository.isJoined(
@@ -79,12 +102,12 @@ class EventDetailsFragment : Fragment() {
                             if (joined) {
                                 AlertDialog.Builder(requireContext())
                                     .setTitle("Already registered")
-                                    .setMessage("You're already on the waiting list for\n${event.name}.")
+                                    .setMessage("You're already on the waiting list for\n$currentEventName.")
                                     .setPositiveButton("OK", null)
                                     .show()
                             } else {
                                 AlertDialog.Builder(requireContext())
-                                    .setTitle("You have successfully joined the waiting list for\n${event.name}")
+                                    .setTitle("You have successfully joined the waiting list for $currentEventName!")
                                     .setMessage(
                                         "Note on Lottery Selection Criteria:\n\n" +
                                                 "• Entry is random from the waiting list\n" +
@@ -95,19 +118,21 @@ class EventDetailsFragment : Fragment() {
                                         repository.joinWaitlist(
                                             eventId,
                                             {
-                                                // Trigger Notification when successfully joined
                                                 NotificationManager.sendNotification(
                                                     DeviceIdProvider.getDeviceId(requireContext()),
                                                     "Requested",
-                                                    "Your entry for ${event.name} was received!",
+                                                    "Your entry for $currentEventName was received!",
                                                     "REQUESTED",
-                                                    event.name
+                                                    currentEventName
                                                 )
+                                                // Update button immediately after joining
+                                                joinBtn.text = "You're in the waiting list"
+                                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
                                             },
                                             {
                                                 AlertDialog.Builder(requireContext())
                                                     .setTitle("Already registered")
-                                                    .setMessage("You're already on the waiting list for\n${event.name}.")
+                                                    .setMessage("You're already on the waiting list for\n$currentEventName.")
                                                     .setPositiveButton("OK", null)
                                                     .show()
                                             },

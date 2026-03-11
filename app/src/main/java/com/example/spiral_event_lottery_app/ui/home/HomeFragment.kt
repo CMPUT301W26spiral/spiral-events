@@ -10,10 +10,6 @@ import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment
 import com.google.firebase.firestore.ListenerRegistration
 
-/**
- * Fragment that displays the list of available events
- * Represents the home page of the application
- */
 class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private lateinit var recyclerView: RecyclerView
@@ -25,13 +21,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         super.onViewCreated(view, savedInstanceState)
 
         repository = EventRepository(requireContext())
-
         recyclerView = view.findViewById(R.id.eventsRecyclerView)
 
         adapter = EventAdapter(emptyList()) { event ->
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, EventDetailsFragment.newInstance(event.id))
-                .addToBackStack(null)
+                .add(R.id.fragmentContainer, EventDetailsFragment.newInstance(event.id), "details_screen")
+                .addToBackStack("details")
                 .commit()
         }
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -40,13 +35,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     override fun onStart() {
         super.onStart()
-
-        listenerRegistration = repository.listenToOpenEvents(
-            { events ->
-                adapter.submitList(events)
-            },
-            { }
-        )
+        listenerRegistration = repository.listenToOpenEvents({ events -> adapter.submitList(events) }, { })
     }
 
     override fun onStop() {

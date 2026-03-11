@@ -1,4 +1,4 @@
-package com.example.spiral_event_lottery_app;
+package com.example.spiral_event_lottery_app.ui.notifications;
 
 import android.graphics.Color;
 import android.view.LayoutInflater;
@@ -11,6 +11,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.model.Notification;
 
 import java.util.List;
 
@@ -33,7 +36,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Notification notification = notificationList.get(position);
         
-        // Show the Event Name if it exists, otherwise just show the title
         String displayTitle = notification.getEventName() != null ? 
             notification.getTitle() + ": " + notification.getEventName() : 
             notification.getTitle();
@@ -42,7 +44,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         holder.message.setText(notification.getMessage());
         holder.date.setText(notification.getFormattedDate());
 
-        // Set colors based on type
         switch (notification.getType()) {
             case "ACCEPTED":
                 holder.background.setBackgroundColor(Color.parseColor("#E8F5E9"));
