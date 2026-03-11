@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
 
-        // Setup tabs
+        // Initial setup
         fm.beginTransaction().add(R.id.fragmentContainer, profileFragment, "profile").hide(profileFragment).commit();
         fm.beginTransaction().add(R.id.fragmentContainer, notificationFragment, "notifications").hide(notificationFragment).commit();
         fm.beginTransaction().add(R.id.fragmentContainer, eventsFragment, "events").hide(eventsFragment).commit();
@@ -45,8 +45,8 @@ public class MainActivity extends AppCompatActivity {
             else if (itemId == R.id.nav_account) target = profileFragment;
 
             if (target != null) {
-                // If clicking the same tab, close any open details screen
                 if (activeTab == target) {
+                    // Double-tap on the same tab: reset to root list
                     fm.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
                 } else {
                     switchTab(target);
@@ -60,21 +60,29 @@ public class MainActivity extends AppCompatActivity {
     private void switchTab(Fragment targetTab) {
         FragmentTransaction ft = fm.beginTransaction();
         
-        // Hide the current active tab
+        // Hide the current main tab
         ft.hide(activeTab);
         
-        // Find and hide any EventDetails screen currently visible
         Fragment details = fm.findFragmentByTag("details_screen");
-        if (details != null) {
+
+        // Logic: Moving between main tabs (Home <-> Events)
+        if ((targetTab == homeFragment || targetTab == eventsFragment) && 
+            (activeTab == homeFragment || activeTab == eventsFragment)) {
+            // Standard behavior: Close details when switching major sections
+            fm.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            details = null;
+        } else if (details != null) {
+            // Just hide the details if moving to/from a utility tab (Notifications/Account)
             ft.hide(details);
         }
 
         // Show the new tab
         ft.show(targetTab);
 
-        // If we are moving TO Home or Events, and there was a details screen, show it on top
-        if (targetTab == homeFragment || targetTab == eventsFragment) {
-            if (details != null && details.isAdded()) {
+        // Restore details if we are returning to a tab that had one open
+        if (details != null && details.isAdded() && (targetTab == homeFragment || targetTab == eventsFragment)) {
+            // Only restore if we are coming from a utility tab
+            if (activeTab == notificationFragment || activeTab == profileFragment) {
                 ft.show(details);
             }
         }
