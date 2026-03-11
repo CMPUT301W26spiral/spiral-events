@@ -9,11 +9,17 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.model.Event
 
+/**
+ * RecyclyerView adapter used to display the list of events the current entrant has joined
+ */
 class MyEventsAdapter(
     private var events: List<Event>,
     private val onDetails: (Event) -> Unit
 ) : RecyclerView.Adapter<MyEventsAdapter.VH>() {
 
+    /**
+     * Updates the list of events displayed by the adapter and refreshes the UI
+     */
     fun submitList(newList: List<Event>) {
         events = newList
         notifyDataSetChanged()
@@ -33,7 +39,6 @@ class MyEventsAdapter(
         private val location = itemView.findViewById<TextView>(R.id.eventLocation)
         private val waiting = itemView.findViewById<TextView>(R.id.eventWaiting)
         private val details = itemView.findViewById<Button>(R.id.detailsButton)
-
         fun bind(event: Event, onDetails: (Event) -> Unit) {
             title.text = event.name
             time.text = event.timeText

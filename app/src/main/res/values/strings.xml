@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">spiral_event_lottery_app</string>
+    <string name="device_id_label">Device ID: %1$s</string>
+    <string name="full_name_label">Full Name: %1$s</string>
+    <string name="email_label">Email address: %1$s</string>
+    <string name="phone_label">Phone: %1$s</string>
+    <string name="unnamed_user">Unnamed User</string>
+    <string name="profile_updated">Profile updated.</string>
+    <string name="profile_deleted">Profile deleted.</string>
+    <string name="photo_upload_failed">Photo upload failed: %1$s</string>
+    <string name="failed_to_load_profile">Failed to load profile: %1$s</string>
+    <string name="failed_to_save_profile">Failed to save profile: %1$s</string>
+    <string name="notification_settings_updated">Notification settings updated.</string>
 </resources>
