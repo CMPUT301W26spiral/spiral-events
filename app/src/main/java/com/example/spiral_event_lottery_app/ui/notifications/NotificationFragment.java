@@ -27,6 +27,11 @@ import com.google.firebase.firestore.WriteBatch;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment that displays a list of notifications for the current user.
+ * Users can view updates about lottery results and event entry confirmations.
+ * Supports real-time updates from Firestore, swipe-to-delete, and clear all functionality.
+ */
 public class NotificationFragment extends Fragment {
 
     private static final String TAG = "NotificationFragment";
@@ -43,6 +48,9 @@ public class NotificationFragment extends Fragment {
         return inflater.inflate(R.layout.activity_notifications, container, false);
     }
 
+    /**
+     * Initializes the UI, connects to Firestore, and sets up gesture listeners.
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -66,6 +74,9 @@ public class NotificationFragment extends Fragment {
         listenForNotifications(currentUserId);
     }
 
+    /**
+     * Displays a confirmation dialog before deleting all notifications for the user.
+     */
     private void showClearAllConfirmation() {
         if (notificationList.isEmpty()) {
             Toast.makeText(requireContext(), "No notifications to clear", Toast.LENGTH_SHORT).show();
@@ -80,6 +91,9 @@ public class NotificationFragment extends Fragment {
                 .show();
     }
 
+    /**
+     * Deletes all notifications associated with the current user's device ID using a Firestore WriteBatch.
+     */
     private void clearAllNotifications() {
         WriteBatch batch = db.batch();
         for (Notification notification : notificationList) {
@@ -97,6 +111,9 @@ public class NotificationFragment extends Fragment {
         });
     }
 
+    /**
+     * Configures the swipe gesture listener to allow users to delete individual notifications.
+     */
     private void setupSwipeToDelete() {
         ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
@@ -124,6 +141,10 @@ public class NotificationFragment extends Fragment {
         itemTouchHelper.attachToRecyclerView(recyclerView);
     }
 
+    /**
+     * Starts a real-time listener for notifications in Firestore filtered by the recipientId.
+     * @param userId The unique device ID of the user.
+     */
     private void listenForNotifications(String userId) {
         stopListening();
         notificationListener = db.collection("notifications")
@@ -145,6 +166,9 @@ public class NotificationFragment extends Fragment {
                 });
     }
 
+    /**
+     * Stops the active Firestore snapshot listener to prevent memory leaks and unnecessary data usage.
+     */
     private void stopListening() {
         if (notificationListener != null) {
             notificationListener.remove();

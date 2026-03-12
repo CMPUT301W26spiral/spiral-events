@@ -23,10 +23,18 @@ import com.example.spiral_event_lottery_app.ui.details.EventDetailsLeaveFragment
 
 import java.util.List;
 
+/**
+ * Adapter for the RecyclerView in NotificationFragment.
+ * Responsible for binding Notification data to the notification_item UI and handling user interactions.
+ */
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.ViewHolder> {
 
     private List<Notification> notificationList;
 
+    /**
+     * Constructs a new NotificationAdapter.
+     * @param notificationList The list of notifications to be displayed.
+     */
     public NotificationAdapter(List<Notification> notificationList) {
         this.notificationList = notificationList;
     }
@@ -38,6 +46,10 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         return new ViewHolder(view);
     }
 
+    /**
+     * Binds data to the UI elements of a single notification card.
+     * Sets colors based on notification type and configures the "Go" button navigation.
+     */
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Notification notification = notificationList.get(position);
@@ -52,21 +64,22 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
         holder.background.setBackgroundColor(Color.WHITE);
 
+        // UI Styling based on notification category
         switch (notification.getType()) {
             case "ACCEPTED":
-                holder.title.setTextColor(Color.parseColor("#2E5A27"));
+                holder.title.setTextColor(Color.parseColor("#2E5A27")); // Green
                 holder.goButton.setVisibility(View.VISIBLE);
                 break;
             case "DENIED":
-                holder.title.setTextColor(Color.parseColor("#B71C1C"));
+                holder.title.setTextColor(Color.parseColor("#B71C1C")); // Red
                 holder.goButton.setVisibility(View.GONE); 
                 break;
             case "REQUESTED":
-                holder.title.setTextColor(Color.parseColor("#FF8F00"));
+                holder.title.setTextColor(Color.parseColor("#FF8F00")); // Amber
                 holder.goButton.setVisibility(View.VISIBLE); 
                 break;
             case "ORGANIZER":
-                holder.title.setTextColor(Color.parseColor("#6A1B9A"));
+                holder.title.setTextColor(Color.parseColor("#6A1B9A")); // Purple
                 holder.goButton.setVisibility(View.VISIBLE);
                 break;
             default:
@@ -74,6 +87,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 break;
         }
 
+        // Handle navigation to event details
         holder.goButton.setOnClickListener(v -> {
             String eventId = notification.getEventId();
             if (eventId != null) {
@@ -84,15 +98,18 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
                 EventRepository repository = new EventRepository(activity);
                 
+                // Verify user status before allowing navigation to details
                 repository.isJoined(eventId, joined -> {
                     if (activity.isFinishing() || activity.isDestroyed()) return;
 
                     if (joined) {
+                        // Navigate to Leave version if already joined
                         activity.getSupportFragmentManager().beginTransaction()
                             .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
                             .addToBackStack("details")
                             .commit();
                     } else if (notification.getType().equals("DENIED") || notification.getType().equals("CANCELLED")) {
+                        // Navigate to standard Details if viewing result of a rejection
                         activity.getSupportFragmentManager().beginTransaction()
                             .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
                             .addToBackStack("details")
@@ -107,6 +124,9 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         });
     }
 
+    /**
+     * Helper to safely unwrap Context to find the hosting Activity.
+     */
     private AppCompatActivity getActivity(Context context) {
         while (context instanceof ContextWrapper) {
             if (context instanceof AppCompatActivity) {
@@ -122,6 +142,9 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         return notificationList.size();
     }
 
+    /**
+     * ViewHolder class for individual notification items.
+     */
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView title, message, date;
         LinearLayout background;
