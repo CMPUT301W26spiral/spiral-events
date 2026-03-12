@@ -21,6 +21,7 @@ import com.example.spiral_event_lottery_app.R;
 import com.example.spiral_event_lottery_app.model.Notification;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
 
@@ -143,15 +144,18 @@ public class NotificationFragment extends Fragment {
 
     /**
      * Starts a real-time listener for notifications in Firestore filtered by the recipientId.
+     * Notifications are ordered by timestamp in descending order (most recent first).
      * @param userId The unique device ID of the user.
      */
     private void listenForNotifications(String userId) {
         stopListening();
+        // FIXED: Added .orderBy("timestamp", Query.Direction.DESCENDING)
         notificationListener = db.collection("notifications")
                 .whereEqualTo("recipientId", userId)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null) {
-                        Log.e(TAG, "Listen failed.", error);
+                        Log.e(TAG, "Listen failed. Have you created the required Firestore index? See Logcat link.", error);
                         return;
                     }
 
