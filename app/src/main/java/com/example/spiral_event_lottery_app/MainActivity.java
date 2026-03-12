@@ -1,5 +1,6 @@
 package com.example.spiral_event_lottery_app;
 
+import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -10,6 +11,7 @@ import com.example.spiral_event_lottery_app.ui.profile.ProfileFragment;
 import com.example.spiral_event_lottery_app.ui.events.MyEventsFragment;
 import com.example.spiral_event_lottery_app.ui.home.HomeFragment;
 import com.example.spiral_event_lottery_app.ui.notifications.NotificationFragment;
+import com.example.event_creation.CreateEventActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
@@ -42,8 +44,14 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
+
+            if (itemId == R.id.nav_add) {
+                Intent intent = new Intent(this, CreateEventActivity.class);
+                startActivity(intent);
+                return true;
+            }
+
             Fragment target = null;
-            
             if (itemId == R.id.nav_home) target = homeFragment;
             else if (itemId == R.id.nav_events) target = eventsFragment;
             else if (itemId == R.id.nav_notifications) target = notificationFragment;
