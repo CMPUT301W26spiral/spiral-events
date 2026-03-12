@@ -33,4 +33,28 @@ public class acceptanceHandling {
                     Toast.makeText(context, "Failed to join event", Toast.LENGTH_SHORT).show();
                 });
     }
+    /**
+ * Updates an entrant's status to "Declined" in Firebase.
+ * This implements US 01.05.03 - declining an invitation.
+ * 
+ * @param context   This is the activity context for Toasts.
+ * @param event_id  This is the firebase doc ID for the event.
+ * @param device_id It is the unique ID of the entrant/user device.
+ */
+public void invitation_declined(Context context, String event_id, String device_id) {
+    if (event_id == null || event_id.isEmpty() || device_id == null || device_id.isEmpty()) {
+        return; // don't hit firebase with garbage data
+    }
+    // Update the entrant's status in the entrants sub-collection
+    DocumentReference doc_path = db_identify.collection("events").document(event_id)
+            .collection("entrants").document(device_id);
+    
+    doc_path.update("Status", "Declined")
+            .addOnSuccessListener(aVoid -> {
+                Toast.makeText(context, "Invitation declined.", Toast.LENGTH_SHORT).show();
+            })
+            .addOnFailureListener(e -> {
+                Toast.makeText(context, "Failed to decline invitation", Toast.LENGTH_SHORT).show();
+            });
+    }
 }
