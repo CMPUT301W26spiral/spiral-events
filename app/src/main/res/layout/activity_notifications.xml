@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF"
-    tools:context=".NotificationActivity">
+    tools:context=".ui.notifications.NotificationFragment">
 
     <!-- Header Container to prevent overlap -->
     <RelativeLayout
@@ -26,16 +26,16 @@
             android:textSize="24sp"
             android:textStyle="bold" />
 
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/notification_opt_out_switch"
+        <Button
+            android:id="@+id/notification_clear_all_button"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:layout_marginEnd="8dp"
-            android:checked="true"
-            android:text="Enable"
-            android:textColor="#666666" />
+            android:text="Clear All"
+            android:textColor="#666666"
+            android:textSize="14sp" />
     </RelativeLayout>
 
     <androidx.recyclerview.widget.RecyclerView
