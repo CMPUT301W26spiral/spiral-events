@@ -1,5 +1,6 @@
 package com.example.event_creation;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.widget.Button;
@@ -9,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.spiral_event_lottery_app.MainActivity;
 import com.example.spiral_event_lottery_app.R;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
@@ -36,7 +38,10 @@ public class QRCodeActivity extends AppCompatActivity {
         }
 
         btnConfirm.setOnClickListener(v -> {
-            // Return to main page or home frame
+            // Navigate back to the home screen (MainActivity)
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
             finish();
         });
 
