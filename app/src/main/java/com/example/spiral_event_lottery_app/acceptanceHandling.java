@@ -24,8 +24,8 @@ public class acceptanceHandling {
             if (event_id == null || event_id.isEmpty() || device_id == null || device_id.isEmpty()) {
                 return; // so don't hit firebase with garbage data
             }
-        DocumentReference doc_path = db_identify.collection("Events").document(event_id)
-                .collection("Entrants").document(device_id);
+        DocumentReference doc_path = db_identify.collection("events").document(event_id)
+                .collection("entrants").document(device_id);
         doc_path.update("Status", "Accepted").addOnSuccessListener(aVoid -> {
                     Toast.makeText(context, "Successfully joined!", Toast.LENGTH_SHORT).show();
                 })

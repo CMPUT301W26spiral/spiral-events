@@ -119,16 +119,13 @@ public class QR_scanner extends AppCompatActivity {
      * @param scanned_data it is the text which is the Event ID from the QR code
      */
     private void handle_successful_scan(String scanned_data) {
-        // Shows the loading spinner
         spinner_loads.setVisibility(View.VISIBLE);
-        // we show a quick message with the ID
-        Toast.makeText(this, "Event ID: " + scanned_data, Toast.LENGTH_LONG).show();
-        // now we navigate to Sean's screen
-        Intent intent = new Intent(this, com.example.event_creation.OrganizerActivity.class);
-        // now we pass the scanned ID so the screen can load the right event
-        intent.putExtra("EVENT_ID", scanned_data);
+
+        Intent intent = new Intent(this, MainActivity.class);
+        // This key tells MainActivity that i have a scan result
+        intent.putExtra("SCAN_RESULT_ID", scanned_data);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
-        //now we close the scanner so it wont keep running in the background
         finish();
     }
 }

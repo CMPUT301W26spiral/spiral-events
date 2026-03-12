@@ -68,6 +68,16 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+        String scannedId = getIntent().getStringExtra("SCAN_RESULT_ID");
+        if (scannedId != null) {
+            // we use .Companion to reach newInstance since tht fragment was in kotlin
+            Fragment detailsFragment = com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment.Companion.newInstance(scannedId);
+
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragmentContainer, detailsFragment, "details_screen")
+                    .addToBackStack("details")
+                    .commit();
+        }
     }
 
     private void switchTab(Fragment targetTab) {
