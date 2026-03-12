@@ -45,10 +45,6 @@ class EventDetailsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         inflater.inflate(R.layout.fragment_event_details, container, false)
 
-    /**
-     * Initializes the UI and sets up the Firebase listener for the selected event
-     * Configures the Join Waiting List button logic and displays confirmation message when the user attempts to join
-     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         repository = EventRepository(requireContext())
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
@@ -59,8 +55,6 @@ class EventDetailsFragment : Fragment() {
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
-
-        // Buttons
         val joinBtn = view.findViewById<Button>(R.id.joinLeaveButton)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
@@ -76,46 +70,66 @@ class EventDetailsFragment : Fragment() {
                 val currentEventName = event.name
                 title.text = currentEventName
                 locationName.text = event.locationName
-                locationAddress.text = event.locationName // Using locationName as address for now
+                locationAddress.text = event.locationName
                 time.text = event.timeText
-                waiting.text = "${event.waitingCount} People on Waiting List, 20 Open Spots"
+                
+                val openSpots = event.maxEntrants?.minus(event.waitingCount) ?: 0
+                waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
-                if (!event.posterUrl.isNullOrEmpty()) {
-                    Glide.with(this)
-                        .load(event.posterUrl)
-                        .placeholder(R.drawable.ic_event)
-                        .into(posterImage)
+                if (!event.posterUriString.isNullOrEmpty()) {
+                    Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
                 } else {
                     posterImage.setImageResource(R.drawable.ic_event)
                 }
-            repository.isJoined(eventId, { joined ->
-                if (joined) {
-                    joinBtn.text = "You're in the waiting list"
-                    joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
-                } else {
-                    joinBtn.text = "Join Waiting List"
-                    joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
-                }
-            }, {})
 
-            joinBtn.setOnClickListener {
+                // Check join status whenever event data updates
                 repository.isJoined(eventId, { joined ->
                     if (joined) {
-                        AlertDialog.Builder(requireContext()).setTitle("Already registered").setMessage("You're already on the waiting list for\n$currentEventName.").setPositiveButton("OK", null).show()
+                        joinBtn.text = "You're in the waiting list"
+                        joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
                     } else {
-                        AlertDialog.Builder(requireContext()).setTitle("You have successfully joined the waiting list for $currentEventName!").setMessage("• Entry is random from the waiting list\n• If someone declines, another entrant may be selected").setPositiveButton("Confirm") { _, _ ->
-                            repository.joinWaitlist(eventId, {
-                                // FIXED: Added eventId parameter
-                                NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Requested", "Your entry for $currentEventName was received!", "REQUESTED", currentEventName, eventId)
-                                joinBtn.text = "You're in the waiting list"
-                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
-                            }, {}, { e -> Toast.makeText(requireContext(), e.message ?: "Join failed", Toast.LENGTH_LONG).show() })
-                        }.setNegativeButton("Cancel", null).show()
+                        joinBtn.text = "Join Waiting List"
+                        joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
                     }
                 }, {})
-            }
-        }, {})
+
+                joinBtn.setOnClickListener {
+                    repository.isJoined(eventId, { joined ->
+                        if (joined) {
+                            AlertDialog.Builder(requireContext())
+                                .setTitle("Already registered")
+                                .setMessage("You're already on the waiting list for\n$currentEventName.")
+                                .setPositiveButton("OK", null)
+                                .show()
+                        } else {
+                            AlertDialog.Builder(requireContext())
+                                .setTitle("Waitlist Confirmation")
+                                .setMessage("Successfully join the waiting list for $currentEventName?\n\n• Entry is random\n• You may leave at any time")
+                                .setPositiveButton("Confirm") { _, _ ->
+                                    repository.joinWaitlist(eventId, {
+                                        NotificationManager.sendNotification(
+                                            DeviceIdProvider.getDeviceId(requireContext()),
+                                            "Requested",
+                                            "Your entry for $currentEventName was received!",
+                                            "REQUESTED",
+                                            currentEventName,
+                                            eventId
+                                        )
+                                        joinBtn.text = "You're in the waiting list"
+                                        joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
+                                    }, {}, { e -> 
+                                        Toast.makeText(requireContext(), e.message ?: "Join failed", Toast.LENGTH_LONG).show() 
+                                    })
+                                }
+                                .setNegativeButton("Cancel", null)
+                                .show()
+                        }
+                    }, {})
+                }
+            },
+            { e -> Toast.makeText(requireContext(), e.message ?: "Failed to load event", Toast.LENGTH_LONG).show() }
+        )
     }
 
     override fun onStop() {

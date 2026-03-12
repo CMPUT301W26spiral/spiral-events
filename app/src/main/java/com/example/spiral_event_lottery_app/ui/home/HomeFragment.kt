@@ -8,8 +8,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider
+import com.example.spiral_event_lottery_app.ui.oevent.EventDetailsOFragment
 import com.google.firebase.firestore.ListenerRegistration
 
+/**
+ * HomeFragment displays a list of all open events.
+ * It identifies if the current user is the organizer of an event to show different options.
+ */
 class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private lateinit var recyclerView: RecyclerView
@@ -22,23 +28,30 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         repository = EventRepository(requireContext())
         recyclerView = view.findViewById(R.id.eventsRecyclerView)
+        
+        // Retrieve the current device ID to check against organizerId
+        val deviceId = DeviceIdProvider.getDeviceId(requireContext())
 
         adapter = EventAdapter(
             events = emptyList(),
-            onItemClicked = { event ->
+            deviceId = deviceId,
+            onDetailsClicked = { event ->
+                // Navigate to Organizer Details if the user owns the event
                 parentFragmentManager.beginTransaction()
-                    .add(R.id.fragmentContainer, EventDetailsFragment.newInstance(event.id), "details_screen")
+                    .add(R.id.fragmentContainer,
+                        EventDetailsOFragment.newInstance(event.id),
+                        "details_screen")
                     .addToBackStack("details")
                     .commit()
             },
             onSignUpClicked = { event ->
-                // Sign up logic (for now ignore as requested, but keep the navigation if that's what was intended)
-                // Actually user said "except the sign up button. for now ignore."
-                // So sign up button click should probably do nothing or keep its current behavior.
-                // Current behavior was navigating to details. I'll leave it or make it do nothing if "ignore" means that.
-                // Usually "ignore" in this context might mean "don't change its behavior" or "don't make it go to details if it wasn't".
-                // But the request says "anywhere you click... except the sign up button... it will send you to event details".
-                // So I'll keep the sign up logic separate.
+                // Navigate to Entrant Details for signing up
+                parentFragmentManager.beginTransaction()
+                    .add(R.id.fragmentContainer,
+                        EventDetailsFragment.newInstance(event.id),
+                        "details_screen")
+                    .addToBackStack("details")
+                    .commit()
             }
         )
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -47,7 +60,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     override fun onStart() {
         super.onStart()
-        listenerRegistration = repository.listenToOpenEvents({ events -> adapter.submitList(events) }, { })
+        // Listen for real-time updates to the events collection
+        listenerRegistration = repository.listenToOpenEvents(
+            { events -> adapter.submitList(events) },
+            { }
+        )
     }
 
     override fun onStop() {

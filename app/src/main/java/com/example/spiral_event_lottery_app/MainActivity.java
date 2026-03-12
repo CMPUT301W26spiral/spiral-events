@@ -11,7 +11,6 @@ import com.example.spiral_event_lottery_app.ui.ProfileFragment;
 import com.example.spiral_event_lottery_app.ui.events.MyEventsFragment;
 import com.example.spiral_event_lottery_app.ui.home.HomeFragment;
 import com.example.spiral_event_lottery_app.ui.notifications.NotificationFragment;
-import com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment;
 import com.example.event_creation.CreateEventActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
