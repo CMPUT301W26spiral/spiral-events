@@ -1,5 +1,5 @@
 package com.example.spiral_event_lottery_app.ui;
-
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -173,8 +173,8 @@ public class ProfileFragment extends Fragment {
      * @return The unique device identifier string.
      */
     private String getOrCreateDeviceId() {
-        SharedPreferences prefs = requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
-        return prefs.getString("device_id", "");
+    //we use the same device ID provider that the rest of the app uses
+        return DeviceIdProvider.getDeviceId(requireContext());
     }
 
     /**
