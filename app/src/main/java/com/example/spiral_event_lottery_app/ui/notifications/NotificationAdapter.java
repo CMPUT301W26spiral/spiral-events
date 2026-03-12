@@ -101,20 +101,20 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                             .setMessage("You have been chosen for this event! Do you want to accept or decline the invitation?")
                             .setPositiveButton("Accept", (dialog, which) -> {
                                 // Trigger the acceptanceHandling class
-                                com.example.spiral_event_lottery_app.acceptanceHandling handler = new com.example.spiral_event_lottery_app.acceptanceHandling();
+                                com.example.spiral_event_lottery_app.acceptanceHandling handler = 
+                                    new com.example.spiral_event_lottery_app.acceptanceHandling();
                                 handler.invitation_accepted(context, eventId, notification.getRecipientId());
                                 holder.goButton.setText("Accepted");
                                 holder.goButton.setEnabled(false);
                             })
                             .setNegativeButton("Decline", (dialog, which) -> {
-                                // Trigger the decline logic (leave waitlist)
-                                EventRepository repo = new EventRepository(context);
-                                repo.leaveWaitlist(eventId, () -> {
-                                    Toast.makeText(context, "Invitation declined.", Toast.LENGTH_SHORT).show();
-                                    holder.goButton.setText("Declined");
-                                    holder.goButton.setEnabled(false);
-                                }, () -> {}, e -> {});
+                                com.example.spiral_event_lottery_app.acceptanceHandling handler = 
+                                    new com.example.spiral_event_lottery_app.acceptanceHandling();
+                                handler.invitation_declined(context, eventId, notification.getRecipientId());
+                                holder.goButton.setText("Declined");
+                                holder.goButton.setEnabled(false);
                             })
+                        })
                             .show();
                     return; // Stop execution here so it doesn't navigate to the details fragment
                 }
