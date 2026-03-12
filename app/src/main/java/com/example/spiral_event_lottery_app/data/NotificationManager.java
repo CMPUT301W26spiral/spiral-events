@@ -8,14 +8,9 @@ public class NotificationManager {
 
     /**
      * Sends a notification to a specific user by saving it to Firestore.
-     * @param recipientId The ID of the user (Entrant) receiving the notification.
-     * @param title The title (e.g., "Accepted", "Denied").
-     * @param message The content of the notification.
-     * @param type The type (e.g., "ACCEPTED", "DENIED", "REQUESTED").
-     * @param eventName The name of the event this notification is about.
      */
-    public static void sendNotification(String recipientId, String title, String message, String type, String eventName) {
-        Notification notification = new Notification(title, message, type, recipientId, eventName);
+    public static void sendNotification(String recipientId, String title, String message, String type, String eventName, String eventId) {
+        Notification notification = new Notification(title, message, type, recipientId, eventName, eventId);
         
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection(COLLECTION_NAME)

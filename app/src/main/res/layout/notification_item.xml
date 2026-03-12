@@ -7,7 +7,7 @@
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
     app:strokeWidth="1dp"
-    app:strokeColor="#DDDDDD">
+    app:strokeColor="#EEEEEE">
 
     <LinearLayout
         android:id="@+id/notification_background"
@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="#E8F5E9"> <!-- Light Green for Accepted -->
+        android:background="#FFFFFF"> <!-- Neutral White Background -->
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -26,7 +26,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Accepted"
-                android:textColor="#000000"
+                android:textColor="#2E5A27"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -36,7 +36,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:text="May 30, 2026"
-                android:textColor="#666666"
+                android:textColor="#999999"
                 android:textSize="12sp" />
         </RelativeLayout>
 
@@ -46,7 +46,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="You were chosen for EventName! Go to accept!"
-            android:textColor="#333333"
+            android:textColor="#666666"
             android:textSize="14sp" />
 
         <RelativeLayout
@@ -61,7 +61,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_delete"
                 android:contentDescription="Delete"
-                app:tint="#888888" />
+                app:tint="#CCCCCC" />
 
             <Button
                 android:id="@+id/notification_go_button"
@@ -69,9 +69,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
                 android:layout_alignParentEnd="true"
-                android:backgroundTint="#A5D6A7"
+                android:backgroundTint="#EEEEEE"
                 android:text="Go"
-                android:textColor="#FFFFFF"
+                android:textColor="#666666"
                 android:textSize="12sp" />
         </RelativeLayout>
 
