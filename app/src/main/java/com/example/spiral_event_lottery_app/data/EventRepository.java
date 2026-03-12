@@ -95,7 +95,9 @@ public class EventRepository {
             posterUrl = data.get("posterUrl") instanceof String ? (String) data.get("posterUrl") : null;
         }
 
-        return new Event(documentId, name, location, timeText, waitingCount, posterUrl);
+        String description = data.get("description") instanceof String ? (String) data.get("description") : "";
+
+        return new Event(documentId, name, location, timeText, waitingCount, posterUrl, description);
     }
 
     public void fetchMyEvents(final EventsCallback onUpdate, final ErrorCallback onError) {

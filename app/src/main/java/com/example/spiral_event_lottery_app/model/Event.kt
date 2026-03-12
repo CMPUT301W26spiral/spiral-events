@@ -11,5 +11,6 @@ data class Event(
     val locationName: String = "",
     val timeText: String = "",
     var waitingCount: Long = 0,
-    val posterUrl: String? = null
+    val posterUrl: String? = null,
+    val description: String = ""
 )

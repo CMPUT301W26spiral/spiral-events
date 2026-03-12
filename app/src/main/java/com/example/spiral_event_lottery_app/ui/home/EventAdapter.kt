@@ -14,10 +14,11 @@ import com.example.spiral_event_lottery_app.model.Event
 /**
  * Recycler view adapter used to display the list of events that entrants can view and join
  * Binds the model data to the UI layout
- * Also provides a callback that allows the UI to respond when the user pressed Sign Up button
+ * Also provides callbacks that allow the UI to respond when the user pressed Sign Up button or the card itself
  */
 class EventAdapter(
     private var events: List<Event>,
+    private val onItemClicked: (Event) -> Unit,
     private val onSignUpClicked: (Event) -> Unit
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
@@ -33,7 +34,7 @@ class EventAdapter(
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
-        holder.bind(events[position], onSignUpClicked)
+        holder.bind(events[position], onItemClicked, onSignUpClicked)
     }
 
     override fun getItemCount(): Int = events.size
@@ -47,7 +48,7 @@ class EventAdapter(
         private val signUpButton: Button = itemView.findViewById(R.id.signUpButton)
         private val posterImage: ImageView = itemView.findViewById(R.id.eventPosterImage)
 
-        fun bind(event: Event, onSignUpClicked: (Event) -> Unit) {
+        fun bind(event: Event, onItemClicked: (Event) -> Unit, onSignUpClicked: (Event) -> Unit) {
             titleText.text = event.name
             locationText.text = event.locationName
             timeText.text = event.timeText
@@ -63,6 +64,7 @@ class EventAdapter(
             }
 
             signUpButton.setOnClickListener { onSignUpClicked(event) }
+            itemView.setOnClickListener { onItemClicked(event) }
         }
     }
 }
