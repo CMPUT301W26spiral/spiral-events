@@ -11,7 +11,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.spiral_event_lottery_app.R;
-import com.example.spiral_event_lottery_app.ui.register.RegisterScreen;
+import com.example.spiral_event_lottery_app.ui.register.RegisterActivity;
 import com.google.firebase.FirebaseApp;
 
 /**
@@ -20,7 +20,7 @@ import com.google.firebase.FirebaseApp;
  * if they are already registered, or showing a "Get Started" button to lead
  * them to the registration process.
  */
-public class LaunchScreen extends AppCompatActivity {
+public class LaunchActivity extends AppCompatActivity {
 
     private ProgressBar progressBar;
     private Button getStartedButton;
@@ -48,7 +48,7 @@ public class LaunchScreen extends AppCompatActivity {
         checkUserRegistration();
 
         getStartedButton.setOnClickListener(v -> {
-            Intent intent = new Intent(LaunchScreen.this, RegisterScreen.class);
+            Intent intent = new Intent(LaunchActivity.this, RegisterActivity.class);
             startActivity(intent);
             finish();
         });
@@ -64,7 +64,7 @@ public class LaunchScreen extends AppCompatActivity {
 
         if (deviceId != null) {
             // If already registered, go to the Welcome/Login screen
-            Intent intent = new Intent(LaunchScreen.this, LoginScreen.class);
+            Intent intent = new Intent(LaunchActivity.this, LoginActivity.class);
             startActivity(intent);
             finish();
         } else {
