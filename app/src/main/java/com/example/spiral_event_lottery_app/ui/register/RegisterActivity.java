@@ -32,7 +32,7 @@ import java.util.UUID;
  * and choose a profile picture. The data is persisted to Firebase Firestore
  * and Storage, and a unique device ID is generated and saved locally.
  */
-public class RegisterScreen extends AppCompatActivity {
+public class RegisterActivity extends AppCompatActivity {
 
     private ImageView profilePic;
     private EditText nameInput;

@@ -1,4 +1,4 @@
-package com.example.spiral_event_lottery_app.ui;
+package com.example.spiral_event_lottery_app.ui.profile;
 
 import android.content.Context;
 import android.content.Intent;
@@ -16,7 +16,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -27,6 +26,7 @@ import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
 import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.ui.LaunchActivity;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
@@ -34,7 +34,6 @@ import com.google.firebase.storage.StorageReference;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * ProfileFragment provides the user interface for viewing and editing the user's profile.
@@ -162,7 +161,7 @@ public class ProfileFragment extends Fragment {
      * Handles the logout process by redirecting to the LaunchScreen and clearing task history.
      */
     private void performLogout() {
-        Intent intent = new Intent(getActivity(), LaunchScreen.class);
+        Intent intent = new Intent(getActivity(), LaunchActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         getActivity().finish();
