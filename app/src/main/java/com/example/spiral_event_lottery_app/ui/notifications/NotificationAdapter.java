@@ -1,19 +1,22 @@
 package com.example.spiral_event_lottery_app.ui.notifications;
 
+import android.content.Context;
+import android.content.ContextWrapper;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.data.EventRepository;
 import com.example.spiral_event_lottery_app.model.Notification;
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment;
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsLeaveFragment;
@@ -49,7 +52,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
         holder.background.setBackgroundColor(Color.WHITE);
 
-        // Visibility and Navigation Logic
         switch (notification.getType()) {
             case "ACCEPTED":
                 holder.title.setTextColor(Color.parseColor("#2E5A27"));
@@ -57,11 +59,11 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 break;
             case "DENIED":
                 holder.title.setTextColor(Color.parseColor("#B71C1C"));
-                holder.goButton.setVisibility(View.GONE); // FIXED: Removed from Denied
+                holder.goButton.setVisibility(View.GONE); 
                 break;
             case "REQUESTED":
                 holder.title.setTextColor(Color.parseColor("#FF8F00"));
-                holder.goButton.setVisibility(View.VISIBLE); // FIXED: Added to Requested
+                holder.goButton.setVisibility(View.VISIBLE); 
                 break;
             case "ORGANIZER":
                 holder.title.setTextColor(Color.parseColor("#6A1B9A"));
@@ -72,25 +74,47 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 break;
         }
 
-        // NAVIGATION: Go to details page when clicking "Go"
         holder.goButton.setOnClickListener(v -> {
-            if (notification.getEventId() != null) {
-                AppCompatActivity activity = (AppCompatActivity) v.getContext();
-                if (notification.getType().equals("REQUESTED") || notification.getType().equals("ACCEPTED")) {
-                    // If they are joined, show the "Leave" version of details
-                    activity.getSupportFragmentManager().beginTransaction()
-                        .add(R.id.fragmentContainer, EventDetailsLeaveFragment.newInstance(notification.getEventId()), "details_screen")
-                        .addToBackStack("details")
-                        .commit();
-                } else {
-                    // Otherwise show regular details
-                    activity.getSupportFragmentManager().beginTransaction()
-                        .add(R.id.fragmentContainer, EventDetailsFragment.newInstance(notification.getEventId()), "details_screen")
-                        .addToBackStack("details")
-                        .commit();
-                }
+            String eventId = notification.getEventId();
+            if (eventId != null) {
+                Context context = v.getContext();
+                AppCompatActivity activity = getActivity(context);
+                
+                if (activity == null) return;
+
+                EventRepository repository = new EventRepository(activity);
+                
+                repository.isJoined(eventId, joined -> {
+                    if (activity.isFinishing() || activity.isDestroyed()) return;
+
+                    if (joined) {
+                        activity.getSupportFragmentManager().beginTransaction()
+                            .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
+                            .addToBackStack("details")
+                            .commit();
+                    } else if (notification.getType().equals("DENIED") || notification.getType().equals("CANCELLED")) {
+                        activity.getSupportFragmentManager().beginTransaction()
+                            .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                            .addToBackStack("details")
+                            .commit();
+                    } else {
+                        Toast.makeText(activity, "You are no longer on the waiting list for this event.", Toast.LENGTH_SHORT).show();
+                    }
+                }, e -> {
+                    Toast.makeText(activity, "Error checking event status", Toast.LENGTH_SHORT).show();
+                });
             }
         });
+    }
+
+    private AppCompatActivity getActivity(Context context) {
+        while (context instanceof ContextWrapper) {
+            if (context instanceof AppCompatActivity) {
+                return (AppCompatActivity) context;
+            }
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return null;
     }
 
     @Override
@@ -102,7 +126,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         TextView title, message, date;
         LinearLayout background;
         Button goButton;
-        ImageButton deleteButton;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -111,7 +134,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             date = itemView.findViewById(R.id.notification_date);
             background = itemView.findViewById(R.id.notification_background);
             goButton = itemView.findViewById(R.id.notification_go_button);
-            deleteButton = itemView.findViewById(R.id.notification_delete);
         }
     }
 }

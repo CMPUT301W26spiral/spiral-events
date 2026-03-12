@@ -54,14 +54,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp">
 
-            <ImageButton
-                android:id="@+id/notification_delete"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_delete"
-                android:contentDescription="Delete"
-                app:tint="#CCCCCC" />
+            <!-- Trash can removed as requested -->
 
             <Button
                 android:id="@+id/notification_go_button"
