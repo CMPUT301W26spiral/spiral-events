@@ -1,4 +1,4 @@
-package com.example.sprial_event_lottery_app;
+package com.example.event_creation;
 
 import android.os.Bundle;
 
@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.spiral_event_lottery_app.R;
 
 public class MainActivity extends AppCompatActivity {
 

@@ -1,6 +1,5 @@
-package com.example.sprial_event_lottery_app;
+package com.example.event_creation;
 
-import android.net.Uri;
 import java.io.Serializable;
 
 /**

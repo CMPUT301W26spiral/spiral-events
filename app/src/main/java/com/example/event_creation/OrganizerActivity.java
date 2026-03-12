@@ -1,4 +1,4 @@
-package com.example.sprial_event_lottery_app;
+package com.example.event_creation;
 
 import android.content.Intent;
 import android.os.Bundle;

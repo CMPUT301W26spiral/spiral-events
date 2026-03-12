@@ -1,17 +1,15 @@
 plugins {
     alias(libs.plugins.android.application)
-
+    alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.sprial_event_lottery_app"
-    compileSdk {
-        version = release(36)
-    }
+    namespace = "com.example.spiral_event_lottery_app"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.sprial_event_lottery_app"
+        applicationId = "com.example.spiral_event_lottery_app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -30,8 +28,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+    kotlinOptions {
+        jvmTarget = "21"
     }
 }
 
@@ -43,7 +44,16 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    
+    // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-firestore")
-
+    implementation("com.google.firebase:firebase-storage")
+    
+    // QR Code Generation
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("com.google.zxing:core:3.4.1")
+    
+    // Image Loading
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }

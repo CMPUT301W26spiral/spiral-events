@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_light_green"
-    tools:context=".CreateEventActivity">
+    tools:context="com.example.event_creation.CreateEventActivity">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
@@ -136,40 +136,31 @@
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp">
 
-                <EditText
-                    android:id="@+id/et_event_day"
+                <Spinner
+                    android:id="@+id/spinner_event_day"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="@string/dd"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
 
-                <EditText
-                    android:id="@+id/et_event_month"
+                <Spinner
+                    android:id="@+id/spinner_event_month"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="@string/mm"
                     android:background="@drawable/edit_text_background"
                     android:padding="12dp"
-                    android:gravity="center"
-                    android:layout_marginStart="8dp"
-                    android:inputType="number" />
+                    android:layout_marginStart="8dp" />
 
-                <EditText
-                    android:id="@+id/et_event_year"
+                <Spinner
+                    android:id="@+id/spinner_event_year"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
-                    android:hint="@string/yyyy"
                     android:background="@drawable/edit_text_background"
                     android:padding="12dp"
-                    android:gravity="center"
-                    android:layout_marginStart="8dp"
-                    android:inputType="number" />
+                    android:layout_marginStart="8dp" />
             </LinearLayout>
 
             <TextView
@@ -186,28 +177,26 @@
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp">
 
-                <EditText
-                    android:id="@+id/et_event_start_hour"
-                    android:layout_width="56dp"
+                <Spinner
+                    android:id="@+id/spinner_event_start_hour"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text=" : " />
 
-                <EditText
-                    android:id="@+id/et_event_start_min"
-                    android:layout_width="56dp"
+                <Spinner
+                    android:id="@+id/spinner_event_start_min"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -215,28 +204,26 @@
                     android:text="@string/to"
                     android:layout_marginHorizontal="8dp" />
 
-                <EditText
-                    android:id="@+id/et_event_end_hour"
-                    android:layout_width="56dp"
+                <Spinner
+                    android:id="@+id/spinner_event_end_hour"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text=" : " />
 
-                <EditText
-                    android:id="@+id/et_event_end_min"
-                    android:layout_width="56dp"
+                <Spinner
+                    android:id="@+id/spinner_event_end_min"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
             </LinearLayout>
 
              <TextView
@@ -252,40 +239,31 @@
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp">
 
-                <EditText
-                    android:id="@+id/et_draw_day"
+                <Spinner
+                    android:id="@+id/spinner_draw_day"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="@string/dd"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
 
-                <EditText
-                    android:id="@+id/et_draw_month"
+                <Spinner
+                    android:id="@+id/spinner_draw_month"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="@string/mm"
                     android:background="@drawable/edit_text_background"
                     android:padding="12dp"
-                    android:gravity="center"
-                    android:layout_marginStart="8dp"
-                    android:inputType="number" />
+                    android:layout_marginStart="8dp" />
 
-                <EditText
-                    android:id="@+id/et_draw_year"
+                <Spinner
+                    android:id="@+id/spinner_draw_year"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
-                    android:hint="@string/yyyy"
                     android:background="@drawable/edit_text_background"
                     android:padding="12dp"
-                    android:gravity="center"
-                    android:layout_marginStart="8dp"
-                    android:inputType="number" />
+                    android:layout_marginStart="8dp" />
             </LinearLayout>
 
             <TextView
@@ -302,28 +280,26 @@
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp">
 
-                <EditText
-                    android:id="@+id/et_draw_start_hour"
-                    android:layout_width="56dp"
+                <Spinner
+                    android:id="@+id/spinner_draw_start_hour"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text=" : " />
 
-                <EditText
-                    android:id="@+id/et_draw_start_min"
-                    android:layout_width="56dp"
+                <Spinner
+                    android:id="@+id/spinner_draw_start_min"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -331,28 +307,26 @@
                     android:text="@string/to"
                     android:layout_marginHorizontal="8dp" />
 
-                <EditText
-                    android:id="@+id/et_draw_end_hour"
-                    android:layout_width="56dp"
+                <Spinner
+                    android:id="@+id/spinner_draw_end_hour"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text=" : " />
 
-                <EditText
-                    android:id="@+id/et_draw_end_min"
-                    android:layout_width="56dp"
+                <Spinner
+                    android:id="@+id/spinner_draw_end_min"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:inputType="number" />
+                    android:padding="12dp" />
             </LinearLayout>
 
             <TextView
@@ -361,14 +335,12 @@
                 android:text="@string/geolocation_requirement"
                 android:textColor="@color/black" />
 
-            <EditText
-                android:id="@+id/et_geolocation"
+            <Spinner
+                android:id="@+id/spinner_geolocation"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/enable_disable"
                 android:background="@drawable/edit_text_background"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
+                android:padding="12dp"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp" />
 
