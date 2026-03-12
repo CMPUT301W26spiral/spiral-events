@@ -5,7 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F2F9F2"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:clickable="true"
+    android:focusable="true">
 
     <ImageButton
         android:id="@+id/backButton"
