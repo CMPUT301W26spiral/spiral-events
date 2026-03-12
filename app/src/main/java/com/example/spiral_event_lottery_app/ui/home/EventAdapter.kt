@@ -4,8 +4,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.model.Event
 
@@ -43,11 +45,23 @@ class EventAdapter(
         private val timeText: TextView = itemView.findViewById(R.id.timeText)
         private val waitingText: TextView = itemView.findViewById(R.id.waitingText)
         private val signUpButton: Button = itemView.findViewById(R.id.signUpButton)
+        private val posterImage: ImageView = itemView.findViewById(R.id.eventPosterImage)
+
         fun bind(event: Event, onSignUpClicked: (Event) -> Unit) {
             titleText.text = event.name
             locationText.text = event.locationName
             timeText.text = event.timeText
             waitingText.text = "${event.waitingCount} People on Waiting List"
+            
+            if (!event.posterUrl.isNullOrEmpty()) {
+                Glide.with(itemView.context)
+                    .load(event.posterUrl)
+                    .placeholder(R.drawable.ic_event)
+                    .into(posterImage)
+            } else {
+                posterImage.setImageResource(R.drawable.ic_event)
+            }
+
             signUpButton.setOnClickListener { onSignUpClicked(event) }
         }
     }

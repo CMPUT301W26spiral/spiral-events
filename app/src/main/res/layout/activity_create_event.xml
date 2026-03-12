@@ -31,20 +31,22 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar">
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:padding="16dp">
 
-            <FrameLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/posters_container"
-                android:layout_width="match_parent"
-                android:layout_height="150dp"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:background="#D9D9D9"
-                android:layout_marginBottom="16dp"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                app:layout_constraintDimensionRatio="H,16:9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
                 <ImageView
                     android:id="@+id/iv_event_poster"
@@ -56,9 +58,12 @@
                     android:id="@+id/ll_add_poster_placeholder"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
                     android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
                     <ImageView
                         android:layout_width="40dp"
@@ -72,69 +77,94 @@
                         android:text="@string/add_posters"
                         android:textColor="@color/hint_text" />
                 </LinearLayout>
-            </FrameLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <TextView
+                android:id="@+id/tv_label_event_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:text="@string/event_name"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/posters_container" />
 
             <EditText
                 android:id="@+id/et_event_name"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:background="@drawable/edit_text_background"
+                android:inputType="textCapWords"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="12dp"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="12dp"
-                android:inputType="textCapWords" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_event_name" />
 
             <TextView
+                android:id="@+id/tv_label_location"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/location"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/et_event_name" />
 
             <EditText
                 android:id="@+id/et_location"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:background="@drawable/edit_text_background"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="12dp"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="12dp" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_location" />
 
             <TextView
+                android:id="@+id/tv_label_interests"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/related_interests"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/et_location" />
 
             <EditText
                 android:id="@+id/et_interests"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:background="@drawable/edit_text_background"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="12dp"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="12dp" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_interests" />
 
             <TextView
+                android:id="@+id/tv_label_day_of_event"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/day_of_event"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/et_interests" />
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/ll_event_date"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:layout_marginTop="4dp"
-                android:layout_marginBottom="12dp">
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_day_of_event">
 
                 <Spinner
                     android:id="@+id/spinner_event_day"
@@ -150,8 +180,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:layout_marginStart="8dp" />
+                    android:layout_marginStart="8dp"
+                    android:padding="12dp" />
 
                 <Spinner
                     android:id="@+id/spinner_event_year"
@@ -159,23 +189,30 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:layout_marginStart="8dp" />
+                    android:layout_marginStart="8dp"
+                    android:padding="12dp" />
             </LinearLayout>
 
             <TextView
+                android:id="@+id/tv_label_time_of_event"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/time_of_event"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/ll_event_date" />
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/ll_event_time"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
                 android:layout_marginTop="4dp"
-                android:layout_marginBottom="12dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_time_of_event">
 
                 <Spinner
                     android:id="@+id/spinner_event_start_hour"
@@ -201,8 +238,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/to"
-                    android:layout_marginHorizontal="8dp" />
+                    android:layout_marginHorizontal="8dp"
+                    android:text="@string/to" />
 
                 <Spinner
                     android:id="@+id/spinner_event_end_hour"
@@ -226,18 +263,25 @@
                     android:padding="12dp" />
             </LinearLayout>
 
-             <TextView
+            <TextView
+                android:id="@+id/tv_label_day_of_draw"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/day_of_draw"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/ll_event_time" />
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/ll_draw_date"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:layout_marginTop="4dp"
-                android:layout_marginBottom="12dp">
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_day_of_draw">
 
                 <Spinner
                     android:id="@+id/spinner_draw_day"
@@ -253,8 +297,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:layout_marginStart="8dp" />
+                    android:layout_marginStart="8dp"
+                    android:padding="12dp" />
 
                 <Spinner
                     android:id="@+id/spinner_draw_year"
@@ -262,23 +306,30 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
                     android:background="@drawable/edit_text_background"
-                    android:padding="12dp"
-                    android:layout_marginStart="8dp" />
+                    android:layout_marginStart="8dp"
+                    android:padding="12dp" />
             </LinearLayout>
 
             <TextView
+                android:id="@+id/tv_label_time_of_draw"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/time_of_draw"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/ll_draw_date" />
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/ll_draw_time"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
                 android:layout_marginTop="4dp"
-                android:layout_marginBottom="12dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_time_of_draw">
 
                 <Spinner
                     android:id="@+id/spinner_draw_start_hour"
@@ -304,8 +355,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/to"
-                    android:layout_marginHorizontal="8dp" />
+                    android:layout_marginHorizontal="8dp"
+                    android:text="@string/to" />
 
                 <Spinner
                     android:id="@+id/spinner_draw_end_hour"
@@ -330,63 +381,87 @@
             </LinearLayout>
 
             <TextView
+                android:id="@+id/tv_label_geolocation"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/geolocation_requirement"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/ll_draw_time" />
 
             <Spinner
                 android:id="@+id/spinner_geolocation"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:background="@drawable/edit_text_background"
                 android:padding="12dp"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="12dp" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_geolocation" />
 
             <TextView
+                android:id="@+id/tv_label_max_entrants"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/max_entrants"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/spinner_geolocation" />
 
             <EditText
                 android:id="@+id/et_max_entrants"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:background="@drawable/edit_text_background"
+                android:inputType="number"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="12dp"
-                android:layout_marginTop="4dp"
-                android:inputType="number"
-                android:layout_marginBottom="12dp" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_max_entrants" />
 
             <TextView
+                android:id="@+id/tv_label_description"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/event_description"
-                android:textColor="@color/black" />
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/et_max_entrants" />
 
             <EditText
                 android:id="@+id/et_description"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="100dp"
-                android:background="@drawable/edit_text_background"
-                android:padding="12dp"
-                android:gravity="top"
                 android:layout_marginTop="4dp"
-                android:layout_marginBottom="24dp" />
+                android:background="@drawable/edit_text_background"
+                android:gravity="top"
+                android:padding="12dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_description" />
 
             <Button
                 android:id="@+id/btn_create"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="8dp"
                 android:backgroundTint="@color/primary_green"
                 android:text="@string/create"
                 android:textAllCaps="false"
-                android:textColor="@color/white" />
+                android:textColor="@color/white"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/et_description" />
 
-        </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

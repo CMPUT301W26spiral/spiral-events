@@ -52,28 +52,50 @@ public class EventRepository {
         deviceId = DeviceIdProvider.getDeviceId(context);
     }
 
-    private String formatTimeRange(Timestamp start, Timestamp end) {
-        if (start == null || end == null) {
-            return "No Time";
-        }
-        java.util.Date startDate = start.toDate();
-        java.util.Date endDate = end.toDate();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, MMM d, yyyy", Locale.CANADA);
-        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.CANADA);
-        return dateFormat.format(startDate) + " " + timeFormat.format(startDate) + "-" + timeFormat.format(endDate);
+    private String formatTimeText(Map<String, Object> data) {
+        String eventDate = data.get("eventDate") instanceof String ? (String) data.get("eventDate") : "";
+        String startTime = data.get("eventStartTime") instanceof String ? (String) data.get("eventStartTime") : "";
+        String endTime = data.get("eventEndTime") instanceof String ? (String) data.get("eventEndTime") : "";
+        
+        if (eventDate.isEmpty()) return "No Date";
+        return eventDate + " " + startTime + " - " + endTime;
     }
 
     private Event toEvent(String documentId, Map<String, Object> data) {
         String name = data.get("name") instanceof String ? (String) data.get("name") : "";
-        String locationName = data.get("location_name") instanceof String ? (String) data.get("location_name") : "";
-        Timestamp startTime = data.get("event_start_time") instanceof Timestamp ? (Timestamp) data.get("event_start_time") : null;
-        Timestamp endTime = data.get("event_end_time") instanceof Timestamp ? (Timestamp) data.get("event_end_time") : null;
+        
+        // Handle both "location" and "locationName" for compatibility
+        String location = data.get("location") instanceof String ? (String) data.get("location") : "";
+        if (location.isEmpty()) {
+            location = data.get("locationName") instanceof String ? (String) data.get("locationName") : "";
+        }
+
+        String timeText = formatTimeText(data);
+        // Fallback for older data format
+        if (timeText.equals("No Date")) {
+            Timestamp start = data.get("event_start_time") instanceof Timestamp ? (Timestamp) data.get("event_start_time") : null;
+            Timestamp end = data.get("event_end_time") instanceof Timestamp ? (Timestamp) data.get("event_end_time") : null;
+            if (start != null && end != null) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, MMM d, yyyy", Locale.CANADA);
+                SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.CANADA);
+                timeText = dateFormat.format(start.toDate()) + " " + timeFormat.format(start.toDate()) + "-" + timeFormat.format(end.toDate());
+            }
+        }
+
         long waitingCount = 0L;
         Object waitingObj = data.get("waiting_count");
         if (waitingObj instanceof Number) {
             waitingCount = ((Number) waitingObj).longValue();
+        } else if (data.get("waitingCount") instanceof Number) {
+            waitingCount = ((Number) data.get("waitingCount")).longValue();
         }
-        return new Event(documentId, name, locationName, formatTimeRange(startTime, endTime), waitingCount);
+
+        String posterUrl = data.get("posterUriString") instanceof String ? (String) data.get("posterUriString") : null;
+        if (posterUrl == null) {
+            posterUrl = data.get("posterUrl") instanceof String ? (String) data.get("posterUrl") : null;
+        }
+
+        return new Event(documentId, name, location, timeText, waitingCount, posterUrl);
     }
 
     public void fetchMyEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
@@ -174,6 +196,7 @@ public class EventRepository {
                     }
                     DocumentSnapshot eventDoc = transaction.get(eventRef);
                     Long currentCount = eventDoc.getLong("waiting_count");
+                    if (currentCount == null) currentCount = eventDoc.getLong("waitingCount");
                     if (currentCount == null) currentCount = 0L;
                     Map<String, Object> waitlistData = new HashMap<>();
                     waitlistData.put("joined_at", Timestamp.now());
@@ -201,6 +224,7 @@ public class EventRepository {
                     }
                     DocumentSnapshot eventDoc = transaction.get(eventRef);
                     Long currentCount = eventDoc.getLong("waiting_count");
+                    if (currentCount == null) currentCount = eventDoc.getLong("waitingCount");
                     if (currentCount == null) currentCount = 0L;
                     transaction.delete(waitlistRef);
                     transaction.update(eventRef, "waiting_count", Math.max(0L, currentCount - 1));
