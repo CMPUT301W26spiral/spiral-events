@@ -7,7 +7,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-
+import android.content.Intent;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -112,20 +112,23 @@ public class QR_scanner extends AppCompatActivity {
             image_proxy.close();
         }
     }
+
     /**
-     * it will start when a code is found.
-     * @param scanned_data it is the text from the QR code
+     * This will start when a QR code is found. It shows a loading spinner,
+     * tells the user the ID found, and moves to the Organizer screen.
+     * @param scanned_data it is the text which is the Event ID from the QR code
      */
     private void handle_successful_scan(String scanned_data) {
+        // Shows the loading spinner
         spinner_loads.setVisibility(View.VISIBLE);
-        // TODO: the scanned_data is the Firebase Document ID.
-        // jus waiting once Sean will merge his Event Details UI we delete the Toast below
+        // we show a quick message with the ID
         Toast.makeText(this, "Event ID: " + scanned_data, Toast.LENGTH_LONG).show();
-
-        // TODO: i'll pass this to sean's event details screen later
-        // and uncomment the Intent code to route the user to his screen.
-        // Intent intent = new Intent(this, Event_details_activity.class);
-        // intent.putExtra("EVENT_ID", scanned_data);
-        // startActivity(intent);
+        // now we navigate to Sean's screen
+        Intent intent = new Intent(this, com.example.event_creation.OrganizerActivity.class);
+        // now we pass the scanned ID so the screen can load the right event
+        intent.putExtra("EVENT_ID", scanned_data);
+        startActivity(intent);
+        //now we close the scanner so it wont keep running in the background
+        finish();
     }
 }
