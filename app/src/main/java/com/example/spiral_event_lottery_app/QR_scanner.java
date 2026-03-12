@@ -53,11 +53,16 @@ public class QR_scanner extends AppCompatActivity {
         setContentView(R.layout.qr_scanner);
         preview_cam = findViewById(R.id.camera_preview);
         spinner_loads = findViewById(R.id.loading_spinner);
+        android.view.View backBtn = findViewById(R.id.btn_back);
+        if (backBtn != null) {
+            backBtn.setOnClickListener(v -> finish());
+        }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             open_camera();
         } else {
             request_permission_launcher.launch(Manifest.permission.CAMERA);
         }
+
     }
     /**
      * This will set up the camera and binds it to the screen layout.
