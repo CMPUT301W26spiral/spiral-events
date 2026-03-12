@@ -21,7 +21,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
  * It retrieves the user's name and profile picture from Firebase Firestore
  * using the unique device ID stored in SharedPreferences.
  */
-public class LoginScreen extends AppCompatActivity {
+public class LoginActivity extends AppCompatActivity {
 
     private TextView welcomeText;
     private ImageView profileImage;
@@ -52,7 +52,7 @@ public class LoginScreen extends AppCompatActivity {
         loadUserData();
 
         enterButton.setOnClickListener(v -> {
-            startActivity(new Intent(LoginScreen.this, MainActivity.class));
+            startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish();
         });
     }

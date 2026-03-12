@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Spiral_event_lottery_app">
         <activity
-            android:name=".ui.LaunchScreen"
+            android:name=".ui.LaunchActivity"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,10 +22,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.LoginScreen" />
-        <activity android:name=".ui.register.RegisterScreen" />
+        <activity android:name=".ui.LoginActivity" />
+        <activity android:name=".ui.register.RegisterActivity" />
         <activity android:name=".MainActivity" />
-        <activity android:name=".ProfileScreen" />
 
         <meta-data
             android:name="preloaded_fonts"
