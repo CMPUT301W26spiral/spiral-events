@@ -11,14 +11,14 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import com.example.spiral_event_lottery_app.ui.register.RegisterActivity;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 /**
- * LaunchScreen is the entry point of the application.
- * It serves as a splash screen and router, directing users to the LoginScreen
- * if they are already registered, or showing a "Get Started" button to lead
- * them to the registration process.
+ * LaunchActivity is the entry point of the application.
+ * It uses local caching to quickly direct registered users to the Login screen.
  */
 public class LaunchActivity extends AppCompatActivity {
 
@@ -32,6 +32,7 @@ public class LaunchActivity extends AppCompatActivity {
      *     previously being shut down then this Bundle contains the data it most
      *     recently supplied in {@link #onSaveInstanceState}. Otherwise it is null.
      */
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,22 +56,50 @@ public class LaunchActivity extends AppCompatActivity {
     }
 
     /**
-     * Checks SharedPreferences for a stored device ID to determine if the user
-     * has previously registered. Redirects to LoginScreen if registered.
+     * Checks local cache first, then Firestore, to determine user status.
      */
     private void checkUserRegistration() {
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        String deviceId = prefs.getString("device_id", null);
+        boolean isRegisteredLocally = prefs.getBoolean("is_registered", false);
 
-        if (deviceId != null) {
-            // If already registered, go to the Welcome/Login screen
-            Intent intent = new Intent(LaunchActivity.this, LoginActivity.class);
-            startActivity(intent);
-            finish();
+        if (isRegisteredLocally) {
+            // CACHE HIT: Go straight to Login without waiting for network
+            goToLogin();
         } else {
-            // New user, show "Get Started"
-            getStartedButton.setVisibility(View.VISIBLE);
-            if (progressBar != null) progressBar.setVisibility(View.GONE);
+            // CACHE MISS: Perform one-time Firestore check
+            performNetworkCheck();
         }
+    }
+
+    private void performNetworkCheck() {
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        getStartedButton.setVisibility(View.GONE);
+
+        String deviceId = DeviceIdProvider.getDeviceId(this);
+
+        FirebaseFirestore.getInstance().collection("users").document(deviceId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // Update cache for next time
+                        getSharedPreferences("app_prefs", MODE_PRIVATE)
+                                .edit().putBoolean("is_registered", true).apply();
+                        goToLogin();
+                    } else {
+                        showGetStarted();
+                    }
+                })
+                .addOnFailureListener(e -> showGetStarted());
+    }
+
+    private void goToLogin() {
+        Intent intent = new Intent(LaunchActivity.this, LoginActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
+    private void showGetStarted() {
+        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        getStartedButton.setVisibility(View.VISIBLE);
     }
 }

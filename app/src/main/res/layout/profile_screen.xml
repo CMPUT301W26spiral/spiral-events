@@ -27,25 +27,16 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <View
-            android:id="@+id/titleUnderline"
-            android:layout_width="88dp"
-            android:layout_height="3dp"
-            android:layout_marginTop="6dp"
-            android:background="#2D7FF9"
-            app:layout_constraintStart_toStartOf="@id/profileTitle"
-            app:layout_constraintTop_toBottomOf="@id/profileTitle" />
-
         <!-- profile image -->
         <ImageView
             android:id="@+id/profileImage"
             android:layout_width="64dp"
             android:layout_height="64dp"
-            android:layout_marginTop="36dp"
+            android:layout_marginTop="45dp"
             android:contentDescription="Profile image"
             android:src="@drawable/ellipse_1"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/titleUnderline" />
+            app:layout_constraintTop_toBottomOf="@id/profileTitle" />
 
         <!-- small edit icon on image -->
         <ImageButton
