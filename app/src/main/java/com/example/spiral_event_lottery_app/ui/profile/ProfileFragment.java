@@ -1,5 +1,3 @@
-package com.example.spiral_event_lottery_app.ui;
-import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 package com.example.spiral_event_lottery_app.ui.profile;
 
 import android.content.Context;
@@ -36,7 +34,6 @@ import com.google.firebase.storage.StorageReference;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * ProfileFragment provides the user interface for viewing and editing the user's profile.
@@ -73,13 +70,6 @@ public class ProfileFragment extends Fragment {
                 }
             });
 
-    /**
-     * Creates and returns the view hierarchy associated with the fragment.
-     * @param inflater The LayoutInflater object that can be used to inflate any views in the fragment.
-     * @param container If non-null, this is the parent view that the fragment's UI should be attached to.
-     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
-     * @return The View for the fragment's UI.
-     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -99,10 +89,6 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
-    /**
-     * Binds view variables to their respective XML IDs.
-     * @param view The root view of the fragment.
-     */
     private void bindViews(View view) {
         profileImage = view.findViewById(R.id.profileImage);
         editPhotoButton = view.findViewById(R.id.editPhotoButton);
@@ -131,9 +117,6 @@ public class ProfileFragment extends Fragment {
         logoutButton = view.findViewById(R.id.logoutButton);
     }
 
-    /**
-     * Sets the starting visibility and enabled states for the UI components.
-     */
     private void setInitialUiState() {
         personalInfoViewGroup.setVisibility(View.VISIBLE);
         personalInfoEditGroup.setVisibility(View.GONE);
@@ -145,9 +128,6 @@ public class ProfileFragment extends Fragment {
         notificationEditActions.setVisibility(View.GONE);
     }
 
-    /**
-     * Attaches click listeners to buttons and interactive views.
-     */
     private void setListeners() {
         editPhotoButton.setOnClickListener(v -> pickImage.launch("image/*"));
         editProfileButton.setOnClickListener(v -> enterPersonalInfoEditMode());
@@ -160,38 +140,24 @@ public class ProfileFragment extends Fragment {
         logoutButton.setOnClickListener(v -> performLogout());
     }
 
-    /**
-     * Handles the logout process by redirecting to the LaunchScreen and clearing task history.
-     */
     private void performLogout() {
-        Intent intent = new Intent(getActivity(), LaunchScreen.class);
+        Intent intent = new Intent(getActivity(), LaunchActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         getActivity().finish();
     }
 
-    /**
-     * Retrieves the stored device ID from SharedPreferences.
-     * @return The unique device identifier string.
-     */
     private String getOrCreateDeviceId() {
         SharedPreferences prefs = requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
         return prefs.getString("device_id", "");
     }
 
-    /**
-     * Initiates a Firestore read to load the user's profile data.
-     */
     private void loadProfileFromFirebase() {
         if (uid.isEmpty()) return;
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(this::handleLoadedProfile);
     }
 
-    /**
-     * Processes the loaded Firestore document and updates UI fields.
-     * @param doc The DocumentSnapshot containing user profile data.
-     */
     private void handleLoadedProfile(DocumentSnapshot doc) {
         if (!isAdded()) return;
         if (doc.exists()) {
@@ -209,9 +175,6 @@ public class ProfileFragment extends Fragment {
         }
     }
 
-    /**
-     * Refreshes the text and check states of all profile views with current data.
-     */
     private void updateProfileViews() {
         if (!isAdded()) return;
         profileName.setText(currentName.isEmpty() ? getString(R.string.unnamed_user) : currentName);
@@ -226,9 +189,6 @@ public class ProfileFragment extends Fragment {
         organizersAdminsCheck.setChecked(currentNotifyOrganizersAdmins);
     }
 
-    /**
-     * Transitions the Personal Information section into edit mode.
-     */
     private void enterPersonalInfoEditMode() {
         personalInfoViewGroup.setVisibility(View.GONE);
         personalInfoEditGroup.setVisibility(View.VISIBLE);
@@ -237,9 +197,6 @@ public class ProfileFragment extends Fragment {
         editPhotoButton.setVisibility(View.VISIBLE);
     }
 
-    /**
-     * Reverts the Personal Information section to view-only mode without saving.
-     */
     private void cancelPersonalInfoEdit() {
         personalInfoEditGroup.setVisibility(View.GONE);
         personalInfoViewGroup.setVisibility(View.VISIBLE);
@@ -249,9 +206,6 @@ public class ProfileFragment extends Fragment {
         updateProfileViews();
     }
 
-    /**
-     * Validates and saves personal information changes to Firebase.
-     */
     private void savePersonalInfoToFirebase() {
         String name = editFullName.getText().toString().trim();
         String email = editEmail.getText().toString().trim();
@@ -264,7 +218,7 @@ public class ProfileFragment extends Fragment {
         if (selectedImageUri == null) {
             saveProfileDocument(name, email, phone, currentPhotoUrl);
         } else {
-            StorageReference ref = storage.getReference().child("profile_photos/" + uid + ".jpg");
+            com.google.firebase.storage.StorageReference ref = storage.getReference().child("profile_photos/" + uid + ".jpg");
             ref.putFile(selectedImageUri)
                     .continueWithTask(task -> ref.getDownloadUrl())
                     .addOnSuccessListener(uri -> saveProfileDocument(name, email, phone, uri.toString()))
@@ -277,13 +231,6 @@ public class ProfileFragment extends Fragment {
         }
     }
 
-    /**
-     * Writes the profile map to the 'users' Firestore collection.
-     * @param name User's updated name.
-     * @param email User's updated email.
-     * @param phone User's updated phone.
-     * @param photoUrl User's updated photo URL.
-     */
     private void saveProfileDocument(String name, String email, String phone, String photoUrl) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("name", name);
@@ -306,31 +253,18 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    /**
-     * Validates input strings for name and email formatting.
-     * @param name Name string.
-     * @param email Email string.
-     * @param phone Phone string.
-     * @return true if valid.
-     */
     private boolean validatePersonalInfo(String name, String email, String phone) {
         if (name.isEmpty()) return false;
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) return false;
         return true;
     }
 
-    /**
-     * Transitions the Notification preferences into edit mode.
-     */
     private void enterNotificationsEditMode() {
         setNotificationCheckboxesEnabled(true);
         editNotificationsButton.setVisibility(View.GONE);
         notificationEditActions.setVisibility(View.VISIBLE);
     }
 
-    /**
-     * Reverts the Notification preferences to view-only mode without saving.
-     */
     private void cancelNotificationsEdit() {
         whenChosenCheck.setChecked(currentNotifyWhenChosen);
         whenNotChosenCheck.setChecked(currentNotifyWhenNotChosen);
@@ -340,9 +274,6 @@ public class ProfileFragment extends Fragment {
         editNotificationsButton.setVisibility(View.VISIBLE);
     }
 
-    /**
-     * Persists updated notification flags to Firestore.
-     */
     private void saveNotificationsToFirebase() {
         saveNotificationsEdit.setEnabled(false); cancelNotificationsEdit.setEnabled(false);
         Map<String, Object> updates = new HashMap<>();
@@ -364,27 +295,17 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    /**
-     * Enables or disables interaction with the notification checkboxes.
-     * @param enabled true to enable, false to disable.
-     */
     private void setNotificationCheckboxesEnabled(boolean enabled) {
         whenChosenCheck.setEnabled(enabled);
         whenNotChosenCheck.setEnabled(enabled);
         organizersAdminsCheck.setEnabled(enabled);
     }
 
-    /**
-     * Displays a confirmation dialog before permanent profile deletion.
-     */
     private void showDeleteDialog() {
         new AlertDialog.Builder(requireContext()).setTitle("ALERT!").setMessage("DELETE PROFILE?")
                 .setPositiveButton("Confirm", (d, w) -> deleteProfile()).setNegativeButton("Cancel", null).show();
     }
 
-    /**
-     * Deletes the user profile from Firestore and removes the local device ID.
-     */
     private void deleteProfile() {
         db.collection("users").document(uid).delete().addOnSuccessListener(unused -> {
             requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE).edit().remove("device_id").apply();
@@ -392,10 +313,5 @@ public class ProfileFragment extends Fragment {
         });
     }
 
-    /**
-     * Returns an empty string if the provided value is null.
-     * @param value The value to check.
-     * @return The original value or "".
-     */
     private String safeString(String value) { return value == null ? "" : value; }
 }
