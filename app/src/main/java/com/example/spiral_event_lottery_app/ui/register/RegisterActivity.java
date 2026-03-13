@@ -21,6 +21,7 @@ import com.example.spiral_event_lottery_app.R;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -122,10 +123,9 @@ public class RegisterActivity extends AppCompatActivity {
     private void saveProfileToFirebase(String fullName, String emailAddress, String phoneNumber) {
         confirmButton.setEnabled(false);
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        
-        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        String deviceId = prefs.getString("device_id", UUID.randomUUID().toString());
-        prefs.edit().putString("device_id", deviceId).apply();
+
+        // Use consistent hardware device ID
+        String deviceId = DeviceIdProvider.getDeviceId(this);
 
         if (selectedImageUri == null) {
             saveToFirestore(db, deviceId, fullName, emailAddress, phoneNumber, null);
@@ -157,6 +157,7 @@ public class RegisterActivity extends AppCompatActivity {
         profile.put("phone", phone.isEmpty() ? null : phone);
         profile.put("photoUrl", photoUrl);
         profile.put("deviceId", uid);
+        getSharedPreferences("app_prefs", MODE_PRIVATE).edit().putBoolean("is_registered", true).apply();
 
         db.collection("users").document(uid).set(profile)
                 .addOnSuccessListener(unused -> {
