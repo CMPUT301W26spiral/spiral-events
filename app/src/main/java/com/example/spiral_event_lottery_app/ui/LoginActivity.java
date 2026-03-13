@@ -1,7 +1,6 @@
 package com.example.spiral_event_lottery_app.ui;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -14,12 +13,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.example.spiral_event_lottery_app.MainActivity;
 import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 /**
- * LoginScreen displays a personalized welcome message to returning users.
+ * LoginActivity displays a personalized welcome message to returning users.
  * It retrieves the user's name and profile picture from Firebase Firestore
- * using the unique device ID stored in SharedPreferences.
+ * using the unique hardware device ID.
  */
 public class LoginActivity extends AppCompatActivity {
 
@@ -58,17 +58,17 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Fetches user data from Firestore based on the stored device ID.
-     * Updates the UI with the user's name and photo upon success.
+     * Fetches user data from Firestore based on the hardware device ID.
      */
     private void loadUserData() {
-        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        String deviceId = prefs.getString("device_id", "");
+        // Use hardware device ID
+        String deviceId = DeviceIdProvider.getDeviceId(this);
+        getSharedPreferences("app_prefs", MODE_PRIVATE).edit().putBoolean("is_registered", true).apply();
 
         deviceIdText.setText("Device ID: " + deviceId);
         footerIdText.setText("User ID: " + deviceId);
 
-        if (!deviceId.isEmpty()) {
+        if (deviceId != null && !deviceId.isEmpty()) {
             FirebaseFirestore.getInstance().collection("users").document(deviceId)
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
@@ -76,7 +76,7 @@ public class LoginActivity extends AppCompatActivity {
                             String name = documentSnapshot.getString("name");
                             String photoUrl = documentSnapshot.getString("photoUrl");
 
-                            welcomeText.setText("Welcome, " + name + "!");
+                            welcomeText.setText("Welcome, " + (name != null ? name : "User") + "!");
                             nameText.setText(name);
 
                             if (photoUrl != null && !photoUrl.isEmpty()) {

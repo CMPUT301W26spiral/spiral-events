@@ -26,6 +26,7 @@ import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
 import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import com.example.spiral_event_lottery_app.ui.LaunchActivity;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -84,7 +85,9 @@ public class ProfileFragment extends Fragment {
 
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
-        uid = getOrCreateDeviceId();
+        
+        // Retrieve hardware ID from DeviceIdProvider
+        uid = DeviceIdProvider.getDeviceId(requireContext());
 
         bindViews(view);
         setInitialUiState();
@@ -165,15 +168,6 @@ public class ProfileFragment extends Fragment {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         getActivity().finish();
-    }
-
-    /**
-     * Retrieves the stored device ID from SharedPreferences.
-     * @return The unique device identifier string.
-     */
-    private String getOrCreateDeviceId() {
-        SharedPreferences prefs = requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
-        return prefs.getString("device_id", "");
     }
 
     /**

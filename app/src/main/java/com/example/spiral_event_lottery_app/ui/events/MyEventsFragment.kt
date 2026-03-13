@@ -9,61 +9,85 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
+import com.example.spiral_event_lottery_app.data.EventStoreO
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsLeaveFragment
+import com.example.spiral_event_lottery_app.ui.oevent.EventDetailsOFragment
 
 /**
- * Fragment that displays the list of events the current entrant has joined
+ * Fragment that displays both joined events (Entrant) and organized events (Organizer).
  */
 class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: MyEventsAdapter
+    private lateinit var joinedAdapter: MyEventsAdapter
+    private lateinit var organizerAdapter: MyEventsAdapter
+    
     private lateinit var repository: EventRepository
+    private lateinit var eventStoreO: EventStoreO
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         repository = EventRepository(requireContext())
+        eventStoreO = EventStoreO(requireContext())
 
-        view.findViewById<ImageButton?>(R.id.backButton)?.setOnClickListener {
+        view.findViewById<ImageButton?>(R.id.backButtonMyEvents)?.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
-        recyclerView = view.findViewById(R.id.currentEventsRecyclerView)
-
-        adapter = MyEventsAdapter(emptyList()) { event ->
+        // 1. Setup Joined Events RecyclerView
+        val joinedRv = view.findViewById<RecyclerView>(R.id.currentEventsRecyclerView)
+        joinedAdapter = MyEventsAdapter(emptyList()) { event ->
             parentFragmentManager.beginTransaction()
-                .add(R.id.fragmentContainer, EventDetailsLeaveFragment.newInstance(event.id), "details_screen")
-                .addToBackStack("details")
+                .replace(R.id.fragmentContainer, EventDetailsLeaveFragment.newInstance(event.id))
+                .addToBackStack(null)
                 .commit()
         }
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = adapter
-        refreshMyEvents()
+        joinedRv.layoutManager = LinearLayoutManager(requireContext())
+        joinedRv.adapter = joinedAdapter
+
+        // 2. Setup Organizer Events RecyclerView
+        val organizerRv = view.findViewById<RecyclerView>(R.id.organizerEventsRecyclerView)
+        organizerAdapter = MyEventsAdapter(emptyList()) { event ->
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, EventDetailsOFragment.newInstance(event.id))
+                .addToBackStack(null)
+                .commit()
+        }
+        organizerRv.layoutManager = LinearLayoutManager(requireContext())
+        organizerRv.adapter = organizerAdapter
+
+        refreshData()
     }
 
     override fun onResume() {
         super.onResume()
-        refreshMyEvents()
+        refreshData()
     }
 
-    /**
-     * Public method to allow MainActivity to trigger a list refresh
-     */
-    fun refreshMyEvents() {
+    fun refreshData() {
+        // Fetch Joined Events (Entrant view)
         repository.fetchMyEvents(
             { events ->
-                adapter.submitList(events)
-                view?.let { updateCounts(it, events.size) }
+                joinedAdapter.submitList(events)
+                view?.let { updateJoinedCount(it, events.size) }
             },
             { }
         )
+
+        // Fetch Organized Events (Organizer view)
+        eventStoreO.organizerEvents { events ->
+            if (isAdded) {
+                organizerAdapter.submitList(events)
+                view?.let { updateOrganizerCount(it, events.size) }
+            }
+        }
     }
 
-    private fun updateCounts(view: View, count: Int) {
-        val currentCountTv: TextView? = view.findViewById(R.id.currentCount)
-        val organizerCountTv: TextView? = view.findViewById(R.id.organizerCount)
-        currentCountTv?.text = "$count Event(s)"
-        organizerCountTv?.text = "0 Event(s)"
+    private fun updateJoinedCount(view: View, count: Int) {
+        view.findViewById<TextView>(R.id.currentCount)?.text = "$count Event(s)"
+    }
+
+    private fun updateOrganizerCount(view: View, count: Int) {
+        view.findViewById<TextView>(R.id.organizerCount)?.text = "$count Event(s)"
     }
 }
