@@ -17,15 +17,8 @@ import com.example.spiral_event_lottery_app.R
  *
  * Used by: ManageEntrantsFragment
  *
- * User Stories implemented:
- * - US 02.02.01: View list of entrants who joined the waiting list
- * - US 02.06.01: View list of all chosen/invited entrants
- * - US 02.06.02: View list of all cancelled entrants
- * - US 02.06.04: Cancel entrants that did not sign up (via remove button)
  *
- * @param entrants List of entrant device IDs to display
- * @param onRemove Optional callback triggered when the organizer taps the remove button.
- *                 Passes the device ID of the removed entrant. Null means no remove button shown.
+ * @param entrants List of entrant device IDs to display.
  */
 class EntrantAdapter(
     private var entrants: List<String>,
@@ -88,7 +81,6 @@ class EntrantAdapter(
 
         /**
          * Binds an entrant's data to this ViewHolder.
-         * Shows the remove button only if an onRemove callback was provided.
          *
          * @param deviceId The entrant's device ID to display
          * @param onRemove Callback for when the remove button is clicked, or null to hide the button

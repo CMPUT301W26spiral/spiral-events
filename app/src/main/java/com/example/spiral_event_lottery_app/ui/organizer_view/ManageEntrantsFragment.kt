@@ -9,65 +9,40 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.spiral_event_lottery_app.R
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.core.content.ContextCompat
 
 /**
- * ManageEntrantsFragment displays the list of entrants for a specific event
- * organized by their status in the lottery system.
+ * ManageEntrantsFragment displays the list of entrants for a specific event.
  *
- * This fragment corresponds to the "Manage Entrants" screen in the Figma mockup.
- * It is accessed by the organizer from the Organizer Event Details screen.
+ * Accessed by the organizer via the "View Entrants" button on the Event Details screen.
  *
- * Displays three tabs:
- * - Invited: entrants who have been selected by the lottery draw
- * - Waiting: entrants who are on the waiting list pending selection
- * - Cancelled: entrants who declined or were removed
+ * Displays two active tabs:
+ * - Invited: entrants who were selected by the lottery draw (from selected_list subcollection)
+ * - Waiting: entrants still on the waiting list (from waitlist subcollection)
  *
  * User Stories implemented:
- * - US 02.02.01: As an organizer I want to view the list of entrants who joined my event waiting list
- * - US 02.06.01: As an organizer I want to view a list of all chosen entrants who are invited to apply
- * - US 02.06.02: As an organizer I want to see a list of all the cancelled entrants
+ * - US 02.02.01: View list of entrants who joined the event waiting list
+ * - US 02.06.01: View list of chosen entrants who are invited to apply
  *
- * Data Source: Firebase Firestore
- * Collection path: events/{eventId}/waitlist
- * Each waitlist document contains:
- * - device_id: the entrant's device identifier
- * - joined_at: timestamp when they joined
- * - status: "waiting", "invited", or "cancelled" (defaults to "waiting" if missing)
  */
 class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
 
-    /** The Firestore event ID passed in when this fragment is created */
     private lateinit var eventId: String
-
-    /** Firestore database instance used to fetch waitlist data */
     private val db = FirebaseFirestore.getInstance()
 
-    /** RecyclerView for displaying invited entrants */
     private lateinit var invitedRecycler: RecyclerView
-
-    /** RecyclerView for displaying waiting entrants */
     private lateinit var waitingRecycler: RecyclerView
-
-    /** RecyclerView for displaying cancelled entrants */
     private lateinit var cancelledRecycler: RecyclerView
-
-    /** Tab button for the Invited list */
     private lateinit var btnInvited: Button
-
-    /** Tab button for the Waiting list */
     private lateinit var btnWaiting: Button
-
-    /** Tab button for the Cancelled list */
     private lateinit var btnCancelled: Button
+    private lateinit var waitingCountText: TextView
+    private lateinit var btnDrawReplacement: Button
+    private lateinit var btnExportCsv: Button
+
+    private var currentTab = "waiting"
 
     companion object {
-        /**
-         * Creates a new instance of ManageEntrantsFragment with the given event ID.
-         * This is the recommended way to instantiate this fragment.
-         *
-         * @param eventId The Firestore document ID of the event whose entrants are being managed
-         * @return A new ManageEntrantsFragment instance with the eventId stored in its arguments
-         */
         fun newInstance(eventId: String): ManageEntrantsFragment {
             return ManageEntrantsFragment().apply {
                 arguments = Bundle().apply { putString("event_id", eventId) }
@@ -75,107 +50,143 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         }
     }
 
-    /**
-     * Called after the fragment's view has been created.
-     * Sets up the tab buttons, RecyclerViews, back button, and loads entrant data from Firestore.
-     *
-     * @param view The root view of the fragment layout
-     * @param savedInstanceState Previously saved state, if any
-     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Retrieve the event ID passed to this fragment
         eventId = arguments?.getString("event_id") ?: ""
 
-        // Bind tab buttons from the layout
         btnInvited = view.findViewById(R.id.btnInvited)
         btnWaiting = view.findViewById(R.id.btnWaiting)
         btnCancelled = view.findViewById(R.id.btnCancelled)
-
-        // Bind RecyclerViews for each tab
         invitedRecycler = view.findViewById(R.id.invitedRecycler)
         waitingRecycler = view.findViewById(R.id.waitingRecycler)
         cancelledRecycler = view.findViewById(R.id.cancelledRecycler)
+        waitingCountText = view.findViewById(R.id.waitingCountText)
+        btnDrawReplacement = view.findViewById(R.id.btnDrawReplacement)
+        btnExportCsv = view.findViewById(R.id.btnExportCsv)
 
-        // Set layout managers so RecyclerViews display as vertical lists
         invitedRecycler.layoutManager = LinearLayoutManager(requireContext())
         waitingRecycler.layoutManager = LinearLayoutManager(requireContext())
         cancelledRecycler.layoutManager = LinearLayoutManager(requireContext())
 
-        // Back button navigates to the previous screen
         view.findViewById<View>(R.id.backButton).setOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
-        // Show the Invited tab by default when the screen opens
-        showTab("invited")
-
-        // Tab button click listeners switch which RecyclerView is visible
         btnInvited.setOnClickListener { showTab("invited") }
         btnWaiting.setOnClickListener { showTab("waiting") }
         btnCancelled.setOnClickListener { showTab("cancelled") }
 
-        // Fetch entrant data from Firestore
-        loadEntrants()
+        // Placeholder clicks for now
+        btnDrawReplacement.setOnClickListener { }
+        btnExportCsv.setOnClickListener { }
+
+        showTab("waiting")
+        loadWaitingEntrants()
+        loadInvitedEntrants()
     }
 
-    /**
-     * Shows the RecyclerView for the selected tab and hides the others.
-     * Only one tab's list is visible at a time.
-     *
-     * @param tab The tab to show. Must be one of: "invited", "waiting", "cancelled"
-     */
     private fun showTab(tab: String) {
+        currentTab = tab
         invitedRecycler.visibility = if (tab == "invited") View.VISIBLE else View.GONE
         waitingRecycler.visibility = if (tab == "waiting") View.VISIBLE else View.GONE
         cancelledRecycler.visibility = if (tab == "cancelled") View.VISIBLE else View.GONE
+
+        // Update tab button colors
+        val activeColor = ContextCompat.getColor(requireContext(), R.color.primary_green)
+        val inactiveColor = ContextCompat.getColor(requireContext(), android.R.color.white)
+        val activeText = ContextCompat.getColor(requireContext(), android.R.color.white)
+        val inactiveText = ContextCompat.getColor(requireContext(), R.color.primary_green)
+
+        listOf(btnInvited, btnWaiting, btnCancelled).forEach { btn ->
+            btn.setBackgroundColor(inactiveColor)
+            btn.setTextColor(inactiveText)
+        }
+
+        val activeBtn = when (tab) {
+            "invited" -> btnInvited
+            "waiting" -> btnWaiting
+            else -> btnCancelled
+        }
+        activeBtn.setBackgroundColor(activeColor)
+        activeBtn.setTextColor(activeText)
     }
 
     /**
-     * Fetches all entrants from the Firestore waitlist subcollection for this event.
-     * Sorts each entrant into the invited, waiting, or cancelled list based on their status field.
-     * If no status field exists, the entrant is treated as "waiting" by default.
-     *
-     * Firestore path: events/{eventId}/waitlist
-     *
-     * After fetching, updates each RecyclerView with the appropriate list
-     * and updates the waiting count text.
+     * Loads waiting entrants from waitlist subcollection.
+     * Looks up each user's name from the users collection using device_id.
      */
-    private fun loadEntrants() {
+    private fun loadWaitingEntrants() {
         db.collection("events")
             .document(eventId)
             .collection("waitlist")
             .get()
             .addOnSuccessListener { snapshot ->
+                val deviceIds = snapshot.documents.map { it.getString("device_id") ?: it.id }
 
-                // Separate lists for each status category
-                val invited = mutableListOf<String>()
-                val waiting = mutableListOf<String>()
-                val cancelled = mutableListOf<String>()
+                waitingCountText.text = "${deviceIds.size} People on Waiting List"
 
-                // Loop through each waitlist document and sort by status
-                for (doc in snapshot.documents) {
-                    // Default to "waiting" if no status field exists yet
-                    val status = doc.getString("status") ?: "waiting"
-                    // Use device_id field if available, otherwise fall back to document ID
-                    val deviceId = doc.getString("device_id") ?: doc.id
-
-                    when (status) {
-                        "invited" -> invited.add(deviceId)
-                        "cancelled" -> cancelled.add(deviceId)
-                        else -> waiting.add(deviceId) // covers "waiting" and any unknown status
-                    }
+                if (deviceIds.isEmpty()) {
+                    waitingRecycler.adapter = EntrantAdapter(emptyList())
+                    return@addOnSuccessListener
                 }
 
-                // Set adapters with the sorted lists
-                invitedRecycler.adapter = EntrantAdapter(invited)
-                waitingRecycler.adapter = EntrantAdapter(waiting)
-                cancelledRecycler.adapter = EntrantAdapter(cancelled)
-
-                // Update the waiting count display
-                view?.findViewById<TextView>(R.id.waitingCountText)?.text =
-                    "${waiting.size} People on Waiting List"
+                // Look up names from users collection
+                resolveNames(deviceIds) { names ->
+                    waitingRecycler.adapter = EntrantAdapter(names)
+                }
             }
+    }
+
+    /**
+     * Loads invited entrants from selected_list subcollection.
+     * Looks up each user's name from the users collection using device_id.
+     */
+    private fun loadInvitedEntrants() {
+        db.collection("events")
+            .document(eventId)
+            .collection("selected_list")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val deviceIds = snapshot.documents.map { it.getString("device_id") ?: it.id }
+
+                if (deviceIds.isEmpty()) {
+                    invitedRecycler.adapter = EntrantAdapter(emptyList())
+                    return@addOnSuccessListener
+                }
+
+                resolveNames(deviceIds) { names ->
+                    invitedRecycler.adapter = EntrantAdapter(names)
+                }
+            }
+    }
+
+    /**
+     * Looks up user names from the users collection given a list of device IDs.
+     * Falls back to the device ID if no user document is found.
+     *
+     * @param deviceIds list of device IDs to look up
+     * @param onComplete callback with list of resolved display names
+     */
+    private fun resolveNames(deviceIds: List<String>, onComplete: (List<String>) -> Unit) {
+        val names = MutableList(deviceIds.size) { deviceIds[it] }
+        var resolved = 0
+
+        for ((index, deviceId) in deviceIds.withIndex()) {
+            db.collection("users")
+                .document(deviceId)
+                .get()
+                .addOnSuccessListener { userDoc ->
+                    if (userDoc.exists()) {
+                        names[index] = userDoc.getString("name") ?: deviceId
+                    }
+                    resolved++
+                    if (resolved == deviceIds.size) onComplete(names)
+                }
+                .addOnFailureListener {
+                    resolved++
+                    if (resolved == deviceIds.size) onComplete(names)
+                }
+        }
     }
 }

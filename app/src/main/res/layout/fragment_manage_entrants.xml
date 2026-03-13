@@ -14,8 +14,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F0F7F0"
-    android:padding="16dp">
+    android:background="#F0F7F0">
 
     <!-- Top bar with back button and title -->
     <LinearLayout
@@ -23,9 +22,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
+        android:padding="16dp">
 
-        <!-- Back button to return to organizer event details -->
         <ImageButton
             android:id="@+id/backButton"
             android:layout_width="wrap_content"
@@ -34,7 +32,6 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Back" />
 
-        <!-- Screen title -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -45,78 +42,100 @@
 
     </LinearLayout>
 
-    <!-- Shows how many people are on the waiting list -->
+    <!-- Waiting count -->
     <TextView
         android:id="@+id/waitingCountText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="0 People on Waiting List"
         android:textSize="14sp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
         android:layout_marginBottom="12dp" />
 
-    <!-- Tab buttons for switching between Invited, Waiting, Cancelled -->
+    <!-- Tab buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:layout_marginBottom="8dp">
 
-        <!-- Invited tab button -->
         <Button
             android:id="@+id/btnInvited"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="Invited"
             android:textSize="12sp"
-            android:backgroundTint="#1B5E20"
-            android:textColor="#FFFFFF"
             android:layout_marginEnd="4dp" />
 
-        <!-- Waiting tab button -->
         <Button
             android:id="@+id/btnWaiting"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="Waiting"
             android:textSize="12sp"
-            android:backgroundTint="#FFFFFF"
-            android:textColor="#1B5E20"
             android:layout_marginEnd="4dp" />
 
-        <!-- Cancelled tab button -->
         <Button
             android:id="@+id/btnCancelled"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="Cancelled"
-            android:textSize="12sp"
-            android:backgroundTint="#FFFFFF"
-            android:textColor="#1B5E20" />
+            android:textSize="12sp" />
 
     </LinearLayout>
 
-    <!-- RecyclerView for Invited entrants - visible when Invited tab is selected -->
+    <!-- RecyclerViews - takes remaining space above buttons -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/invitedRecycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="visible" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
 
-    <!-- RecyclerView for Waiting entrants - visible when Waiting tab is selected -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/waitingRecycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="visible" />
 
-    <!-- RecyclerView for Cancelled entrants - visible when Cancelled tab is selected -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/cancelledRecycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:visibility="gone" />
+
+    <!-- Bottom buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <Button
+            android:id="@+id/btnDrawReplacement"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Draw Replacement Applicant"
+            android:backgroundTint="#1B5E20"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnExportCsv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Export CSV"
+            android:backgroundTint="#1B5E20"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
 
 </LinearLayout>
