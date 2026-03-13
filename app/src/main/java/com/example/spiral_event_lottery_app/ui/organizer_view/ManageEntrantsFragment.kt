@@ -124,7 +124,8 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.getString("device_id") ?: it.id }
 
-                waitingCountText.text = "${deviceIds.size} People on Waiting List"
+                val count = deviceIds.size
+                waitingCountText.text = if (count == 1) "1 Person on Waiting List" else "$count People on Waiting List"
 
                 if (deviceIds.isEmpty()) {
                     waitingRecycler.adapter = EntrantAdapter(emptyList())
