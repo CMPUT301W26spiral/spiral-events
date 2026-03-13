@@ -101,6 +101,14 @@ class EventDetailsOFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
+        // button to link to the view entrants page
+
+        viewEntrantsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
     }
 
     override fun onStop() {
