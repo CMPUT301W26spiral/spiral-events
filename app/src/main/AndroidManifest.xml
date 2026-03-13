@@ -7,8 +7,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.INTERNET" />
-
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <application
+        android:name=".SpiralEventsApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -19,8 +20,8 @@
         android:theme="@style/Theme.Spiral_event_lottery_app">
 
         <activity
-            android:name="com.example.spiral_event_lottery_app.MainActivity"
-            android:exported="true">
+            android:name=".ui.LaunchActivity"
+            android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -28,6 +29,9 @@
         </activity>
         <activity android:name=".QR_scanner" android:exported="false" />
 
+        <activity android:name=".ui.LoginActivity" />
+        <activity android:name=".ui.register.RegisterActivity" />
+        <activity android:name=".MainActivity" />
         <activity
             android:name="com.example.event_creation.CreateEventActivity"
             android:exported="false"

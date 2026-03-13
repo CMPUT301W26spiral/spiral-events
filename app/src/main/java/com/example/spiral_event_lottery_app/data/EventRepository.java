@@ -64,14 +64,12 @@ public class EventRepository {
     private Event toEvent(String documentId, Map<String, Object> data) {
         String name = data.get("name") instanceof String ? (String) data.get("name") : "";
         
-        // Handle both "location" and "locationName" for compatibility
         String location = data.get("location") instanceof String ? (String) data.get("location") : "";
         if (location.isEmpty()) {
             location = data.get("locationName") instanceof String ? (String) data.get("locationName") : "";
         }
 
         String timeText = formatTimeText(data);
-        // Fallback for older data format
         if (timeText.equals("No Date")) {
             Timestamp start = data.get("event_start_time") instanceof Timestamp ? (Timestamp) data.get("event_start_time") : null;
             Timestamp end = data.get("event_end_time") instanceof Timestamp ? (Timestamp) data.get("event_end_time") : null;
@@ -95,7 +93,28 @@ public class EventRepository {
             posterUrl = data.get("posterUrl") instanceof String ? (String) data.get("posterUrl") : null;
         }
 
-        return new Event(documentId, name, location, timeText, waitingCount, posterUrl);
+        String description = data.get("description") instanceof String ? (String) data.get("description") : "";
+        String interests = data.get("interests") instanceof String ? (String) data.get("interests") : "";
+        String geolocation = data.get("geolocation") instanceof String ? (String) data.get("geolocation") : "";
+        
+        Integer maxEntrants = null;
+        if (data.get("maxEntrants") instanceof Number) {
+            maxEntrants = ((Number) data.get("maxEntrants")).intValue();
+        }
+
+        String eventDate = data.get("eventDate") instanceof String ? (String) data.get("eventDate") : "";
+        String eventStartTime = data.get("eventStartTime") instanceof String ? (String) data.get("eventStartTime") : "";
+        String eventEndTime = data.get("eventEndTime") instanceof String ? (String) data.get("eventEndTime") : "";
+        String drawDate = data.get("drawDate") instanceof String ? (String) data.get("drawDate") : "";
+        String drawStartTime = data.get("drawStartTime") instanceof String ? (String) data.get("drawStartTime") : "";
+        String drawEndTime = data.get("drawEndTime") instanceof String ? (String) data.get("drawEndTime") : "";
+        String organizerId = data.get("organizerId") instanceof String ? (String) data.get("organizerId") : "";
+
+        return new Event(
+            documentId, name, location, interests, description, geolocation, maxEntrants,
+            eventDate, eventStartTime, eventEndTime, drawDate, drawStartTime, drawEndTime,
+            posterUrl, timeText, waitingCount, organizerId
+        );
     }
 
     public void fetchMyEvents(final EventsCallback onUpdate, final ErrorCallback onError) {

@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * Activity representing the Organizer Dashboard.
- * Currently redirects straight to CreateEventActivity as per requirement.
+ * Currently redirects straight to CreateEventActivity.
  */
 public class OrganizerActivity extends AppCompatActivity {
 

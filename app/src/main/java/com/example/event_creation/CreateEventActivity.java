@@ -21,6 +21,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.model.Event;
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,36 +98,36 @@ public class CreateEventActivity extends AppCompatActivity {
         etDescription = findViewById(R.id.et_description);
         spinnerGeolocation = findViewById(R.id.spinner_geolocation);
         etMaxEntrants = findViewById(R.id.et_max_entrants);
-        
+
         spinnerEventDay = findViewById(R.id.spinner_event_day);
         spinnerEventMonth = findViewById(R.id.spinner_event_month);
         spinnerEventYear = findViewById(R.id.spinner_event_year);
-        
+
         spinnerEventStartHour = findViewById(R.id.spinner_event_start_hour);
         spinnerEventStartMin = findViewById(R.id.spinner_event_start_min);
         spinnerEventEndHour = findViewById(R.id.spinner_event_end_hour);
         spinnerEventEndMin = findViewById(R.id.spinner_event_end_min);
-        
+
         spinnerDrawDay = findViewById(R.id.spinner_draw_day);
         spinnerDrawMonth = findViewById(R.id.spinner_draw_month);
         spinnerDrawYear = findViewById(R.id.spinner_draw_year);
-        
+
         spinnerDrawStartHour = findViewById(R.id.spinner_draw_start_hour);
         spinnerDrawStartMin = findViewById(R.id.spinner_draw_start_min);
         spinnerDrawEndHour = findViewById(R.id.spinner_draw_end_hour);
         spinnerDrawEndMin = findViewById(R.id.spinner_draw_end_min);
-        
+
         btnCreate = findViewById(R.id.btn_create);
     }
 
     private void setupSpinners() {
         populateSpinner(spinnerEventDay, 1, 31, "DD");
         populateSpinner(spinnerDrawDay, 1, 31, "DD");
-        
+
         List<String> months = Arrays.asList("MM", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
         setupCustomAdapter(spinnerEventMonth, months);
         setupCustomAdapter(spinnerDrawMonth, months);
-        
+
         List<String> years = new ArrayList<>();
         years.add("YYYY");
         for (int i = 2026; i <= 2030; i++) years.add(String.valueOf(i));
@@ -136,7 +138,7 @@ public class CreateEventActivity extends AppCompatActivity {
         populateSpinner(spinnerEventEndHour, 1, 24, "HH");
         populateSpinner(spinnerDrawStartHour, 1, 24, "HH");
         populateSpinner(spinnerDrawEndHour, 1, 24, "HH");
-        
+
         populateSpinner(spinnerEventStartMin, 0, 59, "mm");
         populateSpinner(spinnerEventEndMin, 0, 59, "mm");
         populateSpinner(spinnerDrawStartMin, 0, 59, "mm");
@@ -195,14 +197,14 @@ public class CreateEventActivity extends AppCompatActivity {
         String interests = etInterests.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
         String geolocation = spinnerGeolocation.getSelectedItem().toString();
-        
+
         String maxEntrantsStr = etMaxEntrants.getText().toString().trim();
         Integer maxEntrants = maxEntrantsStr.isEmpty() ? null : Integer.parseInt(maxEntrantsStr);
 
         // Convert month names back to numbers for the stored date string (e.g., Jan -> 01)
         String eventMonth = String.format(Locale.getDefault(), "%02d", spinnerEventMonth.getSelectedItemPosition());
         String eventDate = spinnerEventDay.getSelectedItem().toString() + "/" + eventMonth + "/" + spinnerEventYear.getSelectedItem().toString();
-        
+
         String eventStartTime = spinnerEventStartHour.getSelectedItem().toString() + ":" + spinnerEventStartMin.getSelectedItem().toString();
         String eventEndTime = spinnerEventEndHour.getSelectedItem().toString() + ":" + spinnerEventEndMin.getSelectedItem().toString();
 
@@ -214,11 +216,25 @@ public class CreateEventActivity extends AppCompatActivity {
 
         String posterUriString = (selectedImageUri != null) ? selectedImageUri.toString() : null;
 
+        String organizerId = DeviceIdProvider.getDeviceId(this);
         Event newEvent = new Event(
-                eventName, location, interests, description, geolocation, maxEntrants,
-                eventDate, eventStartTime, eventEndTime,
-                drawDate, drawStartTime, drawEndTime,
-                posterUriString
+                "", // id
+                eventName,
+                location, // locationName
+                interests,
+                description,
+                geolocation,
+                maxEntrants,
+                eventDate,
+                eventStartTime,
+                eventEndTime,
+                drawDate,
+                drawStartTime,
+                drawEndTime,
+                posterUriString,
+                "", // timeText
+                0L, // waitingCount
+                organizerId // organizerId correctly saved
         );
 
         EventManager.getInstance().addEvent(newEvent);
