@@ -237,7 +237,7 @@ public class CreateEventActivity extends AppCompatActivity {
                 organizerId // organizerId correctly saved
         );
 
-        EventManager.getInstance().addEvent(newEvent);
+        EventManager.getInstance().addEvent(this, newEvent);
         Intent intent = new Intent(CreateEventActivity.this, QRCodeActivity.class);
         intent.putExtra("EVENT_NAME", eventName);
         startActivity(intent);
