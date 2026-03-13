@@ -114,7 +114,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                                 holder.goButton.setText("Declined");
                                 holder.goButton.setEnabled(false);
                             })
-                        })
                             .show();
                     return; // Stop execution here so it doesn't navigate to the details fragment
                 }

@@ -3,6 +3,7 @@ package com.example.event_creation;
 import android.net.Uri;
 import android.util.Log;
 
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -37,20 +38,25 @@ public class EventManager {
 
     /**
      * Adds an event to local list and syncs it to Firebase.
+     * Sets the event ID before saving.
      * @param event The event to add.
      */
     public void addEvent(Event event) {
+        // Pre-generate the ID so we can use it immediately for QR codes
+        DocumentReference docRef = db.collection("events").document();
+        event.setId(docRef.getId());
+        
         eventList.add(event);
         
         // If there's a local poster URI, upload it first, then save to Firestore
         if (event.getPosterUriString() != null) {
-            uploadPosterAndSave(event);
+            uploadPosterAndSave(event, docRef);
         } else {
-            saveToFirestore(event);
+            saveToFirestore(event, docRef);
         }
     }
 
-    private void uploadPosterAndSave(Event event) {
+    private void uploadPosterAndSave(Event event, DocumentReference docRef) {
         Uri file = Uri.parse(event.getPosterUriString());
         StorageReference storageRef = storage.getReference().child("event_posters/" + UUID.randomUUID().toString());
 
@@ -58,19 +64,18 @@ public class EventManager {
                 .addOnSuccessListener(taskSnapshot -> storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                     // Replace local URI with permanent download URL
                     event.setPosterUriString(uri.toString());
-                    saveToFirestore(event);
+                    saveToFirestore(event, docRef);
                 }))
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Failed to upload image", e);
                     // Save anyway without the image if upload fails
-                    saveToFirestore(event);
+                    saveToFirestore(event, docRef);
                 });
     }
 
-    private void saveToFirestore(Event event) {
-        db.collection("events")
-                .add(event)
-                .addOnSuccessListener(documentReference -> Log.d(TAG, "Event added with ID: " + documentReference.getId()))
+    private void saveToFirestore(Event event, DocumentReference docRef) {
+        docRef.set(event)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Event added with ID: " + event.getId()))
                 .addOnFailureListener(e -> Log.w(TAG, "Error adding event", e));
     }
 

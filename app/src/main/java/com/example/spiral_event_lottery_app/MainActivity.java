@@ -68,15 +68,31 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-        String scannedId = getIntent().getStringExtra("SCAN_RESULT_ID");
-        if (scannedId != null) {
-            // we use .Companion to reach newInstance since tht fragment was in kotlin
-            Fragment detailsFragment = com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment.Companion.newInstance(scannedId);
 
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragmentContainer, detailsFragment, "details_screen")
+        handleIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (intent == null) return;
+        String scannedId = intent.getStringExtra("SCAN_RESULT_ID");
+        if (scannedId != null) {
+            // US 01.06.01 - Open event details when QR is scanned
+            Fragment detailsFragment = com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment.Companion.newInstance(scannedId);
+            
+            fm.beginTransaction()
+                    .add(R.id.fragmentContainer, detailsFragment, "details_screen")
                     .addToBackStack("details")
                     .commit();
+            
+            // Clear the extra so it doesn't trigger again on rotation
+            intent.removeExtra("SCAN_RESULT_ID");
         }
     }
 
