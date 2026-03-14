@@ -16,6 +16,11 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
 
+/**
+ * Activity that displays a generated QR code for a newly created event.
+ * Organizers can save this QR code or share it with potential entrants.
+ * The QR code contains the Firestore Event ID.
+ */
 public class QRCodeActivity extends AppCompatActivity {
 
     private ImageView ivQRCode;
@@ -32,9 +37,16 @@ public class QRCodeActivity extends AppCompatActivity {
         btnConfirm = findViewById(R.id.btn_confirm);
 
         String eventName = getIntent().getStringExtra("EVENT_NAME");
+        String eventId = getIntent().getStringExtra("EVENT_ID");
+
         if (eventName != null) {
             tvSuccessMsg.setText(getString(R.string.successfully_created, eventName));
-            generateQRCode(eventName);
+        }
+
+        if (eventId != null) {
+            generateQRCode(eventId);
+        } else {
+            Toast.makeText(this, "Error: No event ID received", Toast.LENGTH_SHORT).show();
         }
 
         btnConfirm.setOnClickListener(v -> {
@@ -50,12 +62,15 @@ public class QRCodeActivity extends AppCompatActivity {
         });
     }
 
-    private void generateQRCode(String text) {
+    /**
+     * Generates a QR code bitmap from the provided text (Event ID).
+     * @param eventId The Firestore document ID for the event.
+     */
+    private void generateQRCode(String eventId) {
         try {
             BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
-            // In future app development, this would be a link to the event in the app
-            String qrContent = "spiral-events://event/" + text.replaceAll("\\s+", "_").toLowerCase();
-            Bitmap bitmap = barcodeEncoder.encodeBitmap(qrContent, BarcodeFormat.QR_CODE, 512, 512);
+            // US 01.06.01 - Encoding the event ID so entrants can scan to view details
+            Bitmap bitmap = barcodeEncoder.encodeBitmap(eventId, BarcodeFormat.QR_CODE, 512, 512);
             ivQRCode.setImageBitmap(bitmap);
         } catch (WriterException e) {
             e.printStackTrace();

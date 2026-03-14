@@ -56,6 +56,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         )
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
+        // 1. Find the Scan Button using the ID from your XML
+        val scanBtn = view.findViewById<android.widget.Button>(R.id.scanButton)
+        // 2. Set the click listener to open your camera
+        scanBtn.setOnClickListener {
+            val intent = android.content.Intent(requireContext(), com.example.spiral_event_lottery_app.QR_scanner::class.java)
+            startActivity(intent)
+        }
     }
 
     override fun onStart() {

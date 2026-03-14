@@ -7,6 +7,7 @@ import java.io.Serializable;
  * Contains details about the event location, timing, and lottery draw information.
  */
 public class Event implements Serializable {
+    private String id; // Firebase document ID
     private String name;
     private String location;
     private String interests;
@@ -50,6 +51,9 @@ public class Event implements Serializable {
     }
 
     // Getters and Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 

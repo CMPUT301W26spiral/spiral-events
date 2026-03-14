@@ -56,4 +56,20 @@ dependencies {
 
     // Image Loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    //this is for camera from google
+    val camerax_version = "1.3.1"
+    implementation("androidx.camera:camera-core:${camerax_version}")
+    implementation("androidx.camera:camera-camera2:${camerax_version}")
+    implementation("androidx.camera:camera-lifecycle:${camerax_version}")
+    implementation("androidx.camera:camera-view:${camerax_version}")
+    // this is the google's barcode scanner
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation("com.google.guava:guava:32.1.3-android")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test:rules:1.5.0")
+
+
+
+
 }
