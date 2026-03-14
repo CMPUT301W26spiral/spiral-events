@@ -3,7 +3,6 @@ package com.example.spiral_event_lottery_app.ui;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -17,11 +16,14 @@ import com.example.spiral_event_lottery_app.ui.register.RegisterActivity;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * LaunchActivity is the entry point of the application.
+ * It uses local caching to quickly direct registered users to the Login screen.
+ */
 public class LaunchActivity extends AppCompatActivity {
 
     private ProgressBar progressBar;
     private Button getStartedButton;
-    private boolean checkCompleted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,13 +38,6 @@ public class LaunchActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         getStartedButton = findViewById(R.id.get_started);
 
-        // UI Fail-safe: If network takes more than 5 seconds, show the button anyway
-        new Handler().postDelayed(() -> {
-            if (!checkCompleted) {
-                showGetStarted();
-            }
-        }, 5000);
-
         checkUserRegistration();
 
         getStartedButton.setOnClickListener(v -> {
@@ -52,14 +47,18 @@ public class LaunchActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Checks local cache first, then Firestore, to determine user status.
+     */
     private void checkUserRegistration() {
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
         boolean isRegisteredLocally = prefs.getBoolean("is_registered", false);
 
         if (isRegisteredLocally) {
-            checkCompleted = true;
+            // CACHE HIT: Go straight to Login without waiting for network
             goToLogin();
         } else {
+            // CACHE MISS: Perform one-time Firestore check
             performNetworkCheck();
         }
     }
@@ -73,8 +72,8 @@ public class LaunchActivity extends AppCompatActivity {
         FirebaseFirestore.getInstance().collection("users").document(deviceId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    checkCompleted = true;
                     if (documentSnapshot.exists()) {
+                        // Update cache for next time
                         getSharedPreferences("app_prefs", MODE_PRIVATE)
                                 .edit().putBoolean("is_registered", true).apply();
                         goToLogin();
@@ -82,10 +81,7 @@ public class LaunchActivity extends AppCompatActivity {
                         showGetStarted();
                     }
                 })
-                .addOnFailureListener(e -> {
-                    checkCompleted = true;
-                    showGetStarted();
-                });
+                .addOnFailureListener(e -> showGetStarted());
     }
 
     private void goToLogin() {

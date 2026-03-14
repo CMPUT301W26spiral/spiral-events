@@ -161,10 +161,10 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Handles the logout process by redirecting to the LaunchScreen and clearing task history.
+     * Handles the logout process by redirecting to the LaunchActivity and clearing task history.
      */
     private void performLogout() {
-        Intent intent = new Intent(getActivity(), LaunchScreen.class);
+        Intent intent = new Intent(getActivity(), LaunchActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         if (getActivity() != null) getActivity().finish();
@@ -174,7 +174,7 @@ public class ProfileFragment extends Fragment {
      * Initiates a Firestore read to load the user's profile data.
      */
     private void loadProfileFromFirebase() {
-        if (uid.isEmpty()) return;
+        if (uid == null || uid.isEmpty()) return;
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(this::handleLoadedProfile);
     }
@@ -190,9 +190,16 @@ public class ProfileFragment extends Fragment {
             currentEmail = safeString(doc.getString("email"));
             currentPhone = safeString(doc.getString("phone"));
             currentPhotoUrl = safeString(doc.getString("photoUrl"));
-            currentNotifyWhenChosen = doc.getBoolean("notifyWhenChosen") != null && doc.getBoolean("notifyWhenChosen");
-            currentNotifyWhenNotChosen = doc.getBoolean("notifyWhenNotChosen") != null && doc.getBoolean("notifyWhenNotChosen");
-            currentNotifyOrganizersAdmins = doc.getBoolean("notifyOrganizersAdmins") != null && doc.getBoolean("notifyOrganizersAdmins");
+            
+            Boolean notifyChosen = doc.getBoolean("notifyWhenChosen");
+            currentNotifyWhenChosen = notifyChosen != null ? notifyChosen : true;
+            
+            Boolean notifyNotChosen = doc.getBoolean("notifyWhenNotChosen");
+            currentNotifyWhenNotChosen = notifyNotChosen != null ? notifyNotChosen : true;
+            
+            Boolean notifyOrganizers = doc.getBoolean("notifyOrganizersAdmins");
+            currentNotifyOrganizersAdmins = notifyOrganizers != null ? notifyOrganizers : true;
+            
             updateProfileViews();
             if (!currentPhotoUrl.isEmpty()) {
                 Glide.with(this).load(currentPhotoUrl).into(profileImage);
@@ -253,12 +260,12 @@ public class ProfileFragment extends Fragment {
         cancelProfileEdit.setEnabled(false);
 
         if (selectedImageUri == null) {
-            saveProfileDocument(name, email, phone, currentPhotoUrl);
+            saveProfileDocument(name, email, currentPhotoUrl);
         } else {
             StorageReference ref = storage.getReference().child("profile_photos/" + uid + ".jpg");
             ref.putFile(selectedImageUri)
                     .continueWithTask(task -> ref.getDownloadUrl())
-                    .addOnSuccessListener(uri -> saveProfileDocument(name, email, phone, uri.toString()))
+                    .addOnSuccessListener(uri -> saveProfileDocument(name, email, uri.toString()))
                     .addOnFailureListener(e -> {
                         if (isAdded()) {
                             saveProfileEdit.setEnabled(true);
@@ -272,15 +279,15 @@ public class ProfileFragment extends Fragment {
      * Writes the profile map to the 'users' Firestore collection.
      * @param name User's updated name.
      * @param email User's updated email.
-     * @param phone User's updated phone.
      * @param photoUrl User's updated photo URL.
      */
-    private void saveProfileDocument(String name, String email, String phone, String photoUrl) {
+    private void saveProfileDocument(String name, String email, String photoUrl) {
+        String phone = editPhone.getText().toString().trim();
         Map<String, Object> updates = new HashMap<>();
         updates.put("name", name);
         updates.put("email", email);
         updates.put("phone", phone.isEmpty() ? null : phone);
-        updates.put("photoUrl", photoUrl.isEmpty() ? null : photoUrl);
+        updates.put("photoUrl", (photoUrl == null || photoUrl.isEmpty()) ? null : photoUrl);
         updates.put("deviceId", uid);
         updates.put("notifyWhenChosen", whenChosenCheck.isChecked());
         updates.put("notifyWhenNotChosen", whenNotChosenCheck.isChecked());
