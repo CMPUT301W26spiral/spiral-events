@@ -1,5 +1,3 @@
-package com.example.spiral_event_lottery_app.ui;
-import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 package com.example.spiral_event_lottery_app.ui.profile;
 
 import android.content.Context;
@@ -167,7 +165,7 @@ public class ProfileFragment extends Fragment {
      * Handles the logout process by redirecting to the LaunchScreen and clearing task history.
      */
     private void performLogout() {
-        Intent intent = new Intent(getActivity(), LaunchScreen.class);
+        Intent intent = new Intent(getActivity(), LaunchActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         getActivity().finish();
