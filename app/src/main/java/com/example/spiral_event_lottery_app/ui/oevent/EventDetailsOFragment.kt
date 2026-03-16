@@ -1,5 +1,6 @@
 package com.example.spiral_event_lottery_app.ui.oevent
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,6 +12,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
+import com.example.event_creation.QRCodeActivity
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
@@ -34,6 +36,7 @@ class EventDetailsOFragment : Fragment() {
     private lateinit var eventId: String
     private lateinit var repository: EventRepository
     private var eventListener: ListenerRegistration? = null
+    private var currentEventName: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,12 +61,21 @@ class EventDetailsOFragment : Fragment() {
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
 
         // Buttons
+        val qrBtn = view.findViewById<Button>(R.id.viewQrCodeButton)
         val drawBtn = view.findViewById<Button>(R.id.drawButton)
         val viewEntrantsBtn = view.findViewById<Button>(R.id.viewEntrantsButton)
         val notifyEntrantsBtn = view.findViewById<Button>(R.id.notifyEntrantsButton)
         val viewLocationsBtn = view.findViewById<Button>(R.id.viewLocButton)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
+
+        qrBtn.setOnClickListener {
+            val intent = Intent(requireContext(), QRCodeActivity::class.java).apply {
+                putExtra("EVENT_ID", eventId)
+                putExtra("EVENT_NAME", currentEventName)
+            }
+            startActivity(intent)
+        }
 
         eventListener = repository.listenToEvent(
             eventId,
@@ -73,7 +85,8 @@ class EventDetailsOFragment : Fragment() {
                     return@listenToEvent
                 }
 
-                title.text = event.name
+                currentEventName = event.name
+                title.text = currentEventName
                 locationName.text = event.locationName
                 locationAddress.text = event.locationName // Using locationName as address for now
                 time.text = event.timeText
