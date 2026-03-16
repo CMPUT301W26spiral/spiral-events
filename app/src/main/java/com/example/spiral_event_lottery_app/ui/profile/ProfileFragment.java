@@ -164,6 +164,10 @@ public class ProfileFragment extends Fragment {
      * Handles the logout process by redirecting to the LaunchActivity and clearing task history.
      */
     private void performLogout() {
+        // Clear local registration flag
+        requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                .edit().putBoolean("is_registered", false).apply();
+
         Intent intent = new Intent(getActivity(), LaunchActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
@@ -296,6 +300,10 @@ public class ProfileFragment extends Fragment {
         db.collection("users").document(uid).set(updates)
                 .addOnSuccessListener(unused -> {
                     if (isAdded()) {
+                        // Ensure local cache is updated
+                        requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                                .edit().putBoolean("is_registered", true).apply();
+
                         currentName = name; currentEmail = email; currentPhone = phone; currentPhotoUrl = photoUrl == null ? "" : photoUrl;
                         updateProfileViews();
                         setInitialUiState();
@@ -381,11 +389,16 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Deletes the user profile from Firestore and removes the local device ID.
+     * Deletes the user profile from Firestore and removes the local device ID and registration flag.
      */
     private void deleteProfile() {
         db.collection("users").document(uid).delete().addOnSuccessListener(unused -> {
-            requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE).edit().remove("device_id").apply();
+            // Clear local flags
+            requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .remove("device_id")
+                    .putBoolean("is_registered", false)
+                    .apply();
             performLogout();
         });
     }

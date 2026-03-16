@@ -24,8 +24,11 @@ import com.example.spiral_event_lottery_app.R;
 import com.example.spiral_event_lottery_app.model.Event;
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -80,7 +83,7 @@ public class CreateEventActivity extends AppCompatActivity {
             if (validateForm()) {
                 saveEvent();
             } else {
-                Toast.makeText(CreateEventActivity.this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
+                // Toast already handled inside validateForm for specific cases
             }
         });
 
@@ -121,8 +124,8 @@ public class CreateEventActivity extends AppCompatActivity {
     }
 
     private void setupSpinners() {
-        populateSpinner(spinnerEventDay, 1, 31, "DD");
-        populateSpinner(spinnerDrawDay, 1, 31, "DD");
+        populateSpinner(spinnerEventDay, 1, 31, 1, "DD");
+        populateSpinner(spinnerDrawDay, 1, 31, 1, "DD");
 
         List<String> months = Arrays.asList("MM", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
         setupCustomAdapter(spinnerEventMonth, months);
@@ -134,24 +137,25 @@ public class CreateEventActivity extends AppCompatActivity {
         setupCustomAdapter(spinnerEventYear, years);
         setupCustomAdapter(spinnerDrawYear, years);
 
-        populateSpinner(spinnerEventStartHour, 1, 24, "HH");
-        populateSpinner(spinnerEventEndHour, 1, 24, "HH");
-        populateSpinner(spinnerDrawStartHour, 1, 24, "HH");
-        populateSpinner(spinnerDrawEndHour, 1, 24, "HH");
+        populateSpinner(spinnerEventStartHour, 1, 24, 1, "HH");
+        populateSpinner(spinnerEventEndHour, 1, 24, 1, "HH");
+        populateSpinner(spinnerDrawStartHour, 1, 24, 1, "HH");
+        populateSpinner(spinnerDrawEndHour, 1, 24, 1, "HH");
 
-        populateSpinner(spinnerEventStartMin, 0, 59, "mm");
-        populateSpinner(spinnerEventEndMin, 0, 59, "mm");
-        populateSpinner(spinnerDrawStartMin, 0, 59, "mm");
-        populateSpinner(spinnerDrawEndMin, 0, 59, "mm");
+        // Minutes set to 15-minute increments
+        populateSpinner(spinnerEventStartMin, 0, 59, 15, "mm");
+        populateSpinner(spinnerEventEndMin, 0, 59, 15, "mm");
+        populateSpinner(spinnerDrawStartMin, 0, 59, 15, "mm");
+        populateSpinner(spinnerDrawEndMin, 0, 59, 15, "mm");
 
         List<String> geoOptions = Arrays.asList("Enable/Disable", "Enable", "Disable");
         setupCustomAdapter(spinnerGeolocation, geoOptions);
     }
 
-    private void populateSpinner(Spinner spinner, int min, int max, String placeholder) {
+    private void populateSpinner(Spinner spinner, int min, int max, int step, String placeholder) {
         List<String> items = new ArrayList<>();
         items.add(placeholder);
-        for (int i = min; i <= max; i++) {
+        for (int i = min; i <= max; i += step) {
             items.add(String.format(Locale.getDefault(), "%02d", i));
         }
         setupCustomAdapter(spinner, items);
@@ -191,6 +195,10 @@ public class CreateEventActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
+    private String getCurrentTimestamp() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+    }
+
     private void saveEvent() {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
@@ -202,8 +210,11 @@ public class CreateEventActivity extends AppCompatActivity {
         Integer maxEntrants = maxEntrantsStr.isEmpty() ? null : Integer.parseInt(maxEntrantsStr);
 
         // Convert month names back to numbers for the stored date string (e.g., Jan -> 01)
+        String eventMonthStr = spinnerEventMonth.getSelectedItem().toString();
+        String eventDayStr = spinnerEventDay.getSelectedItem().toString();
+        String eventYearStr = spinnerEventYear.getSelectedItem().toString();
         String eventMonth = String.format(Locale.getDefault(), "%02d", spinnerEventMonth.getSelectedItemPosition());
-        String eventDate = spinnerEventDay.getSelectedItem().toString() + "/" + eventMonth + "/" + spinnerEventYear.getSelectedItem().toString();
+        String eventDate = eventDayStr + "/" + eventMonth + "/" + eventYearStr;
 
         String eventStartTime = spinnerEventStartHour.getSelectedItem().toString() + ":" + spinnerEventStartMin.getSelectedItem().toString();
         String eventEndTime = spinnerEventEndHour.getSelectedItem().toString() + ":" + spinnerEventEndMin.getSelectedItem().toString();
@@ -213,6 +224,9 @@ public class CreateEventActivity extends AppCompatActivity {
 
         String drawStartTime = spinnerDrawStartHour.getSelectedItem().toString() + ":" + spinnerDrawStartMin.getSelectedItem().toString();
         String drawEndTime = spinnerDrawEndHour.getSelectedItem().toString() + ":" + spinnerDrawEndMin.getSelectedItem().toString();
+
+        // Format a human-readable timeText for the UI adapters to display
+        String timeText = eventMonthStr + " " + eventDayStr + ", " + eventYearStr + " " + eventStartTime + "-" + eventEndTime;
 
         String posterUriString = (selectedImageUri != null) ? selectedImageUri.toString() : null;
 
@@ -232,9 +246,10 @@ public class CreateEventActivity extends AppCompatActivity {
                 drawStartTime,
                 drawEndTime,
                 posterUriString,
-                "", // timeText
+                getCurrentTimestamp(), // eventCreated
+                timeText, // timeText (Now populated correctly)
                 0L, // waitingCount
-                organizerId // organizerId correctly saved
+                organizerId // organizerId
         );
 
         EventManager.getInstance().addEvent(newEvent);
@@ -264,7 +279,52 @@ public class CreateEventActivity extends AppCompatActivity {
         isValid &= checkSpinnerSelected(spinnerDrawEndHour);
         isValid &= checkSpinnerSelected(spinnerDrawEndMin);
         isValid &= checkSpinnerSelected(spinnerGeolocation);
-        return isValid;
+
+        if (!isValid) {
+            Toast.makeText(this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (!isDrawBeforeEvent()) {
+            Toast.makeText(this, "Draw date and time must be before the event starts", Toast.LENGTH_LONG).show();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Compares the selected draw date and time with the event start date and time.
+     * @return true if the draw occurs before the event starts, false otherwise.
+     */
+    private boolean isDrawBeforeEvent() {
+        try {
+            Calendar eventCal = Calendar.getInstance();
+            eventCal.set(
+                    Integer.parseInt(spinnerEventYear.getSelectedItem().toString()),
+                    spinnerEventMonth.getSelectedItemPosition() - 1,
+                    Integer.parseInt(spinnerEventDay.getSelectedItem().toString()),
+                    Integer.parseInt(spinnerEventStartHour.getSelectedItem().toString()),
+                    Integer.parseInt(spinnerEventStartMin.getSelectedItem().toString()),
+                    0
+            );
+            eventCal.set(Calendar.MILLISECOND, 0);
+
+            Calendar drawCal = Calendar.getInstance();
+            drawCal.set(
+                    Integer.parseInt(spinnerDrawYear.getSelectedItem().toString()),
+                    spinnerDrawMonth.getSelectedItemPosition() - 1,
+                    Integer.parseInt(spinnerDrawDay.getSelectedItem().toString()),
+                    Integer.parseInt(spinnerDrawStartHour.getSelectedItem().toString()),
+                    Integer.parseInt(spinnerDrawStartMin.getSelectedItem().toString()),
+                    0
+            );
+            drawCal.set(Calendar.MILLISECOND, 0);
+
+            return drawCal.before(eventCal);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean checkEmpty(EditText et) {

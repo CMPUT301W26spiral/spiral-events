@@ -18,14 +18,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.spiral_event_lottery_app.MainActivity;
 import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
+import com.example.spiral_event_lottery_app.model.User;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.ArrayList;
 
 /**
  * RegisterScreen handles the initial user profile creation.
@@ -151,15 +150,20 @@ public class RegisterActivity extends AppCompatActivity {
      * @param photoUrl URL of the uploaded photo, if any.
      */
     private void saveToFirestore(FirebaseFirestore db, String uid, String name, String email, String phone, String photoUrl) {
-        Map<String, Object> profile = new HashMap<>();
-        profile.put("name", name);
-        profile.put("email", email);
-        profile.put("phone", phone.isEmpty() ? null : phone);
-        profile.put("photoUrl", photoUrl);
-        profile.put("deviceId", uid);
+        // Use the User instance to save to Firestore
+        User user = new User(
+                uid,
+                name,
+                email,
+                phone.isEmpty() ? null : phone,
+                photoUrl,
+                false, // isAdmin
+                new ArrayList<String>() // eventList
+        );
+
         getSharedPreferences("app_prefs", MODE_PRIVATE).edit().putBoolean("is_registered", true).apply();
 
-        db.collection("users").document(uid).set(profile)
+        db.collection("users").document(uid).set(user)
                 .addOnSuccessListener(unused -> {
                     startActivity(new Intent(this, MainActivity.class));
                     finish();
