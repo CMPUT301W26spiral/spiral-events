@@ -24,6 +24,7 @@ data class Event @JvmOverloads constructor(
     var drawStartTime: String = "",
     var drawEndTime: String = "",
     var posterUriString: String? = null,
+    var eventCreated: String = "",
 
     var timeText: String = "",
     var waitingCount: Long = 0,
