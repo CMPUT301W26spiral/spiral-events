@@ -7,6 +7,7 @@ import java.io.Serializable;
  * Contains details about the event location, timing, and lottery draw information.
  */
 public class Event implements Serializable {
+    private String id;
     private String name;
     private String location;
     private String interests;
@@ -23,6 +24,8 @@ public class Event implements Serializable {
     private String drawEndTime; // Format: HH:MM
 
     private String posterUriString; // Store the URI as a string for serialization
+    private String qrCodeUrl;
+    private String qrHash;
 
     /**
      * Default constructor required for Firebase operations.
@@ -50,6 +53,9 @@ public class Event implements Serializable {
     }
 
     // Getters and Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -88,4 +94,10 @@ public class Event implements Serializable {
 
     public String getPosterUriString() { return posterUriString; }
     public void setPosterUriString(String posterUriString) { this.posterUriString = posterUriString; }
+
+    public String getQrCodeUrl() { return qrCodeUrl; }
+    public void setQrCodeUrl(String qrCodeUrl) { this.qrCodeUrl = qrCodeUrl; }
+
+    public String getQrHash() { return qrHash; }
+    public void setQrHash(String qrHash) { this.qrHash = qrHash; }
 }

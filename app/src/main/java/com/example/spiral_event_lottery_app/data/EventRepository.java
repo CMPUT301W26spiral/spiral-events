@@ -109,11 +109,12 @@ public class EventRepository {
         String drawStartTime = data.get("drawStartTime") instanceof String ? (String) data.get("drawStartTime") : "";
         String drawEndTime = data.get("drawEndTime") instanceof String ? (String) data.get("drawEndTime") : "";
         String organizerId = data.get("organizerId") instanceof String ? (String) data.get("organizerId") : "";
+        String qrCodeUrl = data.get("qrCodeUrl") instanceof String ? (String) data.get("qrCodeUrl") : null;
 
         return new Event(
             documentId, name, location, interests, description, geolocation, maxEntrants,
             eventDate, eventStartTime, eventEndTime, drawDate, drawStartTime, drawEndTime,
-            posterUrl, timeText, waitingCount, organizerId
+            posterUrl, timeText, waitingCount, organizerId, qrCodeUrl
         );
     }
 

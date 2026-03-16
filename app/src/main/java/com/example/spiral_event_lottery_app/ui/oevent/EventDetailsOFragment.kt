@@ -23,6 +23,7 @@ class EventDetailsOFragment : Fragment() {
     companion object {
         private const val ARG_EVENT_ID = "event_id"
 
+        @JvmStatic
         fun newInstance(eventId: String): EventDetailsOFragment {
             return EventDetailsOFragment().apply {
                 arguments = Bundle().apply { putString(ARG_EVENT_ID, eventId) }

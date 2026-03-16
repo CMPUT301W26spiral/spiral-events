@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,6 +43,7 @@ public class CreateEventActivity extends AppCompatActivity {
     private Spinner spinnerDrawStartHour, spinnerDrawStartMin, spinnerDrawEndHour, spinnerDrawEndMin;
     private Spinner spinnerGeolocation;
     private Button btnCreate;
+    private ProgressBar progressBar;
 
     private ConstraintLayout postersContainer;
     private ImageView ivEventPoster;
@@ -118,6 +120,10 @@ public class CreateEventActivity extends AppCompatActivity {
         spinnerDrawEndMin = findViewById(R.id.spinner_draw_end_min);
 
         btnCreate = findViewById(R.id.btn_create);
+        
+        // Find or create a progress bar for loading state
+        progressBar = new ProgressBar(this);
+        progressBar.setVisibility(View.GONE);
     }
 
     private void setupSpinners() {
@@ -192,6 +198,9 @@ public class CreateEventActivity extends AppCompatActivity {
     }
 
     private void saveEvent() {
+        btnCreate.setEnabled(false);
+        Toast.makeText(this, "Creating event...", Toast.LENGTH_SHORT).show();
+
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
         String interests = etInterests.getText().toString().trim();
@@ -201,7 +210,6 @@ public class CreateEventActivity extends AppCompatActivity {
         String maxEntrantsStr = etMaxEntrants.getText().toString().trim();
         Integer maxEntrants = maxEntrantsStr.isEmpty() ? null : Integer.parseInt(maxEntrantsStr);
 
-        // Convert month names back to numbers for the stored date string (e.g., Jan -> 01)
         String eventMonth = String.format(Locale.getDefault(), "%02d", spinnerEventMonth.getSelectedItemPosition());
         String eventDate = spinnerEventDay.getSelectedItem().toString() + "/" + eventMonth + "/" + spinnerEventYear.getSelectedItem().toString();
 
@@ -215,12 +223,12 @@ public class CreateEventActivity extends AppCompatActivity {
         String drawEndTime = spinnerDrawEndHour.getSelectedItem().toString() + ":" + spinnerDrawEndMin.getSelectedItem().toString();
 
         String posterUriString = (selectedImageUri != null) ? selectedImageUri.toString() : null;
-
         String organizerId = DeviceIdProvider.getDeviceId(this);
+        
         Event newEvent = new Event(
-                "", // id
+                "", // id will be set in EventManager
                 eventName,
-                location, // locationName
+                location,
                 interests,
                 description,
                 geolocation,
@@ -232,15 +240,28 @@ public class CreateEventActivity extends AppCompatActivity {
                 drawStartTime,
                 drawEndTime,
                 posterUriString,
-                "", // timeText
-                0L, // waitingCount
-                organizerId // organizerId correctly saved
+                eventDate + " " + eventStartTime, // timeText
+                0L,
+                organizerId,
+                null // qrCodeUrl will be set in EventManager
         );
 
-        EventManager.getInstance().addEvent(newEvent);
-        Intent intent = new Intent(CreateEventActivity.this, QRCodeActivity.class);
-        intent.putExtra("EVENT_NAME", eventName);
-        startActivity(intent);
+        EventManager.getInstance().addEvent(newEvent, new EventManager.OnEventCreatedListener() {
+            @Override
+            public void onSuccess(String eventId) {
+                Intent intent = new Intent(CreateEventActivity.this, QRCodeActivity.class);
+                intent.putExtra("EVENT_ID", eventId);
+                intent.putExtra("EVENT_NAME", eventName);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                btnCreate.setEnabled(true);
+                Toast.makeText(CreateEventActivity.this, "Failed to create event: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private boolean validateForm() {
