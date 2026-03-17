@@ -2,7 +2,6 @@ package com.example.spiral_event_lottery_app.ui.profile;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Patterns;
@@ -31,7 +30,6 @@ import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import com.example.spiral_event_lottery_app.ui.LaunchActivity;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
@@ -41,6 +39,8 @@ import java.util.Map;
 /**
  * ProfileFragment provides the user interface for viewing and editing the user's profile.
  * It is hosted within the MainActivity as part of the bottom navigation.
+ * This fragment manages personal information updates, notification preferences,
+ * and profile deletion logic.
  */
 public class ProfileFragment extends Fragment {
 
@@ -71,6 +71,13 @@ public class ProfileFragment extends Fragment {
                 }
             });
 
+    /**
+     * Creates and returns the view hierarchy associated with the fragment.
+     * @param inflater The LayoutInflater object that can be used to inflate any views in the fragment.
+     * @param container If non-null, this is the parent view that the fragment's UI should be attached to.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
+     * @return The View for the fragment's UI.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -79,6 +86,7 @@ public class ProfileFragment extends Fragment {
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
         
+        // Retrieve hardware ID from DeviceIdProvider
         uid = DeviceIdProvider.getDeviceId(requireContext());
 
         bindViews(view);
@@ -91,6 +99,10 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Binds view variables to their respective XML IDs.
+     * @param view The root view of the fragment.
+     */
     private void bindViews(View view) {
         profileImage = view.findViewById(R.id.profileImage);
         editPhotoButton = view.findViewById(R.id.editPhotoButton);
@@ -119,6 +131,9 @@ public class ProfileFragment extends Fragment {
         logoutButton = view.findViewById(R.id.logoutButton);
     }
 
+    /**
+     * Sets the starting visibility and enabled states for the UI components.
+     */
     private void setInitialUiState() {
         personalInfoViewGroup.setVisibility(View.VISIBLE);
         personalInfoEditGroup.setVisibility(View.GONE);
@@ -130,6 +145,9 @@ public class ProfileFragment extends Fragment {
         notificationEditActions.setVisibility(View.GONE);
     }
 
+    /**
+     * Attaches click listeners to buttons and interactive views.
+     */
     private void setListeners() {
         editPhotoButton.setOnClickListener(v -> pickImage.launch("image/*"));
         editProfileButton.setOnClickListener(v -> enterPersonalInfoEditMode());
@@ -139,26 +157,36 @@ public class ProfileFragment extends Fragment {
         cancelNotificationsEdit.setOnClickListener(v -> cancelNotificationsEdit());
         saveNotificationsEdit.setOnClickListener(v -> saveNotificationsToFirebase());
         deleteProfileButton.setOnClickListener(v -> showDeleteDialog());
-        logoutButton.setOnClickListener(v -> {
-            requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                    .edit().putBoolean("is_registered", false).apply();
-            performLogout();
-        });
+        logoutButton.setOnClickListener(v -> performLogout());
     }
 
+    /**
+     * Handles the logout process by redirecting to the LaunchActivity and clearing task history.
+     */
     private void performLogout() {
+        // Clear local registration flag
+        requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                .edit().putBoolean("is_registered", false).apply();
+
         Intent intent = new Intent(getActivity(), LaunchActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         if (getActivity() != null) getActivity().finish();
     }
 
+    /**
+     * Initiates a Firestore read to load the user's profile data.
+     */
     private void loadProfileFromFirebase() {
         if (uid == null || uid.isEmpty()) return;
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(this::handleLoadedProfile);
     }
 
+    /**
+     * Processes the loaded Firestore document and updates UI fields.
+     * @param doc The DocumentSnapshot containing user profile data.
+     */
     private void handleLoadedProfile(DocumentSnapshot doc) {
         if (!isAdded()) return;
         if (doc.exists()) {
@@ -169,8 +197,10 @@ public class ProfileFragment extends Fragment {
             
             Boolean notifyChosen = doc.getBoolean("notifyWhenChosen");
             currentNotifyWhenChosen = notifyChosen != null ? notifyChosen : true;
+            
             Boolean notifyNotChosen = doc.getBoolean("notifyWhenNotChosen");
             currentNotifyWhenNotChosen = notifyNotChosen != null ? notifyNotChosen : true;
+            
             Boolean notifyOrganizers = doc.getBoolean("notifyOrganizersAdmins");
             currentNotifyOrganizersAdmins = notifyOrganizers != null ? notifyOrganizers : true;
             
@@ -181,6 +211,9 @@ public class ProfileFragment extends Fragment {
         }
     }
 
+    /**
+     * Refreshes the text and check states of all profile views with current data.
+     */
     private void updateProfileViews() {
         if (!isAdded()) return;
         profileName.setText(currentName.isEmpty() ? getString(R.string.unnamed_user) : currentName);
@@ -195,6 +228,9 @@ public class ProfileFragment extends Fragment {
         organizersAdminsCheck.setChecked(currentNotifyOrganizersAdmins);
     }
 
+    /**
+     * Transitions the Personal Information section into edit mode.
+     */
     private void enterPersonalInfoEditMode() {
         personalInfoViewGroup.setVisibility(View.GONE);
         personalInfoEditGroup.setVisibility(View.VISIBLE);
@@ -203,6 +239,9 @@ public class ProfileFragment extends Fragment {
         editPhotoButton.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Reverts the Personal Information section to view-only mode without saving.
+     */
     private void cancelPersonalInfoEdit() {
         personalInfoEditGroup.setVisibility(View.GONE);
         personalInfoViewGroup.setVisibility(View.VISIBLE);
@@ -212,6 +251,9 @@ public class ProfileFragment extends Fragment {
         updateProfileViews();
     }
 
+    /**
+     * Validates and saves personal information changes to Firebase.
+     */
     private void savePersonalInfoToFirebase() {
         String name = editFullName.getText().toString().trim();
         String email = editEmail.getText().toString().trim();
@@ -220,7 +262,6 @@ public class ProfileFragment extends Fragment {
 
         saveProfileEdit.setEnabled(false);
         cancelProfileEdit.setEnabled(false);
-        Toast.makeText(getContext(), "Saving profile...", Toast.LENGTH_SHORT).show();
 
         if (selectedImageUri == null) {
             saveProfileDocument(name, email, currentPhotoUrl);
@@ -233,12 +274,17 @@ public class ProfileFragment extends Fragment {
                         if (isAdded()) {
                             saveProfileEdit.setEnabled(true);
                             cancelProfileEdit.setEnabled(true);
-                            Toast.makeText(getContext(), "Photo upload failed", Toast.LENGTH_SHORT).show();
                         }
                     });
         }
     }
 
+    /**
+     * Writes the profile map to the 'users' Firestore collection.
+     * @param name User's updated name.
+     * @param email User's updated email.
+     * @param photoUrl User's updated photo URL.
+     */
     private void saveProfileDocument(String name, String email, String photoUrl) {
         String phone = editPhone.getText().toString().trim();
         Map<String, Object> updates = new HashMap<>();
@@ -251,44 +297,46 @@ public class ProfileFragment extends Fragment {
         updates.put("notifyWhenNotChosen", whenNotChosenCheck.isChecked());
         updates.put("notifyOrganizersAdmins", organizersAdminsCheck.isChecked());
 
-        db.collection("users").document(uid).set(updates, SetOptions.merge())
+        db.collection("users").document(uid).set(updates)
                 .addOnSuccessListener(unused -> {
                     if (isAdded()) {
+                        // Ensure local cache is updated
+                        requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                                .edit().putBoolean("is_registered", true).apply();
+
                         currentName = name; currentEmail = email; currentPhone = phone; currentPhotoUrl = photoUrl == null ? "" : photoUrl;
                         updateProfileViews();
                         setInitialUiState();
                         saveProfileEdit.setEnabled(true); cancelProfileEdit.setEnabled(true);
-                        Toast.makeText(getContext(), "Profile updated", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (isAdded()) {
-                        saveProfileEdit.setEnabled(true); cancelProfileEdit.setEnabled(true);
-                        Toast.makeText(getContext(), "Update failed", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
+    /**
+     * Validates input strings for name and email formatting.
+     * @param name Name string.
+     * @param email Email string.
+     * @param phone Phone string.
+     * @return true if valid.
+     */
     private boolean validatePersonalInfo(String name, String email, String phone) {
-        if (name.isEmpty()) {
-            editFullName.setError("Name required");
-            Toast.makeText(getContext(), "Please enter a name", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            editEmail.setError("Valid email required");
-            Toast.makeText(getContext(), "Please enter a valid email", Toast.LENGTH_SHORT).show();
-            return false;
-        }
+        if (name.isEmpty()) return false;
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) return false;
         return true;
     }
 
+    /**
+     * Transitions the Notification preferences into edit mode.
+     */
     private void enterNotificationsEditMode() {
         setNotificationCheckboxesEnabled(true);
         editNotificationsButton.setVisibility(View.GONE);
         notificationEditActions.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Reverts the Notification preferences to view-only mode without saving.
+     */
     private void cancelNotificationsEdit() {
         whenChosenCheck.setChecked(currentNotifyWhenChosen);
         whenNotChosenCheck.setChecked(currentNotifyWhenNotChosen);
@@ -298,6 +346,9 @@ public class ProfileFragment extends Fragment {
         editNotificationsButton.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Persists updated notification flags to Firestore.
+     */
     private void saveNotificationsToFirebase() {
         saveNotificationsEdit.setEnabled(false); cancelNotificationsEdit.setEnabled(false);
         Map<String, Object> updates = new HashMap<>();
@@ -315,41 +366,47 @@ public class ProfileFragment extends Fragment {
                         notificationEditActions.setVisibility(View.GONE);
                         editNotificationsButton.setVisibility(View.VISIBLE);
                         saveNotificationsEdit.setEnabled(true); cancelNotificationsEdit.setEnabled(true);
-                        Toast.makeText(getContext(), "Notifications updated", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (isAdded()) {
-                        saveNotificationsEdit.setEnabled(true); cancelNotificationsEdit.setEnabled(true);
-                        Toast.makeText(getContext(), "Update failed", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
+    /**
+     * Enables or disables interaction with the notification checkboxes.
+     * @param enabled true to enable, false to disable.
+     */
     private void setNotificationCheckboxesEnabled(boolean enabled) {
         whenChosenCheck.setEnabled(enabled);
         whenNotChosenCheck.setEnabled(enabled);
         organizersAdminsCheck.setEnabled(enabled);
     }
 
+    /**
+     * Displays a confirmation dialog before permanent profile deletion.
+     */
     private void showDeleteDialog() {
         new AlertDialog.Builder(requireContext()).setTitle("ALERT!").setMessage("DELETE PROFILE?")
                 .setPositiveButton("Confirm", (d, w) -> deleteProfile()).setNegativeButton("Cancel", null).show();
     }
 
+    /**
+     * Deletes the user profile from Firestore and removes the local device ID and registration flag.
+     */
     private void deleteProfile() {
         db.collection("users").document(uid).delete().addOnSuccessListener(unused -> {
-            SharedPreferences.Editor editor = requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE).edit();
-            editor.remove("is_registered");
-            editor.apply();
-            Toast.makeText(getContext(), "Account deleted successfully", Toast.LENGTH_SHORT).show();
+            // Clear local flags
+            requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .remove("device_id")
+                    .putBoolean("is_registered", false)
+                    .apply();
             performLogout();
-        }).addOnFailureListener(e -> {
-            if (isAdded()) {
-                Toast.makeText(getContext(), "Failed to delete account", Toast.LENGTH_SHORT).show();
-            }
         });
     }
 
+    /**
+     * Returns an empty string if the provided value is null.
+     * @param value The value to check.
+     * @return The original value or "".
+     */
     private String safeString(String value) { return value == null ? "" : value; }
 }

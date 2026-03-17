@@ -18,13 +18,22 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 /**
  * LaunchActivity is the entry point of the application.
- * It uses local caching to quickly direct registered users to the Login screen.
+ * It serves as a splash screen and router, directing users to the LoginScreen
+ * if they are already registered, or showing a "Get Started" button to lead
+ * them to the registration process.
  */
 public class LaunchActivity extends AppCompatActivity {
 
     private ProgressBar progressBar;
     private Button getStartedButton;
 
+    /**
+     * Called when the activity is first created.
+     * Initializes Firebase and checks for existing user registration.
+     * @param savedInstanceState If the activity is being re-initialized after
+     *     previously being shut down then this Bundle contains the data it most
+     *     recently supplied in {@link #onSaveInstanceState}. Otherwise it is null.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,7 +57,8 @@ public class LaunchActivity extends AppCompatActivity {
     }
 
     /**
-     * Checks local cache first, then Firestore, to determine user status.
+     * Checks local cache first, then Firestore, to determine if the user
+     * has previously registered. Redirects to LoginScreen if registered.
      */
     private void checkUserRegistration() {
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
@@ -63,6 +73,9 @@ public class LaunchActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Performs a one-time Firestore check if local registration status is unknown.
+     */
     private void performNetworkCheck() {
         if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
         getStartedButton.setVisibility(View.GONE);
@@ -73,11 +86,12 @@ public class LaunchActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        // Update cache for next time
+                        // User exists in cloud, update cache and go to Login
                         getSharedPreferences("app_prefs", MODE_PRIVATE)
                                 .edit().putBoolean("is_registered", true).apply();
                         goToLogin();
                     } else {
+                        // User does not exist, force registration
                         showGetStarted();
                     }
                 })

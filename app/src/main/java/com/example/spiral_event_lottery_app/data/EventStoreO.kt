@@ -40,6 +40,7 @@ class EventStoreO(private val context: Context) {
 
     /**
      * Converts raw Firestore document data into a structured Event model object.
+     * Maps fields based on the names used in the Event.kt data class.
      * 
      * @param documentId The ID of the document in Firestore.
      * @param data The map of fields retrieved from the document.
@@ -47,17 +48,32 @@ class EventStoreO(private val context: Context) {
      */
     private fun toEvent(documentId: String, data: Map<String, Any>): Event {
         val name = data["name"] as? String ?: ""
-        val locationName = data["location_name"] as? String ?: ""
-        val startTime = data["event_start_time"] as? Timestamp
-        val endTime = data["event_end_time"] as? Timestamp
+        
+        // Handle variations in field naming
+        val location = data["locationName"] as? String 
+            ?: data["location_name"] as? String 
+            ?: data["location"] as? String ?: ""
+
+        var timeText = data["timeText"] as? String ?: ""
+        if (timeText.isEmpty()) {
+            val startTime = data["event_start_time"] as? Timestamp
+            val endTime = data["event_end_time"] as? Timestamp
+            timeText = formatTimeRange(startTime, endTime)
+        }
+
+        val waitingCount = (data["waitingCount"] as? Long) 
+            ?: (data["waiting_count"] as? Long) ?: 0L
 
         return Event(
             id = documentId,
             name = name,
-            locationName = locationName,
-            timeText = formatTimeRange(startTime, endTime),
-            waitingCount = (data["waiting_count"] as? Long) ?: 0L,
-            organizerId = data["organizerId"] as? String ?: ""
+            locationName = location,
+            timeText = timeText,
+            waitingCount = waitingCount,
+            eventCreated = data["eventCreated"] as? String ?: "",
+            organizerId = data["organizerId"] as? String ?: "",
+            description = data["description"] as? String ?: "",
+            posterUriString = data["posterUriString"] as? String ?: data["posterUrl"] as? String
         )
     }
 
