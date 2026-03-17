@@ -83,14 +83,23 @@ class EventDetailsFragment : Fragment() {
                     posterImage.setImageResource(R.drawable.ic_event)
                 }
 
-                // Check join status whenever event data updates
+                // Check waitlist and selection status whenever event data updates
                 repository.isJoined(eventId, { joined ->
                     if (joined) {
                         joinBtn.text = "You're in the waiting list"
                         joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
                     } else {
-                        joinBtn.text = "Join Waiting List"
-                        joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
+                        repository.isSelected(eventId, { selected ->
+                            if (selected) {
+                                joinBtn.text = "You are selected/invited"
+                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.GRAY)
+                                joinBtn.isEnabled = false
+                            } else {
+                                joinBtn.text = "Join Waiting List"
+                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
+                                joinBtn.isEnabled = true
+                            }
+                        }, {})
                     }
                 }, {})
 
@@ -103,27 +112,38 @@ class EventDetailsFragment : Fragment() {
                                 .setPositiveButton("OK", null)
                                 .show()
                         } else {
-                            AlertDialog.Builder(requireContext())
-                                .setTitle("Waitlist Confirmation")
-                                .setMessage("Successfully join the waiting list for $currentEventName?\n\n• Entry is random\n• You may leave at any time")
-                                .setPositiveButton("Confirm") { _, _ ->
-                                    repository.joinWaitlist(eventId, {
-                                        NotificationManager.sendNotification(
-                                            DeviceIdProvider.getDeviceId(requireContext()),
-                                            "Requested",
-                                            "Your entry for $currentEventName was received!",
-                                            "REQUESTED",
-                                            currentEventName,
-                                            eventId
-                                        )
-                                        joinBtn.text = "You're in the waiting list"
-                                        joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
-                                    }, {}, { e -> 
-                                        Toast.makeText(requireContext(), e.message ?: "Join failed", Toast.LENGTH_LONG).show() 
-                                    })
+                            // Check if they were already selected before allowing join
+                            repository.isSelected(eventId, { selected ->
+                                if (selected) {
+                                    AlertDialog.Builder(requireContext())
+                                        .setTitle("Already Selected")
+                                        .setMessage("You have already been selected for $currentEventName.")
+                                        .setPositiveButton("OK", null)
+                                        .show()
+                                } else {
+                                    AlertDialog.Builder(requireContext())
+                                        .setTitle("Waitlist Confirmation")
+                                        .setMessage("Successfully join the waiting list for $currentEventName?\n\n• Entry is random\n• You may leave at any time")
+                                        .setPositiveButton("Confirm") { _, _ ->
+                                            repository.joinWaitlist(eventId, {
+                                                NotificationManager.sendNotification(
+                                                    DeviceIdProvider.getDeviceId(requireContext()),
+                                                    "Requested",
+                                                    "Your entry for $currentEventName was received!",
+                                                    "REQUESTED",
+                                                    currentEventName,
+                                                    eventId
+                                                )
+                                                joinBtn.text = "You're in the waiting list"
+                                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
+                                            }, {}, { e -> 
+                                                Toast.makeText(requireContext(), e.message ?: "Join failed", Toast.LENGTH_LONG).show() 
+                                            })
+                                        }
+                                        .setNegativeButton("Cancel", null)
+                                        .show()
                                 }
-                                .setNegativeButton("Cancel", null)
-                                .show()
+                            }, {})
                         }
                     }, {})
                 }

@@ -204,15 +204,33 @@ public class EventRepository {
                 .addOnSuccessListener(doc -> onResult.onResult(doc.exists()))
                 .addOnFailureListener(onError::onError);
     }
+    
+    public void isSelected(String eventId, final BooleanCallback onResult, final ErrorCallback onError) {
+        db.collection("events")
+                .document(eventId)
+                .collection("selected_list")
+                .document(deviceId)
+                .get()
+                .addOnSuccessListener(doc -> onResult.onResult(doc.exists()))
+                .addOnFailureListener(onError::onError);
+    }
 
     public void joinWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onAlreadyJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
         DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
+        DocumentReference selectedRef = eventRef.collection("selected_list").document(deviceId);
+        
         db.runTransaction((Transaction.Function<Void>) transaction -> {
                     DocumentSnapshot waitlistDoc = transaction.get(waitlistRef);
                     if (waitlistDoc.exists()) {
                         throw new IllegalStateException("ALREADY_JOINED");
                     }
+                    
+                    DocumentSnapshot selectedDoc = transaction.get(selectedRef);
+                    if (selectedDoc.exists()) {
+                        throw new IllegalStateException("ALREADY_SELECTED");
+                    }
+                    
                     DocumentSnapshot eventDoc = transaction.get(eventRef);
                     Long currentCount = eventDoc.getLong("waiting_count");
                     if (currentCount == null) currentCount = 0L;
@@ -226,6 +244,8 @@ public class EventRepository {
                 .addOnFailureListener(e -> {
                     if ("ALREADY_JOINED".equals(e.getMessage())) {
                         onAlreadyJoined.onSuccess();
+                    } else if ("ALREADY_SELECTED".equals(e.getMessage())) {
+                        onError.onError(new Exception("You have already been selected for this event."));
                     } else {
                         onError.onError(e);
                     }
