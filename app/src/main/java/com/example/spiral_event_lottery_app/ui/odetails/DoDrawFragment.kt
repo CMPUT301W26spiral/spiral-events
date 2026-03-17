@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.spiral_event_lottery_app.R
 import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 /**
@@ -119,14 +120,9 @@ class DoDrawFragment : Fragment() {
         entrantLimit: Int?,
         onComplete: (Boolean, String?) -> Unit
     ) {
-
-        val waitlistRef = db.collection("events")
-            .document(eventId)
-            .collection("waitlist")
-
-        val selectedRef = db.collection("events")
-            .document(eventId)
-            .collection("selected_list")
+        val eventRef = db.collection("events").document(eventId)
+        val waitlistRef = eventRef.collection("waitlist")
+        val selectedRef = eventRef.collection("selected_list")
 
         // Get all users on the waitlist
         waitlistRef.get().addOnSuccessListener { snapshot ->
@@ -151,12 +147,13 @@ class DoDrawFragment : Fragment() {
                 val docRef = selectedRef.document(userId)
                 val waitlistDocRef = waitlistRef.document(userId)
 
-                // stores the time in milliseconds when the "Go!" button was pressed and the
-                // database transaction moved that user into the selected_list subcollection
-                // can be used to for selection expiry (if (currentTime - selectedAt > 24_hours) give spot to someone else)
+                // stores the time in milliseconds when the "Go!" button was pressed
                 batch.set(docRef, mapOf("selectedAt" to System.currentTimeMillis()))
                 batch.delete(waitlistDocRef) // Remove from waitlist when moved to selected_list
             }
+            
+            // Decrement the waiting_count field on the main event document
+            batch.update(eventRef, "waiting_count", FieldValue.increment(-selectedUsers.size.toLong()))
 
             batch.commit()
                 .addOnSuccessListener { onComplete(true, null) }

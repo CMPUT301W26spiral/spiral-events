@@ -61,8 +61,10 @@ class EventStoreO(private val context: Context) {
             timeText = formatTimeRange(startTime, endTime)
         }
 
-        val waitingCount = (data["waitingCount"] as? Long) 
-            ?: (data["waiting_count"] as? Long) ?: 0L
+        // Robust parsing of waiting count from Number type (handles both Long and Int)
+        val waitingCount = (data["waiting_count"] as? Number)?.toLong()
+            ?: (data["waitingCount"] as? Number)?.toLong()
+            ?: 0L
 
         return Event(
             id = documentId,
