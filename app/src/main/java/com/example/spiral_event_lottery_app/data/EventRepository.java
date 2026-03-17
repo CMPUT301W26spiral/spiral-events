@@ -81,11 +81,10 @@ public class EventRepository {
         }
 
         long waitingCount = 0L;
+        // Standardized to waiting_count in Firestore
         Object waitingObj = data.get("waiting_count");
         if (waitingObj instanceof Number) {
             waitingCount = ((Number) waitingObj).longValue();
-        } else if (data.get("waitingCount") instanceof Number) {
-            waitingCount = ((Number) data.get("waitingCount")).longValue();
         }
 
         String posterUrl = data.get("posterUriString") instanceof String ? (String) data.get("posterUriString") : null;
@@ -216,7 +215,6 @@ public class EventRepository {
                     }
                     DocumentSnapshot eventDoc = transaction.get(eventRef);
                     Long currentCount = eventDoc.getLong("waiting_count");
-                    if (currentCount == null) currentCount = eventDoc.getLong("waitingCount");
                     if (currentCount == null) currentCount = 0L;
                     Map<String, Object> waitlistData = new HashMap<>();
                     waitlistData.put("joined_at", Timestamp.now());
@@ -244,7 +242,6 @@ public class EventRepository {
                     }
                     DocumentSnapshot eventDoc = transaction.get(eventRef);
                     Long currentCount = eventDoc.getLong("waiting_count");
-                    if (currentCount == null) currentCount = eventDoc.getLong("waitingCount");
                     if (currentCount == null) currentCount = 0L;
                     transaction.delete(waitlistRef);
                     transaction.update(eventRef, "waiting_count", Math.max(0L, currentCount - 1));
