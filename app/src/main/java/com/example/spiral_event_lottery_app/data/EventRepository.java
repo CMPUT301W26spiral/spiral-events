@@ -81,11 +81,10 @@ public class EventRepository {
         }
 
         long waitingCount = 0L;
+        // Standardized to waiting_count in Firestore
         Object waitingObj = data.get("waiting_count");
         if (waitingObj instanceof Number) {
             waitingCount = ((Number) waitingObj).longValue();
-        } else if (data.get("waitingCount") instanceof Number) {
-            waitingCount = ((Number) data.get("waitingCount")).longValue();
         }
 
         String posterUrl = data.get("posterUriString") instanceof String ? (String) data.get("posterUriString") : null;
@@ -108,12 +107,13 @@ public class EventRepository {
         String drawDate = data.get("drawDate") instanceof String ? (String) data.get("drawDate") : "";
         String drawStartTime = data.get("drawStartTime") instanceof String ? (String) data.get("drawStartTime") : "";
         String drawEndTime = data.get("drawEndTime") instanceof String ? (String) data.get("drawEndTime") : "";
+        String eventCreated = data.get("eventCreated") instanceof String ? (String) data.get("eventCreated") : "";
         String organizerId = data.get("organizerId") instanceof String ? (String) data.get("organizerId") : "";
 
         return new Event(
             documentId, name, location, interests, description, geolocation, maxEntrants,
             eventDate, eventStartTime, eventEndTime, drawDate, drawStartTime, drawEndTime,
-            posterUrl, timeText, waitingCount, organizerId
+            posterUrl, eventCreated, timeText, waitingCount, organizerId
         );
     }
 
@@ -204,18 +204,35 @@ public class EventRepository {
                 .addOnSuccessListener(doc -> onResult.onResult(doc.exists()))
                 .addOnFailureListener(onError::onError);
     }
+    
+    public void isSelected(String eventId, final BooleanCallback onResult, final ErrorCallback onError) {
+        db.collection("events")
+                .document(eventId)
+                .collection("selected_list")
+                .document(deviceId)
+                .get()
+                .addOnSuccessListener(doc -> onResult.onResult(doc.exists()))
+                .addOnFailureListener(onError::onError);
+    }
 
     public void joinWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onAlreadyJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
         DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
+        DocumentReference selectedRef = eventRef.collection("selected_list").document(deviceId);
+        
         db.runTransaction((Transaction.Function<Void>) transaction -> {
                     DocumentSnapshot waitlistDoc = transaction.get(waitlistRef);
                     if (waitlistDoc.exists()) {
                         throw new IllegalStateException("ALREADY_JOINED");
                     }
+                    
+                    DocumentSnapshot selectedDoc = transaction.get(selectedRef);
+                    if (selectedDoc.exists()) {
+                        throw new IllegalStateException("ALREADY_SELECTED");
+                    }
+                    
                     DocumentSnapshot eventDoc = transaction.get(eventRef);
                     Long currentCount = eventDoc.getLong("waiting_count");
-                    if (currentCount == null) currentCount = eventDoc.getLong("waitingCount");
                     if (currentCount == null) currentCount = 0L;
                     Map<String, Object> waitlistData = new HashMap<>();
                     waitlistData.put("joined_at", Timestamp.now());
@@ -227,6 +244,8 @@ public class EventRepository {
                 .addOnFailureListener(e -> {
                     if ("ALREADY_JOINED".equals(e.getMessage())) {
                         onAlreadyJoined.onSuccess();
+                    } else if ("ALREADY_SELECTED".equals(e.getMessage())) {
+                        onError.onError(new Exception("You have already been selected for this event."));
                     } else {
                         onError.onError(e);
                     }
@@ -243,7 +262,6 @@ public class EventRepository {
                     }
                     DocumentSnapshot eventDoc = transaction.get(eventRef);
                     Long currentCount = eventDoc.getLong("waiting_count");
-                    if (currentCount == null) currentCount = eventDoc.getLong("waitingCount");
                     if (currentCount == null) currentCount = 0L;
                     transaction.delete(waitlistRef);
                     transaction.update(eventRef, "waiting_count", Math.max(0L, currentCount - 1));

@@ -13,10 +13,11 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
+import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
 import com.google.firebase.firestore.ListenerRegistration
 
 /**
- * Fragment that displays the details of a specific event.
+ * Fragment that displays the details of a specific event from an organizer's perspective.
  */
 class EventDetailsOFragment : Fragment() {
     companion object {
@@ -75,7 +76,8 @@ class EventDetailsOFragment : Fragment() {
                 locationName.text = event.locationName
                 locationAddress.text = event.locationName // Using locationName as address for now
                 time.text = event.timeText
-                waiting.text = "${event.waitingCount} People on Waiting List, ${event.maxEntrants} Open Spots"
+                val openSpots = event.maxEntrants?.minus(event.waitingCount) ?: 0
+                waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
                 if (!event.posterUriString.isNullOrEmpty()) {
@@ -91,6 +93,22 @@ class EventDetailsOFragment : Fragment() {
                 Toast.makeText(requireContext(), e.message ?: "Failed to load event", Toast.LENGTH_LONG).show()
             }
         )
+
+        // Set up the Draw button navigation
+        drawBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
+        // button to link to the view entrants page
+
+        viewEntrantsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
     }
 
     override fun onStop() {

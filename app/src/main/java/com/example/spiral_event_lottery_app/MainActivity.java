@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         // REFRESH LOGIC: When a 'Details' screen is closed (popped), refresh the visible tab
         fm.addOnBackStackChangedListener(() -> {
             if (activeTab instanceof MyEventsFragment) {
-                ((MyEventsFragment) activeTab).refreshMyEvents();
+                ((MyEventsFragment) activeTab).refreshData();
             }
         });
 
@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (target != null) {
                 if (activeTab == target) {
+                    // If clicking the same tab, clear the backstack for that tab
                     fm.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
                 } else {
                     switchTab(target);
@@ -122,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
         
         // Refresh the list whenever we switch to the Events tab
         if (targetTab instanceof MyEventsFragment) {
-            ((MyEventsFragment) targetTab).refreshMyEvents();
+            ((MyEventsFragment) targetTab).refreshData();
         }
     }
 }

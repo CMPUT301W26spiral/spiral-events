@@ -1,5 +1,6 @@
 package com.example.spiral_event_lottery_app.model
 
+import com.google.firebase.firestore.PropertyName
 import java.io.Serializable
 
 /**
@@ -24,8 +25,13 @@ data class Event @JvmOverloads constructor(
     var drawStartTime: String = "",
     var drawEndTime: String = "",
     var posterUriString: String? = null,
+    var eventCreated: String = "",
 
     var timeText: String = "",
+    
+    @get:PropertyName("waiting_count")
+    @set:PropertyName("waiting_count")
     var waitingCount: Long = 0,
+    
     var organizerId: String = ""
 ) : Serializable
