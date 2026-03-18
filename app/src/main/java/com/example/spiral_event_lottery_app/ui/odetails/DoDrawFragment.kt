@@ -153,7 +153,8 @@ class DoDrawFragment : Fragment() {
             }
             
             // Decrement the waiting_count field on the main event document
-            batch.update(eventRef, "waiting_count", FieldValue.increment(-selectedUsers.size.toLong()))
+            val remainingCount = waitlistUsers.size - selectedUsers.size
+            batch.update(eventRef, "waiting_count", remainingCount.toLong())
 
             batch.commit()
                 .addOnSuccessListener { onComplete(true, null) }
