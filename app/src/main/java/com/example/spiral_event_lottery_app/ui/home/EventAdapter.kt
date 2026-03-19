@@ -16,14 +16,30 @@ import com.example.spiral_event_lottery_app.model.Event
  * Updated to handle different button text and actions based on whether the user is the organizer.
  */
 class EventAdapter(
-    private var events: List<Event>,
+    private var allEvents: List<Event>,
     private val deviceId: String,
     private val onDetailsClicked: (Event) -> Unit,
     private val onSignUpClicked: (Event) -> Unit,
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
+    private var filteredEvents: List<Event> = allEvents
+
     fun submitList(newList: List<Event>) {
-        events = newList
+        allEvents = newList
+        filteredEvents = newList
+        notifyDataSetChanged()
+    }
+
+    fun filter(query: String) {
+        filteredEvents = if (query.isEmpty()) {
+            allEvents
+        } else {
+            allEvents.filter { event ->
+                event.name.contains(query, ignoreCase = true) ||
+                        event.locationName.contains(query, ignoreCase = true) ||
+                        event.description.contains(query, ignoreCase = true)
+            }
+        }
         notifyDataSetChanged()
     }
 
@@ -34,10 +50,10 @@ class EventAdapter(
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
-        holder.bind(events[position], deviceId, onDetailsClicked, onSignUpClicked)
+        holder.bind(filteredEvents[position], deviceId, onDetailsClicked, onSignUpClicked)
     }
 
-    override fun getItemCount(): Int = events.size
+    override fun getItemCount(): Int = filteredEvents.size
 
     class EventViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
