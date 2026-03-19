@@ -10,6 +10,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.model.Event
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Recycler view adapter used to display the list of events that entrants can view and join.
@@ -23,22 +26,50 @@ class EventAdapter(
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
     private var filteredEvents: List<Event> = allEvents
+    private var currentSearchQuery: String = ""
+    private var startDateFilter: Date? = null
+    private var endDateFilter: Date? = null
 
     fun submitList(newList: List<Event>) {
         allEvents = newList
-        filteredEvents = newList
-        notifyDataSetChanged()
+        applyFilters()
     }
 
     fun filter(query: String) {
-        filteredEvents = if (query.isEmpty()) {
-            allEvents
-        } else {
-            allEvents.filter { event ->
-                event.name.contains(query, ignoreCase = true) ||
-                        event.locationName.contains(query, ignoreCase = true) ||
-                        event.description.contains(query, ignoreCase = true)
+        currentSearchQuery = query
+        applyFilters()
+    }
+
+    fun setDateRangeFilter(start: Date?, end: Date?) {
+        startDateFilter = start
+        endDateFilter = end
+        applyFilters()
+    }
+
+    private fun applyFilters() {
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        
+        filteredEvents = allEvents.filter { event ->
+            val matchesSearch = if (currentSearchQuery.isEmpty()) {
+                true
+            } else {
+                event.name.contains(currentSearchQuery, ignoreCase = true) ||
+                        event.locationName.contains(currentSearchQuery, ignoreCase = true) ||
+                        event.description.contains(currentSearchQuery, ignoreCase = true)
             }
+
+            val matchesDateRange = if (startDateFilter == null || endDateFilter == null) {
+                true
+            } else {
+                try {
+                    val eventDate = dateFormat.parse(event.eventDate)
+                    eventDate != null && !eventDate.before(startDateFilter) && !eventDate.after(endDateFilter)
+                } catch (e: Exception) {
+                    false
+                }
+            }
+
+            matchesSearch && matchesDateRange
         }
         notifyDataSetChanged()
     }
