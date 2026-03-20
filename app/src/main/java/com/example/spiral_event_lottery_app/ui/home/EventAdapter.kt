@@ -25,10 +25,13 @@ class EventAdapter(
     private val onSignUpClicked: (Event) -> Unit,
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
+    enum class FilterStatus { ALL, OPEN, FULL }
+
     private var filteredEvents: List<Event> = allEvents
     private var currentSearchQuery: String = ""
     private var startDateFilter: Date? = null
     private var endDateFilter: Date? = null
+    private var currentStatusFilter: FilterStatus = FilterStatus.ALL
 
     fun submitList(newList: List<Event>) {
         allEvents = newList
@@ -37,6 +40,11 @@ class EventAdapter(
 
     fun filter(query: String) {
         currentSearchQuery = query
+        applyFilters()
+    }
+
+    fun setStatusFilter(status: FilterStatus) {
+        currentStatusFilter = status
         applyFilters()
     }
 
@@ -69,7 +77,14 @@ class EventAdapter(
                 }
             }
 
-            matchesSearch && matchesDateRange
+            val isFull = event.maxEntrants != null && event.waitingCount >= event.maxEntrants!!
+            val matchesStatus = when (currentStatusFilter) {
+                FilterStatus.ALL -> true
+                FilterStatus.OPEN -> !isFull
+                FilterStatus.FULL -> isFull
+            }
+
+            matchesSearch && matchesDateRange && matchesStatus
         }
         notifyDataSetChanged()
     }
@@ -121,9 +136,16 @@ class EventAdapter(
                 actionButton.setOnClickListener { onDetailsClicked(event) }
                 itemView.setOnClickListener { onDetailsClicked(event) }
             } else {
-                actionButton.text = "Sign Up"
-                actionButton.setOnClickListener { onSignUpClicked(event) }
-                itemView.setOnClickListener { onSignUpClicked(event) }
+                val isFull = event.maxEntrants != null && event.waitingCount >= event.maxEntrants!!
+                if (isFull) {
+                    actionButton.text = "Full"
+                    actionButton.isEnabled = false
+                } else {
+                    actionButton.text = "Sign Up"
+                    actionButton.isEnabled = true
+                    actionButton.setOnClickListener { onSignUpClicked(event) }
+                    itemView.setOnClickListener { onSignUpClicked(event) }
+                }
             }
         }
     }

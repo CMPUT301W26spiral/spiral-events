@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -36,6 +37,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var listenerRegistration: ListenerRegistration? = null
     private lateinit var searchEditText: EditText
     private lateinit var filterButton: ImageButton
+    
+    private lateinit var chipAll: TextView
+    private lateinit var chipOpen: TextView
+    private lateinit var chipFull: TextView
 
     private var startDate: Date? = null
     private var endDate: Date? = null
@@ -47,6 +52,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         recyclerView = view.findViewById(R.id.eventsRecyclerView)
         searchEditText = view.findViewById(R.id.searchEditText)
         filterButton = view.findViewById(R.id.filterButton)
+        
+        chipAll = view.findViewById(R.id.chipAll)
+        chipOpen = view.findViewById(R.id.chipOpen)
+        chipFull = view.findViewById(R.id.chipFull)
         
         // Retrieve the current device ID to check against organizerId
         val deviceId = DeviceIdProvider.getDeviceId(requireContext())
@@ -89,6 +98,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             showDateRangePickerDialog()
         }
 
+        setupChips()
+
         // 1. Find the Scan Button using the ID from your XML
         val scanBtn = view.findViewById<android.widget.Button>(R.id.scanButton)
         // 2. Set the click listener to open your camera
@@ -96,6 +107,32 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             val intent = android.content.Intent(requireContext(), com.example.spiral_event_lottery_app.QR_scanner::class.java)
             startActivity(intent)
         }
+    }
+
+    private fun setupChips() {
+        chipAll.setOnClickListener {
+            updateChipSelection(EventAdapter.FilterStatus.ALL)
+        }
+        chipOpen.setOnClickListener {
+            updateChipSelection(EventAdapter.FilterStatus.OPEN)
+        }
+        chipFull.setOnClickListener {
+            updateChipSelection(EventAdapter.FilterStatus.FULL)
+        }
+    }
+
+    private fun updateChipSelection(status: EventAdapter.FilterStatus) {
+        adapter.setStatusFilter(status)
+        
+        // Update UI visuals
+        chipAll.setBackgroundResource(if (status == EventAdapter.FilterStatus.ALL) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+        chipAll.setTextColor(if (status == EventAdapter.FilterStatus.ALL) 0xFFFFFFFF.toInt() else 0xFF1F1F1F.toInt())
+        
+        chipOpen.setBackgroundResource(if (status == EventAdapter.FilterStatus.OPEN) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+        chipOpen.setTextColor(if (status == EventAdapter.FilterStatus.OPEN) 0xFFFFFFFF.toInt() else 0xFF1F1F1F.toInt())
+        
+        chipFull.setBackgroundResource(if (status == EventAdapter.FilterStatus.FULL) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+        chipFull.setTextColor(if (status == EventAdapter.FilterStatus.FULL) 0xFFFFFFFF.toInt() else 0xFF1F1F1F.toInt())
     }
 
     private fun showDateRangePickerDialog() {
