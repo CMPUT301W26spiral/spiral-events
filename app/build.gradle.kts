@@ -34,6 +34,13 @@ android {
     kotlinOptions {
         jvmTarget = "21"
     }
+
+    packaging {
+        jniLibs {
+            // Required for 16 KB page size compatibility in Android 15+
+            useLegacyPackaging = true
+        }
+    }
 }
 
 dependencies {
@@ -68,8 +75,4 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.test:rules:1.5.0")
-
-
-
-
 }

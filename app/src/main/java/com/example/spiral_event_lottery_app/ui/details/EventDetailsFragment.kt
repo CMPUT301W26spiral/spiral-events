@@ -2,6 +2,7 @@ package com.example.spiral_event_lottery_app.ui.details
 
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,6 +12,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
@@ -18,10 +20,13 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.storage.FirebaseStorage
 
 /**
  * Fragment that displays the details of a specific event.
+ * Now supports editing the event poster for organizers.
  */
 class EventDetailsFragment : Fragment() {
     companion object {
@@ -36,6 +41,11 @@ class EventDetailsFragment : Fragment() {
     private lateinit var eventId: String
     private lateinit var repository: EventRepository
     private var eventListener: ListenerRegistration? = null
+
+    // Register the image picker at the class level
+    private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { uploadPoster(it) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +65,7 @@ class EventDetailsFragment : Fragment() {
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
+        val editPosterBtn = view.findViewById<ImageView>(R.id.editImageButton)
         val joinBtn = view.findViewById<Button>(R.id.joinLeaveButton)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
@@ -76,6 +87,11 @@ class EventDetailsFragment : Fragment() {
                 val openSpots = event.maxEntrants?.minus(event.waitingCount) ?: 0
                 waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
+
+                // Only allow the organizer to edit the poster
+                val currentUserId = DeviceIdProvider.getDeviceId(requireContext())
+                editPosterBtn.visibility = if (event.organizerId == currentUserId) View.VISIBLE else View.GONE
+                editPosterBtn.setOnClickListener { imagePickerLauncher.launch("image/*") }
 
                 if (!event.posterUriString.isNullOrEmpty()) {
                     Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
@@ -112,7 +128,6 @@ class EventDetailsFragment : Fragment() {
                                 .setPositiveButton("OK", null)
                                 .show()
                         } else {
-                            // Check if they were already selected before allowing join
                             repository.isSelected(eventId, { selected ->
                                 if (selected) {
                                     AlertDialog.Builder(requireContext())
@@ -150,6 +165,40 @@ class EventDetailsFragment : Fragment() {
             },
             { e -> Toast.makeText(requireContext(), e.message ?: "Failed to load event", Toast.LENGTH_LONG).show() }
         )
+    }
+
+    /**
+     * Uploads the selected image to Firebase Storage and updates the Firestore document.
+     */
+    private fun uploadPoster(uri: Uri) {
+        val storageRef = FirebaseStorage.getInstance().getReference("event_posters/${eventId}_${System.currentTimeMillis()}.jpg")
+        Toast.makeText(requireContext(), "Uploading new poster...", Toast.LENGTH_SHORT).show()
+
+        storageRef.putFile(uri)
+            .continueWithTask { task ->
+                if (!task.isSuccessful) task.exception?.let { throw it }
+                storageRef.downloadUrl
+            }
+            .addOnSuccessListener { downloadUri ->
+                updateFirestorePoster(downloadUri.toString())
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    /**
+     * Updates the 'posterUriString' field in the Firestore 'events' collection.
+     */
+    private fun updateFirestorePoster(url: String) {
+        FirebaseFirestore.getInstance().collection("events").document(eventId)
+            .update("posterUriString", url)
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "Poster updated successfully", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Failed to update database: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     override fun onStop() {
