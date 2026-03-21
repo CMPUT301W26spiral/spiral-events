@@ -32,9 +32,8 @@ public class acceptanceHandling {
             return; // Don't hit firebase with garbage data
         }
         
-        // Try entrants collection first (lottery result location)
         DocumentReference doc_path = db_identify.collection("events").document(event_id)
-                .collection("entrants").document(device_id);
+                .collection("selected_list").document(device_id);
         
         Map<String, Object> data = new HashMap<>();
         data.put("Status", "Accepted");
@@ -65,7 +64,7 @@ public class acceptanceHandling {
         }
         
         DocumentReference doc_path = db_identify.collection("events").document(event_id)
-                .collection("entrants").document(device_id);
+                .collection("selected_list").document(device_id);
         
         Map<String, Object> data = new HashMap<>();
         data.put("Status", "Declined");
