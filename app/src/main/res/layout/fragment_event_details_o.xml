@@ -10,242 +10,348 @@
     android:clickable="true"
     android:focusable="true">
 
-    <ImageButton
-        android:id="@+id/backButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="@android:color/transparent"
-        android:src="@drawable/ic_back"
-        android:contentDescription="Back"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
-    <TextView
-        android:id="@+id/header"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Event Details"
-        android:textStyle="bold"
-        android:textSize="24sp"
-        android:textColor="#000000"
-        app:layout_constraintStart_toEndOf="@id/backButton"
-        app:layout_constraintTop_toTopOf="@id/backButton"
-        app:layout_constraintBottom_toBottomOf="@id/backButton"
-        android:layout_marginStart="8dp"/>
-
-    <androidx.cardview.widget.CardView
-        android:id="@+id/imageCard"
-        android:layout_width="0dp"
-        android:layout_height="250dp"
-        app:cardCornerRadius="0dp"
-        app:cardElevation="0dp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/header"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <FrameLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#D9D9D9">
+            android:layout_height="wrap_content">
 
-            <ImageView
-                android:id="@+id/eventPosterImage"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop" />
-
-            <ImageView
-                android:id="@+id/editImageButton"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_gravity="bottom|end"
-                android:layout_margin="12dp"
-                android:src="@drawable/baseline_edit_24"
+            <ImageButton
+                android:id="@+id/backButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@android:color/transparent"
-                android:tint="#000000" />
-        </FrameLayout>
-    </androidx.cardview.widget.CardView>
+                android:src="@drawable/ic_back"
+                android:contentDescription="Back"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#1F5E3B" />
 
-    <TextView
-        android:id="@+id/detailsTitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Family Swimming Lessons"
-        android:textStyle="bold"
-        android:textSize="22sp"
-        android:textColor="#000000"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/imageCard"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <TextView
+                android:id="@+id/header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Event Details"
+                android:textStyle="bold"
+                android:textSize="24sp"
+                android:textColor="#1F5E3B"
+                app:layout_constraintStart_toEndOf="@id/backButton"
+                app:layout_constraintTop_toTopOf="@id/backButton"
+                app:layout_constraintBottom_toBottomOf="@id/backButton"
+                android:layout_marginStart="8dp"/>
 
-    <TextView
-        android:id="@+id/detailsLocation"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Peter Hemingway Aquatic Centre"
-        android:textSize="14sp"
-        android:textColor="#000000"
-        android:layout_marginTop="4dp"
-        app:layout_constraintTop_toBottomOf="@id/detailsTitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <androidx.cardview.widget.CardView
+                android:id="@+id/imageCard"
+                android:layout_width="0dp"
+                android:layout_height="250dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintTop_toBottomOf="@id/header"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
 
-    <ImageView
-        android:id="@+id/iconCalendar"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:layout_marginTop="12dp"
-        android:src="@drawable/ic_calendar"
-        android:tint="#2E673B"
-        app:layout_constraintTop_toBottomOf="@id/detailsLocation"
-        app:layout_constraintStart_toStartOf="parent"/>
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#D9D9D9">
 
-    <TextView
-        android:id="@+id/detailsTime"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="Sat, Mar. 4, 2026 10:00-11:00 AM"
-        android:textColor="#000000"
-        app:layout_constraintTop_toTopOf="@id/iconCalendar"
-        app:layout_constraintBottom_toBottomOf="@id/iconCalendar"
-        app:layout_constraintStart_toEndOf="@id/iconCalendar"
-        app:layout_constraintEnd_toEndOf="parent"/>
+                    <ImageView
+                        android:id="@+id/eventPosterImage"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="Event Poster" />
 
-    <ImageView
-        android:id="@+id/iconPlace"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:layout_marginTop="8dp"
-        android:src="@drawable/ic_pin"
-        android:tint="#2E673B"
-        app:layout_constraintTop_toBottomOf="@id/iconCalendar"
-        app:layout_constraintStart_toStartOf="parent"/>
+                    <ImageView
+                        android:id="@+id/editImageButton"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="bottom|end"
+                        android:layout_margin="12dp"
+                        android:src="@drawable/baseline_edit_24"
+                        android:background="@drawable/bg_search"
+                        android:padding="8dp"
+                        app:tint="#1F5E3B"
+                        android:contentDescription="Edit Poster" />
+                </FrameLayout>
+            </androidx.cardview.widget.CardView>
 
-    <TextView
-        android:id="@+id/detailsLocationAddress"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="Building 1, Peter Hemingway Aquatic Centre"
-        android:textColor="#000000"
-        app:layout_constraintTop_toTopOf="@id/iconPlace"
-        app:layout_constraintBottom_toBottomOf="@id/iconPlace"
-        app:layout_constraintStart_toEndOf="@id/iconPlace"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <TextView
+                android:id="@+id/detailsTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Event Name"
+                android:textStyle="bold"
+                android:textSize="22sp"
+                android:textColor="#000000"
+                android:layout_marginTop="16dp"
+                app:layout_constraintTop_toBottomOf="@id/imageCard"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
 
-    <ImageView
-        android:id="@+id/iconPeople"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:layout_marginTop="8dp"
-        android:src="@drawable/ic_people"
-        android:tint="#2E673B"
-        app:layout_constraintTop_toBottomOf="@id/iconPlace"
-        app:layout_constraintStart_toStartOf="parent"/>
+            <TextView
+                android:id="@+id/detailsLocation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Location Name"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:layout_marginTop="4dp"
+                app:layout_constraintTop_toBottomOf="@id/detailsTitle"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
 
-    <TextView
-        android:id="@+id/detailsWaiting"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="71 People on Waiting List, 20 Open Spots"
-        android:textColor="#000000"
-        app:layout_constraintTop_toTopOf="@id/iconPeople"
-        app:layout_constraintBottom_toBottomOf="@id/iconPeople"
-        app:layout_constraintStart_toEndOf="@id/iconPeople"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <ImageView
+                android:id="@+id/iconCalendar"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginTop="12dp"
+                android:src="@drawable/ic_calendar"
+                app:tint="#1F5E3B"
+                android:contentDescription="Calendar Icon"
+                app:layout_constraintTop_toBottomOf="@id/detailsLocation"
+                app:layout_constraintStart_toStartOf="parent"/>
 
-    <TextView
-        android:id="@+id/descriptionLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Event Description"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:textColor="#000000"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/iconPeople"
-        app:layout_constraintStart_toStartOf="parent"/>
+            <TextView
+                android:id="@+id/detailsTime"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Date/Time"
+                android:textColor="#333333"
+                android:textSize="14sp"
+                app:layout_constraintTop_toTopOf="@id/iconCalendar"
+                app:layout_constraintBottom_toBottomOf="@id/iconCalendar"
+                app:layout_constraintStart_toEndOf="@id/iconCalendar"
+                app:layout_constraintEnd_toEndOf="parent"/>
 
-    <TextView
-        android:id="@+id/detailsDescription"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="No description available"
-        android:textColor="#000000"
-        app:layout_constraintTop_toBottomOf="@id/descriptionLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <ImageView
+                android:id="@+id/iconPlace"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginTop="8dp"
+                android:src="@drawable/ic_pin"
+                app:tint="#1F5E3B"
+                android:contentDescription="Location Pin"
+                app:layout_constraintTop_toBottomOf="@id/iconCalendar"
+                app:layout_constraintStart_toStartOf="parent"/>
 
-    <Button
-        android:id="@+id/drawButton"
-        android:layout_width="0dp"
-        android:layout_height="50dp"
-        android:text="Draw!"
-        android:textStyle="bold"
-        android:layout_marginTop="22dp"
-        android:backgroundTint="#1F5E3B"
-        android:textColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@+id/detailsDescription"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <TextView
+                android:id="@+id/detailsLocationAddress"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Address"
+                android:textColor="#333333"
+                android:textSize="14sp"
+                app:layout_constraintTop_toTopOf="@id/iconPlace"
+                app:layout_constraintBottom_toBottomOf="@id/iconPlace"
+                app:layout_constraintStart_toEndOf="@id/iconPlace"
+                app:layout_constraintEnd_toEndOf="parent"/>
 
-    <Button
-        android:id="@+id/deleteEventButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="172dp"
-        android:background="@drawable/profile_delete_button_bg"
-        android:backgroundTint="@null"
-        android:text="Delete Event"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/detailsDescription" />
+            <ImageView
+                android:id="@+id/iconPeople"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginTop="8dp"
+                android:src="@drawable/ic_people"
+                app:tint="#1F5E3B"
+                android:contentDescription="Waitlist Icon"
+                app:layout_constraintTop_toBottomOf="@id/iconPlace"
+                app:layout_constraintStart_toStartOf="parent"/>
 
-    <Button
-        android:id="@+id/viewEntrantsButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="View Entrants"
-        android:textStyle="bold"
-        android:layout_marginTop="22dp"
-        android:backgroundTint="#1F5E3B"
-        android:textColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@+id/drawButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/notifyEntrantsButton"/>
+            <TextView
+                android:id="@+id/detailsWaiting"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Waiting List Info"
+                android:textColor="#333333"
+                android:textSize="14sp"
+                app:layout_constraintTop_toTopOf="@id/iconPeople"
+                app:layout_constraintBottom_toBottomOf="@id/iconPeople"
+                app:layout_constraintStart_toEndOf="@id/iconPeople"
+                app:layout_constraintEnd_toEndOf="parent"/>
 
-    <Button
-        android:id="@+id/notifyEntrantsButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Notify Entrants"
-        android:textStyle="bold"
-        android:layout_marginTop="22dp"
-        android:backgroundTint="#1F5E3B"
-        android:textColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@+id/drawButton"
-        app:layout_constraintStart_toEndOf="@+id/viewEntrantsButton"
-        app:layout_constraintEnd_toStartOf="@+id/viewLocButton"/>
+            <TextView
+                android:id="@+id/descriptionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Event Description"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#000000"
+                android:layout_marginTop="16dp"
+                app:layout_constraintTop_toBottomOf="@id/iconPeople"
+                app:layout_constraintStart_toStartOf="parent"/>
 
-    <Button
-        android:id="@+id/viewLocButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="View Locations"
-        android:textStyle="bold"
-        android:layout_marginTop="22dp"
-        android:backgroundTint="#1F5E3B"
-        android:textColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@+id/drawButton"
-        app:layout_constraintStart_toEndOf="@+id/notifyEntrantsButton"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <TextView
+                android:id="@+id/detailsDescription"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Description goes here..."
+                android:textColor="#333333"
+                android:textSize="14sp"
+                app:layout_constraintTop_toBottomOf="@id/descriptionLabel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+            <!-- PRIVATE EVENT SECTION -->
+            <TextView
+                android:id="@+id/inviteHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Invite entrants"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/detailsDescription" />
+
+            <LinearLayout
+                android:id="@+id/inviteRow"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/inviteHeader">
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search">
+
+                    <Spinner
+                        android:id="@+id/inviteCategorySpinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:background="@null"
+                        android:textSize="14sp"
+                        android:spinnerMode="dropdown" />
+                </FrameLayout>
+
+                <EditText
+                    android:id="@+id/inviteSearchInput"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="2"
+                    android:background="@drawable/bg_search"
+                    android:drawableEnd="@drawable/ic_search"
+                    android:drawablePadding="8dp"
+                    android:hint="Search entrants..."
+                    android:importantForAutofill="no"
+                    android:inputType="text"
+                    android:paddingHorizontal="16dp"
+                    android:textSize="14sp"
+                    app:tint="#1F5E3B" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/searchResultRecycler"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:maxHeight="200dp"
+                android:background="@drawable/edit_text_background"
+                android:elevation="4dp"
+                android:visibility="gone"
+                android:layout_marginTop="2dp"
+                app:layout_constraintTop_toBottomOf="@id/inviteRow"
+                app:layout_constraintStart_toStartOf="@id/inviteRow"
+                app:layout_constraintEnd_toEndOf="@id/inviteRow" />
+
+            <Button
+                android:id="@+id/drawButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:text="Draw!"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="#1F5E3B"
+                android:textColor="#FFFFFF"
+                app:cornerRadius="28dp"
+                app:layout_constraintTop_toBottomOf="@+id/searchResultRecycler"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+            <LinearLayout
+                android:id="@+id/organizerActionButtons"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal"
+                app:layout_constraintTop_toBottomOf="@id/drawButton">
+
+                <Button
+                    android:id="@+id/viewEntrantsButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="View Entrants"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:backgroundTint="#1F5E3B"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="24dp" />
+
+                <Button
+                    android:id="@+id/notifyEntrantsButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="4dp"
+                    android:text="Notify Entrants"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:backgroundTint="#1F5E3B"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="24dp" />
+
+                <Button
+                    android:id="@+id/viewLocButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="View Location"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:backgroundTint="#1F5E3B"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="24dp" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/deleteEventButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="32dp"
+                android:background="@drawable/profile_delete_button_bg"
+                android:backgroundTint="@null"
+                android:text="Delete Event"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/organizerActionButtons" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

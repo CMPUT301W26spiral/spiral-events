@@ -1,23 +1,38 @@
 package com.example.spiral_event_lottery_app.ui.oevent
 
+import android.app.AlertDialog
+import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
+import com.example.spiral_event_lottery_app.model.User
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.storage.FirebaseStorage
 
 /**
  * Fragment that displays the details of a specific event from an organizer's perspective.
+ * Supports editing the event poster and private event specific UI including entrant search.
  */
 class EventDetailsOFragment : Fragment() {
     companion object {
@@ -33,6 +48,18 @@ class EventDetailsOFragment : Fragment() {
     private lateinit var eventId: String
     private lateinit var repository: EventRepository
     private var eventListener: ListenerRegistration? = null
+    private val db = FirebaseFirestore.getInstance()
+
+    // UI elements for search
+    private lateinit var inviteSearchInput: EditText
+    private lateinit var inviteCategorySpinner: Spinner
+    private lateinit var searchResultRecycler: RecyclerView
+    private lateinit var searchAdapter: UserSearchAdapter
+
+    // Register the image picker at the class level
+    private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { uploadPoster(it) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +82,27 @@ class EventDetailsOFragment : Fragment() {
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
+        val editPosterBtn = view.findViewById<ImageView>(R.id.editImageButton)
+        
+        // Private event views
+        val inviteHeader = view.findViewById<TextView>(R.id.inviteHeader)
+        val inviteRow = view.findViewById<View>(R.id.inviteRow)
+        inviteSearchInput = view.findViewById(R.id.inviteSearchInput)
+        inviteCategorySpinner = view.findViewById(R.id.inviteCategorySpinner)
+        searchResultRecycler = view.findViewById(R.id.searchResultRecycler)
+
+        // Setup search results recycler
+        searchAdapter = UserSearchAdapter { user ->
+            showInviteDialog(user)
+        }
+        searchResultRecycler.layoutManager = LinearLayoutManager(requireContext())
+        searchResultRecycler.adapter = searchAdapter
+
+        // Setup category spinner
+        val categories = listOf("Name", "Email", "Phone")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categories)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        inviteCategorySpinner.adapter = adapter
 
         // Buttons
         val drawBtn = view.findViewById<Button>(R.id.drawButton)
@@ -64,6 +112,11 @@ class EventDetailsOFragment : Fragment() {
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
+        // Setup the Edit Poster button
+        editPosterBtn.setOnClickListener {
+            imagePickerLauncher.launch("image/*")
+        }
+
         eventListener = repository.listenToEvent(
             eventId,
             { event ->
@@ -72,9 +125,18 @@ class EventDetailsOFragment : Fragment() {
                     return@listenToEvent
                 }
 
-                title.text = event.name
+                if (!event.isPublic) {
+                    title.text = "${event.name} (Private)"
+                    inviteHeader.visibility = View.VISIBLE
+                    inviteRow.visibility = View.VISIBLE
+                } else {
+                    title.text = event.name
+                    inviteHeader.visibility = View.GONE
+                    inviteRow.visibility = View.GONE
+                }
+
                 locationName.text = event.locationName
-                locationAddress.text = event.locationName // Using locationName as address for now
+                locationAddress.text = event.locationName
                 time.text = event.timeText
                 val openSpots = event.maxEntrants?.minus(event.waitingCount) ?: 0
                 waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
@@ -94,6 +156,21 @@ class EventDetailsOFragment : Fragment() {
             }
         )
 
+        // Implement Search Functionality
+        inviteSearchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s.toString().trim()
+                if (query.length >= 1) {
+                    performUserSearch(query)
+                } else {
+                    searchAdapter.submitList(emptyList())
+                    searchResultRecycler.visibility = View.GONE
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
         // Set up the Draw button navigation
         drawBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
@@ -101,7 +178,6 @@ class EventDetailsOFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
-        // button to link to the view entrants page
 
         viewEntrantsBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
@@ -111,9 +187,130 @@ class EventDetailsOFragment : Fragment() {
         }
     }
 
+    private fun showInviteDialog(user: User) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Invite Entrant")
+            .setMessage("Invite ${user.name} to event?")
+            .setPositiveButton("Yes") { _, _ ->
+                inviteUserToEvent(user)
+            }
+            .setNegativeButton("No", null)
+            .show()
+    }
+
+    private fun inviteUserToEvent(user: User) {
+        val waitlistRef = db.collection("events").document(eventId).collection("waitlist").document(user.deviceId)
+        
+        val waitlistData = hashMapOf(
+            "device_id" to user.deviceId,
+            "joined_at" to Timestamp.now()
+        )
+
+        db.runTransaction { transaction ->
+            val waitlistDoc = transaction.get(waitlistRef)
+            if (waitlistDoc.exists()) {
+                throw Exception("ALREADY_IN_WAITLIST")
+            }
+            
+            val eventRef = db.collection("events").document(eventId)
+            val eventDoc = transaction.get(eventRef)
+            val currentCount = eventDoc.getLong("waiting_count") ?: 0L
+            
+            transaction.set(waitlistRef, waitlistData)
+            transaction.update(eventRef, "waiting_count", currentCount + 1)
+            null
+        }.addOnSuccessListener {
+            Toast.makeText(requireContext(), "${user.name} has been invited!", Toast.LENGTH_SHORT).show()
+            inviteSearchInput.text.clear()
+            searchAdapter.submitList(emptyList())
+            searchResultRecycler.visibility = View.GONE
+        }.addOnFailureListener { e ->
+            val msg = if (e.message == "ALREADY_IN_WAITLIST") "User is already on the waitlist." else "Failed to invite: ${e.message}"
+            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun performUserSearch(query: String) {
+        val category = inviteCategorySpinner.selectedItem.toString().lowercase()
+        val field = when(category) {
+            "name" -> "name"
+            "email" -> "email"
+            "phone" -> "phoneNumber"
+            else -> "name"
+        }
+
+        db.collection("users")
+            .whereGreaterThanOrEqualTo(field, query)
+            .whereLessThanOrEqualTo(field, query + "\uf8ff")
+            .limit(5)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
+                searchAdapter.submitList(users)
+                searchResultRecycler.visibility = if (users.isNotEmpty()) View.VISIBLE else View.GONE
+            }
+    }
+
+    private fun uploadPoster(uri: Uri) {
+        val storageRef = FirebaseStorage.getInstance().getReference("event_posters/${eventId}_${System.currentTimeMillis()}.jpg")
+        Toast.makeText(requireContext(), "Uploading new poster...", Toast.LENGTH_SHORT).show()
+
+        storageRef.putFile(uri)
+            .continueWithTask { task ->
+                if (!task.isSuccessful) task.exception?.let { throw it }
+                storageRef.downloadUrl
+            }
+            .addOnSuccessListener { downloadUri ->
+                updateFirestorePoster(downloadUri.toString())
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun updateFirestorePoster(url: String) {
+        FirebaseFirestore.getInstance().collection("events").document(eventId)
+            .update("posterUriString", url)
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "Poster updated successfully", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Failed to update database: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
     override fun onStop() {
         super.onStop()
         eventListener?.remove()
         eventListener = null
+    }
+
+    private inner class UserSearchAdapter(private val onItemClick: (User) -> Unit) :
+        RecyclerView.Adapter<UserSearchAdapter.VH>() {
+        private var users = listOf<User>()
+
+        fun submitList(newList: List<User>) {
+            users = newList
+            notifyDataSetChanged()
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val v = LayoutInflater.from(parent.context).inflate(R.layout.item_user_search_result, parent, false)
+            return VH(v)
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val user = users[position]
+            holder.userName.text = user.name
+            holder.userDetail.text = user.email
+            holder.itemView.setOnClickListener { onItemClick(user) }
+        }
+
+        override fun getItemCount() = users.size
+        
+        inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val userName: TextView = itemView.findViewById(R.id.userName)
+            val userDetail: TextView = itemView.findViewById(R.id.userDetail)
+        }
     }
 }
