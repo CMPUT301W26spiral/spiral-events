@@ -6,6 +6,7 @@
 |-------------------|--------|-------------|
 | id                | string | Event document ID |
 | name              | string | Event name |
+ | isPublic          | boolean| Public flag |
 | description       | string | Event description |
 | organizerId       | string | Reference to user who created the event |
 | eventDate         | string | Event date |

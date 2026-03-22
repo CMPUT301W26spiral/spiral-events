@@ -4,8 +4,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.model.Event
 
@@ -39,11 +41,23 @@ class MyEventsAdapter(
         private val location = itemView.findViewById<TextView>(R.id.eventLocation)
         private val waiting = itemView.findViewById<TextView>(R.id.eventWaiting)
         private val details = itemView.findViewById<Button>(R.id.detailsButton)
+        private val posterImage = itemView.findViewById<ImageView>(R.id.imagePlaceholder)
+
         fun bind(event: Event, onDetails: (Event) -> Unit) {
             title.text = event.name
             time.text = event.timeText
             location.text = event.locationName
             waiting.text = "${event.waitingCount} People on Waiting List"
+            
+            if (!event.posterUriString.isNullOrEmpty()) {
+                Glide.with(itemView.context)
+                    .load(event.posterUriString)
+                    .placeholder(R.drawable.ic_event)
+                    .into(posterImage)
+            } else {
+                posterImage.setImageResource(R.drawable.ic_event)
+            }
+
             details.setOnClickListener { onDetails(event) }
         }
     }
