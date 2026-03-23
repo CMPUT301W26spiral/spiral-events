@@ -6,10 +6,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
@@ -45,6 +47,7 @@ class EventDetailsLeaveFragment : Fragment() {
         val location = view.findViewById<TextView>(R.id.detailsLocation)
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
+        val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
 
         actionBtn.text = "Leave Waiting List"
@@ -57,6 +60,16 @@ class EventDetailsLeaveFragment : Fragment() {
             time.text = event.timeText
             waiting.text = "${event.waitingCount} People on Waiting List"
 
+            // Load the event poster from Firestore URL
+            if (!event.posterUriString.isNullOrEmpty()) {
+                Glide.with(this)
+                    .load(event.posterUriString)
+                    .placeholder(R.drawable.ic_event)
+                    .into(posterImage)
+            } else {
+                posterImage.setImageResource(R.drawable.ic_event)
+            }
+
             actionBtn.setOnClickListener {
                 repository.isJoined(eventId, { joined ->
                     if (!joined) {
@@ -64,7 +77,6 @@ class EventDetailsLeaveFragment : Fragment() {
                     } else {
                         AlertDialog.Builder(requireContext()).setTitle("You have successfully left the waiting list for ${event.name}").setPositiveButton("Confirm") { _, _ ->
                             repository.leaveWaitlist(eventId, {
-                                // FIXED: Added eventId parameter
                                 NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Cancelled", "You have left the waiting list.", "DENIED", event.name, eventId)
                                 parentFragmentManager.popBackStack()
                             }, {}, { e -> Toast.makeText(requireContext(), e.message ?: "Leave failed", Toast.LENGTH_LONG).show() })

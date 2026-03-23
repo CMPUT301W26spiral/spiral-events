@@ -45,6 +45,10 @@
             android:name="com.example.event_creation.OrganizerActivity"
             android:exported="false" />
 
+        <activity
+            android:name="com.example.event_creation.PrivateEventSuccessActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

@@ -125,6 +125,27 @@
                 app:layout_constraintTop_toBottomOf="@id/tv_label_location" />
 
             <TextView
+                android:id="@+id/tv_label_access"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/access"
+                android:textColor="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/et_location" />
+
+            <Spinner
+                android:id="@+id/spinner_access"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/edit_text_background"
+                android:minWidth="120dp"
+                android:padding="12dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_access" />
+
+            <TextView
                 android:id="@+id/tv_label_interests"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -132,7 +153,7 @@
                 android:text="@string/related_interests"
                 android:textColor="@color/black"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/et_location" />
+                app:layout_constraintTop_toBottomOf="@id/spinner_access" />
 
             <EditText
                 android:id="@+id/et_interests"
@@ -417,6 +438,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:background="@drawable/edit_text_background"
+                android:hint="No Limit"
                 android:inputType="number"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="12dp"
@@ -437,11 +459,14 @@
             <EditText
                 android:id="@+id/et_description"
                 android:layout_width="0dp"
-                android:layout_height="100dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:background="@drawable/edit_text_background"
                 android:gravity="top"
-                android:padding="12dp"
+                android:inputType="textMultiLine"
+                android:minLines="3"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tv_label_description" />
@@ -451,11 +476,13 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="24dp"
                 android:backgroundTint="@color/primary_green"
                 android:text="@string/create"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
+                android:textStyle="bold"
+                app:cornerRadius="8dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"

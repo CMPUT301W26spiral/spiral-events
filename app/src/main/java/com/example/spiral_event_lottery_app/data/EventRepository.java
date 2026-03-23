@@ -109,9 +109,16 @@ public class EventRepository {
         String drawEndTime = data.get("drawEndTime") instanceof String ? (String) data.get("drawEndTime") : "";
         String eventCreated = data.get("eventCreated") instanceof String ? (String) data.get("eventCreated") : "";
         String organizerId = data.get("organizerId") instanceof String ? (String) data.get("organizerId") : "";
+        
+        boolean isPublic = true;
+        if (data.get("isPublic") instanceof Boolean) {
+            isPublic = (Boolean) data.get("isPublic");
+        } else if (data.get("public") instanceof Boolean) {
+            isPublic = (Boolean) data.get("public");
+        }
 
         return new Event(
-            documentId, name, location, interests, description, geolocation, maxEntrants,
+            documentId, name, location, isPublic, interests, description, geolocation, maxEntrants,
             eventDate, eventStartTime, eventEndTime, drawDate, drawStartTime, drawEndTime,
             posterUrl, eventCreated, timeText, waitingCount, organizerId
         );
@@ -157,7 +164,9 @@ public class EventRepository {
     }
 
     public ListenerRegistration listenToOpenEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
+        // Only fetch events where isPublic is true for the Home screen
         return db.collection("events")
+                .whereEqualTo("isPublic", true)
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null) {
                         onError.onError(error);

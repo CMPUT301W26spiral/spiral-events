@@ -12,6 +12,11 @@ data class Event @JvmOverloads constructor(
     var id: String = "",
     var name: String = "",
     var locationName: String = "",
+    
+    @get:PropertyName("isPublic")
+    @set:PropertyName("isPublic")
+    var isPublic: Boolean = true,
+    
     var interests: String = "",
     var description: String = "",
     var geolocation: String = "",

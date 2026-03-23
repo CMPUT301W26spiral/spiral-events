@@ -5,6 +5,7 @@
     <string name="add_posters">Add Posters</string>
     <string name="event_name">Event Name</string>
     <string name="location">Location</string>
+    <string name="access">Access</string>
     <string name="related_interests">Related Interests</string>
     <string name="day_of_event">Day of Event</string>
     <string name="dd">DD</string>

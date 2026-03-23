@@ -34,7 +34,7 @@ import java.util.Locale;
 
 /**
  * Activity for organizers to create and configure new lottery events.
- * Handles input validation, event creation, and navigation to QR code generation.
+ * Handles input validation, event creation, and navigation based on access type.
  */
 public class CreateEventActivity extends AppCompatActivity {
 
@@ -43,7 +43,7 @@ public class CreateEventActivity extends AppCompatActivity {
     private Spinner spinnerEventStartHour, spinnerEventStartMin, spinnerEventEndHour, spinnerEventEndMin;
     private Spinner spinnerDrawDay, spinnerDrawMonth, spinnerDrawYear;
     private Spinner spinnerDrawStartHour, spinnerDrawStartMin, spinnerDrawEndHour, spinnerDrawEndMin;
-    private Spinner spinnerGeolocation;
+    private Spinner spinnerGeolocation, spinnerAccess;
     private Button btnCreate;
 
     private ConstraintLayout postersContainer;
@@ -82,8 +82,6 @@ public class CreateEventActivity extends AppCompatActivity {
         btnCreate.setOnClickListener(v -> {
             if (validateForm()) {
                 saveEvent();
-            } else {
-                // Toast already handled inside validateForm for specific cases
             }
         });
 
@@ -97,6 +95,7 @@ public class CreateEventActivity extends AppCompatActivity {
 
         etEventName = findViewById(R.id.et_event_name);
         etLocation = findViewById(R.id.et_location);
+        spinnerAccess = findViewById(R.id.spinner_access);
         etInterests = findViewById(R.id.et_interests);
         etDescription = findViewById(R.id.et_description);
         spinnerGeolocation = findViewById(R.id.spinner_geolocation);
@@ -142,7 +141,6 @@ public class CreateEventActivity extends AppCompatActivity {
         populateSpinner(spinnerDrawStartHour, 1, 24, 1, "HH");
         populateSpinner(spinnerDrawEndHour, 1, 24, 1, "HH");
 
-        // Minutes set to 15-minute increments
         populateSpinner(spinnerEventStartMin, 0, 59, 15, "mm");
         populateSpinner(spinnerEventEndMin, 0, 59, 15, "mm");
         populateSpinner(spinnerDrawStartMin, 0, 59, 15, "mm");
@@ -150,6 +148,9 @@ public class CreateEventActivity extends AppCompatActivity {
 
         List<String> geoOptions = Arrays.asList("Enable/Disable", "Enable", "Disable");
         setupCustomAdapter(spinnerGeolocation, geoOptions);
+
+        List<String> accessOptions = Arrays.asList("Select Access", "Public", "Private");
+        setupCustomAdapter(spinnerAccess, accessOptions);
     }
 
     private void populateSpinner(Spinner spinner, int min, int max, int step, String placeholder) {
@@ -202,6 +203,7 @@ public class CreateEventActivity extends AppCompatActivity {
     private void saveEvent() {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
+        boolean isPublic = spinnerAccess.getSelectedItem().toString().equalsIgnoreCase("Public");
         String interests = etInterests.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
         String geolocation = spinnerGeolocation.getSelectedItem().toString();
@@ -209,23 +211,21 @@ public class CreateEventActivity extends AppCompatActivity {
         String maxEntrantsStr = etMaxEntrants.getText().toString().trim();
         Integer maxEntrants = maxEntrantsStr.isEmpty() ? null : Integer.parseInt(maxEntrantsStr);
 
-        // Convert month names back to numbers for the stored date string (e.g., Jan -> 01)
         String eventMonthStr = spinnerEventMonth.getSelectedItem().toString();
         String eventDayStr = spinnerEventDay.getSelectedItem().toString();
         String eventYearStr = spinnerEventYear.getSelectedItem().toString();
-        String eventMonth = String.format(Locale.getDefault(), "%02d", spinnerEventMonth.getSelectedItemPosition());
-        String eventDate = eventDayStr + "/" + eventMonth + "/" + eventYearStr;
+        String eventMonthNum = String.format(Locale.getDefault(), "%02d", spinnerEventMonth.getSelectedItemPosition());
+        String eventDate = eventDayStr + "/" + eventMonthNum + "/" + eventYearStr;
 
         String eventStartTime = spinnerEventStartHour.getSelectedItem().toString() + ":" + spinnerEventStartMin.getSelectedItem().toString();
         String eventEndTime = spinnerEventEndHour.getSelectedItem().toString() + ":" + spinnerEventEndMin.getSelectedItem().toString();
 
-        String drawMonth = String.format(Locale.getDefault(), "%02d", spinnerDrawMonth.getSelectedItemPosition());
-        String drawDate = spinnerDrawDay.getSelectedItem().toString() + "/" + drawMonth + "/" + spinnerDrawYear.getSelectedItem().toString();
+        String drawMonthNum = String.format(Locale.getDefault(), "%02d", spinnerDrawMonth.getSelectedItemPosition());
+        String drawDate = spinnerDrawDay.getSelectedItem().toString() + "/" + drawMonthNum + "/" + spinnerDrawYear.getSelectedItem().toString();
 
         String drawStartTime = spinnerDrawStartHour.getSelectedItem().toString() + ":" + spinnerDrawStartMin.getSelectedItem().toString();
         String drawEndTime = spinnerDrawEndHour.getSelectedItem().toString() + ":" + spinnerDrawEndMin.getSelectedItem().toString();
 
-        // Format a human-readable timeText for the UI adapters to display
         String timeText = eventMonthStr + " " + eventDayStr + ", " + eventYearStr + " " + eventStartTime + "-" + eventEndTime;
 
         String posterUriString = (selectedImageUri != null) ? selectedImageUri.toString() : null;
@@ -235,6 +235,7 @@ public class CreateEventActivity extends AppCompatActivity {
                 "", // id
                 eventName,
                 location, // locationName
+                isPublic, // isPublic
                 interests,
                 description,
                 geolocation,
@@ -247,22 +248,32 @@ public class CreateEventActivity extends AppCompatActivity {
                 drawEndTime,
                 posterUriString,
                 getCurrentTimestamp(), // eventCreated
-                timeText, // timeText (Now populated correctly)
+                timeText, // timeText
                 0L, // waitingCount
                 organizerId // organizerId
         );
 
         EventManager.getInstance().addEvent(newEvent);
-        Intent intent = new Intent(CreateEventActivity.this, QRCodeActivity.class);
-        intent.putExtra("EVENT_NAME", eventName);
-        intent.putExtra("EVENT_ID", newEvent.getId()); // Pass the generated ID
-        startActivity(intent);
+
+        if (isPublic) {
+            Intent intent = new Intent(this, QRCodeActivity.class);
+            intent.putExtra("EVENT_NAME", eventName);
+            intent.putExtra("EVENT_ID", newEvent.getId());
+            startActivity(intent);
+        } else {
+            Intent intent = new Intent(this, PrivateEventSuccessActivity.class);
+            intent.putExtra("EVENT_NAME", eventName);
+            intent.putExtra("EVENT_ID", newEvent.getId());
+            startActivity(intent);
+        }
+        finish();
     }
 
     private boolean validateForm() {
         boolean isValid = true;
         isValid &= checkEmpty(etEventName);
         isValid &= checkEmpty(etLocation);
+        isValid &= checkSpinnerSelected(spinnerAccess);
         isValid &= checkSpinnerSelected(spinnerEventDay);
         isValid &= checkSpinnerSelected(spinnerEventMonth);
         isValid &= checkSpinnerSelected(spinnerEventYear);
@@ -293,10 +304,6 @@ public class CreateEventActivity extends AppCompatActivity {
         return true;
     }
 
-    /**
-     * Compares the selected draw date and time with the event start date and time.
-     * @return true if the draw occurs before the event starts, false otherwise.
-     */
     private boolean isDrawBeforeEvent() {
         try {
             Calendar eventCal = Calendar.getInstance();
