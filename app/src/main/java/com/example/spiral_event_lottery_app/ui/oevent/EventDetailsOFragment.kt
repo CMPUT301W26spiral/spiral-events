@@ -38,6 +38,11 @@ class EventDetailsOFragment : Fragment() {
     companion object {
         private const val ARG_EVENT_ID = "event_id"
 
+        /**
+         * Creates a new instance of EventDetailsOFragment with the given event ID.
+         * @param eventId The unique identifier of the event.
+         * @return A new instance of this fragment.
+         */
         fun newInstance(eventId: String): EventDetailsOFragment {
             return EventDetailsOFragment().apply {
                 arguments = Bundle().apply { putString(ARG_EVENT_ID, eventId) }
@@ -50,7 +55,16 @@ class EventDetailsOFragment : Fragment() {
     private var eventListener: ListenerRegistration? = null
     private val db = FirebaseFirestore.getInstance()
 
-    // UI elements for search
+    // UI elements
+    private lateinit var title: TextView
+    private lateinit var locationName: TextView
+    private lateinit var locationAddress: TextView
+    private lateinit var time: TextView
+    private lateinit var waiting: TextView
+    private lateinit var description: TextView
+    private lateinit var posterImage: ImageView
+    private lateinit var inviteHeader: TextView
+    private lateinit var inviteRow: View
     private lateinit var inviteSearchInput: EditText
     private lateinit var inviteCategorySpinner: Spinner
     private lateinit var searchResultRecycler: RecyclerView
@@ -74,19 +88,19 @@ class EventDetailsOFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         repository = EventRepository(requireContext())
 
+        // Initialize UI elements
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
-        val title = view.findViewById<TextView>(R.id.detailsTitle)
-        val locationName = view.findViewById<TextView>(R.id.detailsLocation)
-        val locationAddress = view.findViewById<TextView>(R.id.detailsLocationAddress)
-        val time = view.findViewById<TextView>(R.id.detailsTime)
-        val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
-        val description = view.findViewById<TextView>(R.id.detailsDescription)
-        val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
+        title = view.findViewById(R.id.detailsTitle)
+        locationName = view.findViewById(R.id.detailsLocation)
+        locationAddress = view.findViewById(R.id.detailsLocationAddress)
+        time = view.findViewById(R.id.detailsTime)
+        waiting = view.findViewById(R.id.detailsWaiting)
+        description = view.findViewById(R.id.detailsDescription)
+        posterImage = view.findViewById(R.id.eventPosterImage)
         val editPosterBtn = view.findViewById<ImageView>(R.id.editImageButton)
         
-        // Private event views
-        val inviteHeader = view.findViewById<TextView>(R.id.inviteHeader)
-        val inviteRow = view.findViewById<View>(R.id.inviteRow)
+        inviteHeader = view.findViewById(R.id.inviteHeader)
+        inviteRow = view.findViewById(R.id.inviteRow)
         inviteSearchInput = view.findViewById(R.id.inviteSearchInput)
         inviteCategorySpinner = view.findViewById(R.id.inviteCategorySpinner)
         searchResultRecycler = view.findViewById(R.id.searchResultRecycler)
@@ -109,21 +123,63 @@ class EventDetailsOFragment : Fragment() {
         val viewEntrantsBtn = view.findViewById<Button>(R.id.viewEntrantsButton)
         val notifyEntrantsBtn = view.findViewById<Button>(R.id.notifyEntrantsButton)
         val viewLocationsBtn = view.findViewById<Button>(R.id.viewLocButton)
+        val deleteEventBtn = view.findViewById<Button>(R.id.deleteEventButton)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
-        // Setup the Edit Poster button
         editPosterBtn.setOnClickListener {
             imagePickerLauncher.launch("image/*")
         }
 
+        deleteEventBtn.setOnClickListener {
+            showDeleteEventDialog()
+        }
+
+        // Implement Search Functionality
+        inviteSearchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s.toString().trim()
+                if (query.length >= 1) {
+                    performUserSearch(query)
+                } else {
+                    searchAdapter.submitList(emptyList())
+                    searchResultRecycler.visibility = View.GONE
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        drawBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
+
+        viewEntrantsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        startEventListener()
+    }
+
+    /**
+     * Sets up a real-time Firestore listener for the event document.
+     * Updates the UI automatically when event data changes.
+     */
+    private fun startEventListener() {
+        eventListener?.remove() // Ensure no duplicate listeners
         eventListener = repository.listenToEvent(
             eventId,
             { event ->
-                if (event == null) {
-                    title.text = "Event not found"
-                    return@listenToEvent
-                }
+                if (event == null || !isAdded) return@listenToEvent
 
                 if (!event.isPublic) {
                     title.text = "${event.name} (Private)"
@@ -152,41 +208,44 @@ class EventDetailsOFragment : Fragment() {
                 }
             },
             { e ->
-                Toast.makeText(requireContext(), e.message ?: "Failed to load event", Toast.LENGTH_LONG).show()
+                if (isAdded) Toast.makeText(requireContext(), e.message ?: "Failed to load event", Toast.LENGTH_LONG).show()
             }
         )
-
-        // Implement Search Functionality
-        inviteSearchInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val query = s.toString().trim()
-                if (query.length >= 1) {
-                    performUserSearch(query)
-                } else {
-                    searchAdapter.submitList(emptyList())
-                    searchResultRecycler.visibility = View.GONE
-                }
-            }
-            override fun afterTextChanged(s: Editable?) {}
-        })
-
-        // Set up the Draw button navigation
-        drawBtn.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
-                .addToBackStack(null)
-                .commit()
-        }
-
-        viewEntrantsBtn.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
-                .addToBackStack(null)
-                .commit()
-        }
     }
 
+    /**
+     * Shows a confirmation dialog for deleting the current event.
+     */
+    private fun showDeleteEventDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Delete Event")
+            .setMessage("Are you sure you want to delete this event? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                deleteEvent()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    /**
+     * Deletes the current event from Firestore and returns to the previous screen.
+     */
+    private fun deleteEvent() {
+        db.collection("events").document(eventId)
+            .delete()
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "Event deleted successfully", Toast.LENGTH_SHORT).show()
+                parentFragmentManager.popBackStack()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Failed to delete event: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    /**
+     * Shows a confirmation dialog for inviting a specific user to the event.
+     * @param user The user to potentially invite.
+     */
     private fun showInviteDialog(user: User) {
         AlertDialog.Builder(requireContext())
             .setTitle("Invite Entrant")
@@ -198,6 +257,11 @@ class EventDetailsOFragment : Fragment() {
             .show()
     }
 
+    /**
+     * Adds a user to the event's waitlist in Firestore.
+     * Uses a transaction to ensure waitlist count accuracy.
+     * @param user The user to add to the waitlist.
+     */
     private fun inviteUserToEvent(user: User) {
         val waitlistRef = db.collection("events").document(eventId).collection("waitlist").document(user.deviceId)
         
@@ -220,7 +284,7 @@ class EventDetailsOFragment : Fragment() {
             transaction.update(eventRef, "waiting_count", currentCount + 1)
             null
         }.addOnSuccessListener {
-            Toast.makeText(requireContext(), "${user.name} has been invited!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "${user.name} has been added to the waiting list!", Toast.LENGTH_SHORT).show()
             inviteSearchInput.text.clear()
             searchAdapter.submitList(emptyList())
             searchResultRecycler.visibility = View.GONE
@@ -230,6 +294,11 @@ class EventDetailsOFragment : Fragment() {
         }
     }
 
+    /**
+     * Performs a Firestore search for users matching the query string.
+     * Limits search results to the first 5 matches.
+     * @param query The search string (name, email, or phone).
+     */
     private fun performUserSearch(query: String) {
         val category = inviteCategorySpinner.selectedItem.toString().lowercase()
         val field = when(category) {
@@ -251,6 +320,11 @@ class EventDetailsOFragment : Fragment() {
             }
     }
 
+    /**
+     * Uploads a local image file to Firebase Storage.
+     * On success, updates the Firestore document with the new image URL.
+     * @param uri The local URI of the image to upload.
+     */
     private fun uploadPoster(uri: Uri) {
         val storageRef = FirebaseStorage.getInstance().getReference("event_posters/${eventId}_${System.currentTimeMillis()}.jpg")
         Toast.makeText(requireContext(), "Uploading new poster...", Toast.LENGTH_SHORT).show()
@@ -268,6 +342,10 @@ class EventDetailsOFragment : Fragment() {
             }
     }
 
+    /**
+     * Updates the Firestore event document with a new poster image URL.
+     * @param url The public download URL of the new poster.
+     */
     private fun updateFirestorePoster(url: String) {
         FirebaseFirestore.getInstance().collection("events").document(eventId)
             .update("posterUriString", url)
@@ -285,6 +363,9 @@ class EventDetailsOFragment : Fragment() {
         eventListener = null
     }
 
+    /**
+     * Adapter for displaying matching entrants in the search dropdown.
+     */
     private inner class UserSearchAdapter(private val onItemClick: (User) -> Unit) :
         RecyclerView.Adapter<UserSearchAdapter.VH>() {
         private var users = listOf<User>()
