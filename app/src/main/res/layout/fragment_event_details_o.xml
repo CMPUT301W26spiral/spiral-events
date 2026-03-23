@@ -17,7 +17,8 @@
         android:src="@drawable/ic_back"
         android:contentDescription="Back"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#0F3D2E"/>
 
     <TextView
         android:id="@+id/header"
@@ -25,8 +26,8 @@
         android:layout_height="wrap_content"
         android:text="Event Details"
         android:textStyle="bold"
-        android:textSize="24sp"
-        android:textColor="#000000"
+        android:textSize="22sp"
+        android:textColor="#0F3D2E"
         app:layout_constraintStart_toEndOf="@id/backButton"
         app:layout_constraintTop_toTopOf="@id/backButton"
         app:layout_constraintBottom_toBottomOf="@id/backButton"
@@ -35,9 +36,9 @@
     <androidx.cardview.widget.CardView
         android:id="@+id/imageCard"
         android:layout_width="0dp"
-        android:layout_height="250dp"
-        app:cardCornerRadius="0dp"
-        app:cardElevation="0dp"
+        android:layout_height="220dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
         android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/header"
         app:layout_constraintStart_toStartOf="parent"
@@ -62,7 +63,7 @@
                 android:layout_margin="12dp"
                 android:src="@drawable/baseline_edit_24"
                 android:background="@android:color/transparent"
-                android:tint="#000000" />
+                app:tint="#000000" />
         </FrameLayout>
     </androidx.cardview.widget.CardView>
 
@@ -70,10 +71,10 @@
         android:id="@+id/detailsTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Family Swimming Lessons"
+        android:text="Event Title"
         android:textStyle="bold"
         android:textSize="22sp"
-        android:textColor="#000000"
+        android:textColor="#0F3D2E"
         android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/imageCard"
         app:layout_constraintStart_toStartOf="parent"
@@ -83,9 +84,9 @@
         android:id="@+id/detailsLocation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Peter Hemingway Aquatic Centre"
+        android:text="Location Name"
         android:textSize="14sp"
-        android:textColor="#000000"
+        android:textColor="#666666"
         android:layout_marginTop="4dp"
         app:layout_constraintTop_toBottomOf="@id/detailsTitle"
         app:layout_constraintStart_toStartOf="parent"
@@ -93,11 +94,11 @@
 
     <ImageView
         android:id="@+id/iconCalendar"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
         android:layout_marginTop="12dp"
         android:src="@drawable/ic_calendar"
-        android:tint="#2E673B"
+        app:tint="#2E673B"
         app:layout_constraintTop_toBottomOf="@id/detailsLocation"
         app:layout_constraintStart_toStartOf="parent"/>
 
@@ -107,42 +108,21 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:text="Sat, Mar. 4, 2026 10:00-11:00 AM"
-        android:textColor="#000000"
+        android:textColor="#333333"
+        android:textSize="14sp"
         app:layout_constraintTop_toTopOf="@id/iconCalendar"
         app:layout_constraintBottom_toBottomOf="@id/iconCalendar"
         app:layout_constraintStart_toEndOf="@id/iconCalendar"
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <ImageView
-        android:id="@+id/iconPlace"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:layout_marginTop="8dp"
-        android:src="@drawable/ic_pin"
-        android:tint="#2E673B"
-        app:layout_constraintTop_toBottomOf="@id/iconCalendar"
-        app:layout_constraintStart_toStartOf="parent"/>
-
-    <TextView
-        android:id="@+id/detailsLocationAddress"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="Building 1, Peter Hemingway Aquatic Centre"
-        android:textColor="#000000"
-        app:layout_constraintTop_toTopOf="@id/iconPlace"
-        app:layout_constraintBottom_toBottomOf="@id/iconPlace"
-        app:layout_constraintStart_toEndOf="@id/iconPlace"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <ImageView
         android:id="@+id/iconPeople"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
         android:layout_marginTop="8dp"
         android:src="@drawable/ic_people"
-        android:tint="#2E673B"
-        app:layout_constraintTop_toBottomOf="@id/iconPlace"
+        app:tint="#2E673B"
+        app:layout_constraintTop_toBottomOf="@id/iconCalendar"
         app:layout_constraintStart_toStartOf="parent"/>
 
     <TextView
@@ -150,8 +130,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:text="71 People on Waiting List, 20 Open Spots"
-        android:textColor="#000000"
+        android:text="0 People on Waiting List"
+        android:textColor="#333333"
+        android:textSize="14sp"
         app:layout_constraintTop_toTopOf="@id/iconPeople"
         app:layout_constraintBottom_toBottomOf="@id/iconPeople"
         app:layout_constraintStart_toEndOf="@id/iconPeople"
@@ -164,7 +145,7 @@
         android:text="Event Description"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:textColor="#000000"
+        android:textColor="#0F3D2E"
         android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/iconPeople"
         app:layout_constraintStart_toStartOf="parent"/>
@@ -175,61 +156,83 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="No description available"
-        android:textColor="#000000"
+        android:textColor="#666666"
+        android:textSize="14sp"
         app:layout_constraintTop_toBottomOf="@id/descriptionLabel"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <Button
-        android:id="@+id/drawButton"
+    <!-- Pinned Action Container -->
+    <LinearLayout
+        android:id="@+id/organizerActionTray"
         android:layout_width="0dp"
-        android:layout_height="50dp"
-        android:text="Draw!"
-        android:textStyle="bold"
-        android:layout_marginTop="22dp"
-        android:backgroundTint="#1F5E3B"
-        android:textColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@+id/detailsDescription"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <Button
-        android:id="@+id/viewEntrantsButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="View Entrants"
-        android:textStyle="bold"
-        android:layout_marginTop="22dp"
-        android:backgroundTint="#1F5E3B"
-        android:textColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@+id/drawButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/notifyEntrantsButton"/>
+        <Button
+            android:id="@+id/drawButton"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Perform Lottery Draw"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="#1F5E3B"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="26dp" />
 
-    <Button
-        android:id="@+id/notifyEntrantsButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Notify Entrants"
-        android:textStyle="bold"
-        android:layout_marginTop="22dp"
-        android:backgroundTint="#1F5E3B"
-        android:textColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@+id/drawButton"
-        app:layout_constraintStart_toEndOf="@+id/viewEntrantsButton"
-        app:layout_constraintEnd_toStartOf="@+id/viewLocButton"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
 
-    <Button
-        android:id="@+id/viewLocButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="View Locations"
-        android:textStyle="bold"
-        android:layout_marginTop="22dp"
-        android:backgroundTint="#1F5E3B"
-        android:textColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@+id/drawButton"
-        app:layout_constraintStart_toEndOf="@+id/notifyEntrantsButton"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <Button
+                android:id="@+id/viewEntrantsButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="Entrants"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:textColor="#1F5E3B"
+                app:strokeColor="#1F5E3B"
+                app:cornerRadius="24dp" />
+
+            <Button
+                android:id="@+id/notifyEntrantsButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="Notify"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:textColor="#1F5E3B"
+                app:strokeColor="#1F5E3B"
+                app:cornerRadius="24dp" />
+
+            <Button
+                android:id="@+id/viewLocButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Locations"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:textColor="#1F5E3B"
+                app:strokeColor="#1F5E3B"
+                app:cornerRadius="24dp" />
+        </LinearLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -50,7 +50,6 @@ class EventDetailsOFragment : Fragment() {
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
         val title = view.findViewById<TextView>(R.id.detailsTitle)
         val locationName = view.findViewById<TextView>(R.id.detailsLocation)
-        val locationAddress = view.findViewById<TextView>(R.id.detailsLocationAddress)
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val description = view.findViewById<TextView>(R.id.detailsDescription)
@@ -74,10 +73,16 @@ class EventDetailsOFragment : Fragment() {
 
                 title.text = event.name
                 locationName.text = event.locationName
-                locationAddress.text = event.locationName // Using locationName as address for now
                 time.text = event.timeText
+                
+                // Logic for open spots calculation
                 val openSpots = event.maxEntrants?.minus(event.waitingCount) ?: 0
-                waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+                waiting.text = if (event.maxEntrants != null) {
+                    "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+                } else {
+                    "${event.waitingCount} People on Waiting List"
+                }
+                
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
                 if (!event.posterUriString.isNullOrEmpty()) {
@@ -94,15 +99,15 @@ class EventDetailsOFragment : Fragment() {
             }
         )
 
-        // Set up the Draw button navigation
+        // Draw Navigation
         drawBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
                 .addToBackStack(null)
                 .commit()
         }
-        // button to link to the view entrants page
 
+        // Entrants List Navigation
         viewEntrantsBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
