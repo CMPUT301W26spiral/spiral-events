@@ -92,7 +92,6 @@ class EventDetailsOFragment : Fragment() {
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
         title = view.findViewById(R.id.detailsTitle)
         locationName = view.findViewById(R.id.detailsLocation)
-        locationAddress = view.findViewById(R.id.detailsLocationAddress)
         time = view.findViewById(R.id.detailsTime)
         waiting = view.findViewById(R.id.detailsWaiting)
         description = view.findViewById(R.id.detailsDescription)
@@ -192,10 +191,16 @@ class EventDetailsOFragment : Fragment() {
                 }
 
                 locationName.text = event.locationName
-                locationAddress.text = event.locationName
                 time.text = event.timeText
+                
+                // Logic for open spots calculation
                 val openSpots = event.maxEntrants?.minus(event.waitingCount) ?: 0
-                waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+                waiting.text = if (event.maxEntrants != null) {
+                    "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+                } else {
+                    "${event.waitingCount} People on Waiting List"
+                }
+                
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
                 if (!event.posterUriString.isNullOrEmpty()) {
@@ -306,6 +311,20 @@ class EventDetailsOFragment : Fragment() {
             "email" -> "email"
             "phone" -> "phoneNumber"
             else -> "name"
+        // Draw Navigation
+        drawBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
+
+        // Entrants List Navigation
+        viewEntrantsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
         }
 
         db.collection("users")

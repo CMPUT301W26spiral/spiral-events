@@ -17,7 +17,7 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.model.Event
 
 /**
- * RecyclyerView adapter used to display the list of events the current entrant has joined
+ * RecyclerView adapter used to display the list of events the current entrant has joined.
  */
 class MyEventsAdapter(
     private var events: List<Event>,
@@ -25,7 +25,7 @@ class MyEventsAdapter(
 ) : RecyclerView.Adapter<MyEventsAdapter.VH>() {
 
     /**
-     * Updates the list of events displayed by the adapter and refreshes the UI
+     * Updates the list of events displayed by the adapter and refreshes the UI.
      */
     fun submitList(newList: List<Event>) {
         events = newList
@@ -62,17 +62,8 @@ class MyEventsAdapter(
         private val location = itemView.findViewById<TextView>(R.id.eventLocation)
         private val waiting = itemView.findViewById<TextView>(R.id.eventWaiting)
         private val details = itemView.findViewById<Button>(R.id.detailsButton)
-        private val posterImage = itemView.findViewById<ImageView>(R.id.imagePlaceholder)
+        private val poster = itemView.findViewById<ImageView>(R.id.eventPoster)
 
-        /**
-         * Binds event data to the view components.
-         * Sets the title, time, location, and waitlist count.
-         * Appends "(Private)" to the title if the event is not public using a distinct style.
-         * Loads the event poster using Glide if available.
-         *
-         * @param event The event data to display.
-         * @param onDetails Callback for when the details button is clicked.
-         */
         fun bind(event: Event, onDetails: (Event) -> Unit) {
             val builder = SpannableStringBuilder(event.name)
             if (!event.isPublic) {
@@ -98,13 +89,15 @@ class MyEventsAdapter(
             location.text = event.locationName
             waiting.text = "${event.waitingCount} People on Waiting List"
             
+            // Load the event poster using Glide
             if (!event.posterUriString.isNullOrEmpty()) {
                 Glide.with(itemView.context)
                     .load(event.posterUriString)
-                    .placeholder(R.drawable.ic_event)
-                    .into(posterImage)
+                    .placeholder(R.drawable.ic_event) // Show default while loading
+                    .into(poster)
             } else {
-                posterImage.setImageResource(R.drawable.ic_event)
+                // Show a default placeholder if no poster exists
+                poster.setImageResource(R.drawable.ic_event)
             }
 
             details.setOnClickListener { onDetails(event) }

@@ -9,8 +9,8 @@ import android.widget.ImageButton
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.spiral_event_lottery_app.R
+import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.google.android.material.textfield.TextInputEditText
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 /**
@@ -79,12 +79,15 @@ class DoDrawFragment : Fragment() {
                     return@addOnSuccessListener
                 }
 
+                // Retrieve the event name for notifications
+                val eventName = doc.getString("name") ?: "Unknown Event"
+
                 // Get the user input as a string
                 val inputText = entrantLimitEditText.text.toString()
                 // Convert to Int? safely (null if blank or invalid)
                 val entrantLimit = if (inputText.isNotBlank()) inputText.toIntOrNull() else null
 
-                performLottery(eventId, entrantLimit) { success, message ->
+                performLottery(eventId, eventName, entrantLimit) { success, message ->
                     if (success) {
                         eventRef.update("lottery_done", true)
                         Toast.makeText(requireContext(), "Lottery completed!", Toast.LENGTH_SHORT)
@@ -112,11 +115,13 @@ class DoDrawFragment : Fragment() {
      * Executes the lottery logic by fetching the waitlist, selecting winners, and updating Firestore.
      *
      * @param eventId The ID of the event for which the draw is performed.
+     * @param eventName The name of the event for notification content.
      * @param entrantLimit The maximum number of winners to select. If null, everyone on the waitlist is selected.
      * @param onComplete Callback invoked when the process finishes, returning success status and an optional error message.
      */
     private fun performLottery(
         eventId: String,
+        eventName: String,
         entrantLimit: Int?,
         onComplete: (Boolean, String?) -> Unit
     ) {
@@ -141,6 +146,9 @@ class DoDrawFragment : Fragment() {
                 waitlistUsers.shuffled().take(entrantLimit) // randomly select
             }
 
+            // Identify users who were not selected (losers)
+            val nonSelectedUsers = waitlistUsers.filter { it !in selectedUsers }
+
             // Move selected users to selected_list using a batch write for atomicity
             val batch = db.batch()
             selectedUsers.forEach { userId ->
@@ -148,7 +156,7 @@ class DoDrawFragment : Fragment() {
                 val waitlistDocRef = waitlistRef.document(userId)
 
                 // stores the time in milliseconds when the "Go!" button was pressed
-                batch.set(docRef, mapOf("selectedAt" to System.currentTimeMillis()))
+                batch.set(docRef, mapOf("selectedAt" to System.currentTimeMillis(), "status" to "invited"))
                 batch.delete(waitlistDocRef) // Remove from waitlist when moved to selected_list
             }
             
@@ -157,7 +165,33 @@ class DoDrawFragment : Fragment() {
             batch.update(eventRef, "waiting_count", remainingCount.toLong())
 
             batch.commit()
-                .addOnSuccessListener { onComplete(true, null) }
+                .addOnSuccessListener {
+                    // Send notifications to winners (Selected List)
+                    selectedUsers.forEach { userId ->
+                        NotificationManager.sendNotification(
+                            userId,
+                            "Invitation Accepted",
+                            "Congratulations! You have been selected for $eventName. Please confirm your attendance.",
+                            "ACCEPTED",
+                            eventName,
+                            eventId
+                        )
+                    }
+
+                    // Send notifications to losers (Those remaining who weren't picked)
+                    nonSelectedUsers.forEach { userId ->
+                        NotificationManager.sendNotification(
+                            userId,
+                            "Lottery Result",
+                            "We're sorry, you were not selected for $eventName this time.",
+                            "DENIED",
+                            eventName,
+                            eventId
+                        )
+                    }
+
+                    onComplete(true, null)
+                }
                 .addOnFailureListener { e -> onComplete(false, e.message) }
 
         }.addOnFailureListener { e ->

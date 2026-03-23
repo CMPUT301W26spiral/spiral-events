@@ -1,10 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.Spiral_event_lottery_app" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    <style name="Base.Theme.Spiral_event_lottery_app" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Force Light theme to prevent black screen on Dark Mode devices -->
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:textColorPrimary">@android:color/black</item>
     </style>
 
     <style name="Theme.Spiral_event_lottery_app" parent="Base.Theme.Spiral_event_lottery_app" />
 </resources>
-

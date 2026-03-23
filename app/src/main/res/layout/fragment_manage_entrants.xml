@@ -1,141 +1,201 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    fragment_manage_entrants.xml
-    Layout for the Manage Entrants screen shown to organizers.
-    Displays three tabs (Invited, Waiting, Cancelled) with a list of entrants in each.
-
-    User Stories:
-    - US 02.02.01: View list of entrants who joined the waiting list
-    - US 02.06.01: View list of all chosen/invited entrants
-    - US 02.06.02: View list of all cancelled entrants
--->
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F0F7F0">
+    android:background="#F8FBF8">
 
-    <!-- Top bar with back button and title -->
-    <LinearLayout
+    <!-- Top Bar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="16dp">
+        android:background="@android:color/white"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <ImageButton
-            android:id="@+id/backButton"
-            android:layout_width="wrap_content"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_back"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Back" />
+            android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Manage Entrants"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:layout_marginStart="8dp" />
+            <ImageButton
+                android:id="@+id/backButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Back"
+                android:src="@drawable/ic_back"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#0F3D2E" />
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/headerTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Manage Entrants"
+                android:textColor="#0F3D2E"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/btnInvitePrivate"
+                app:layout_constraintStart_toEndOf="@+id/backButton"
+                app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Waiting count -->
+            <Button
+                android:id="@+id/btnInvitePrivate"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="INVITE"
+                android:textColor="#2E5A27"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Sub-header Status -->
     <TextView
         android:id="@+id/waitingCountText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="0 People on Waiting List"
-        android:textSize="14sp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:layout_marginBottom="12dp" />
-
-    <!-- Tab buttons -->
-    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:layout_marginBottom="8dp">
+        android:background="#E8F5E9"
+        android:padding="8dp"
+        android:text="0 People on Waiting List"
+        android:textAlignment="center"
+        android:textColor="#2E5A27"
+        android:textSize="14sp"
+        android:textStyle="italic"
+        app:layout_constraintTop_toBottomOf="@id/appBarLayout" />
+
+    <!-- Tab Selector -->
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/toggleGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:checkedButton="@+id/btnWaiting"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/waitingCountText"
+        app:singleSelection="true">
 
         <Button
             android:id="@+id/btnInvited"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="Invited"
-            android:textSize="12sp"
-            android:layout_marginEnd="4dp" />
+            android:paddingHorizontal="16dp" />
 
         <Button
             android:id="@+id/btnWaiting"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="Waiting"
-            android:textSize="12sp"
-            android:layout_marginEnd="4dp" />
+            android:paddingHorizontal="16dp" />
 
         <Button
             android:id="@+id/btnCancelled"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="Cancelled"
-            android:textSize="12sp" />
+            android:paddingHorizontal="16dp" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
 
-    </LinearLayout>
-
-    <!-- RecyclerViews - takes remaining space above buttons -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/invitedRecycler"
-        android:layout_width="match_parent"
+    <!-- List Section -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/listCard"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone" />
+        android:layout_margin="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/actionButtonsContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toggleGroup"
+        app:strokeColor="#DDDDDD"
+        app:strokeWidth="1dp">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/waitingRecycler"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="visible" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/cancelledRecycler"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/invitedRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
 
-    <!-- Bottom buttons -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/waitingRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="visible" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/cancelledRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Action Buttons Container -->
     <LinearLayout
+        android:id="@+id/actionButtonsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:elevation="8dp"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/btnNotifyAll"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#388E3C"
+            android:text="Notify All in Current Tab"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            app:cornerRadius="26dp" />
 
         <Button
             android:id="@+id/btnDrawReplacement"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#2E5A27"
             android:text="Draw Replacement Applicant"
-            android:backgroundTint="#1B5E20"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="8dp" />
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            app:cornerRadius="26dp" />
 
-        <Button
-            android:id="@+id/btnExportCsv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Export CSV"
-            android:backgroundTint="#1B5E20"
-            android:textColor="#FFFFFF" />
-
+            <Button
+                android:id="@+id/btnExportCsv"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:text="Export CSV"
+                android:textAllCaps="false"
+                android:textColor="#2E5A27"
+                android:textSize="16sp"
+                app:cornerRadius="26dp"
+                app:strokeColor="#2E5A27" />
     </LinearLayout>
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
