@@ -1,5 +1,10 @@
 package com.example.spiral_event_lottery_app.ui.events
 
+import android.graphics.Color
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -27,12 +32,28 @@ class MyEventsAdapter(
         notifyDataSetChanged()
     }
 
+    /**
+     * Called when RecyclerView needs a new ViewHolder of the given type to represent an item.
+     * @param parent The ViewGroup into which the new View will be added.
+     * @param viewType The view type of the new View.
+     * @return A new ViewHolder that holds a View of the given view type.
+     */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val v = LayoutInflater.from(parent.context).inflate(R.layout.item_my_event, parent, false)
         return VH(v)
     }
 
+    /**
+     * Called by RecyclerView to display the data at the specified position.
+     * @param holder The ViewHolder which should be updated to represent the contents of the item.
+     * @param position The position of the item within the adapter's data set.
+     */
     override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(events[position], onDetails)
+
+    /**
+     * Returns the total number of items in the data set held by the adapter.
+     * @return The total number of items in this adapter.
+     */
     override fun getItemCount(): Int = events.size
 
     class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -44,7 +65,26 @@ class MyEventsAdapter(
         private val poster = itemView.findViewById<ImageView>(R.id.eventPoster)
 
         fun bind(event: Event, onDetails: (Event) -> Unit) {
-            title.text = event.name
+            val builder = SpannableStringBuilder(event.name)
+            if (!event.isPublic) {
+                val start = builder.length
+                builder.append(" (Private)")
+                // Make the "(Private)" text gray and slightly smaller for a professional look
+                builder.setSpan(
+                    ForegroundColorSpan(Color.GRAY),
+                    start,
+                    builder.length,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                builder.setSpan(
+                    RelativeSizeSpan(0.8f),
+                    start,
+                    builder.length,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            title.text = builder
+            
             time.text = event.timeText
             location.text = event.locationName
             waiting.text = "${event.waitingCount} People on Waiting List"
