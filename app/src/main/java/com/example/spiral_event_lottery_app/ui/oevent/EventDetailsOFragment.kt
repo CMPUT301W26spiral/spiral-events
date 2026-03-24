@@ -311,20 +311,6 @@ class EventDetailsOFragment : Fragment() {
             "email" -> "email"
             "phone" -> "phoneNumber"
             else -> "name"
-        // Draw Navigation
-        drawBtn.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
-                .addToBackStack(null)
-                .commit()
-        }
-
-        // Entrants List Navigation
-        viewEntrantsBtn.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
-                .addToBackStack(null)
-                .commit()
         }
 
         db.collection("users")
@@ -336,6 +322,9 @@ class EventDetailsOFragment : Fragment() {
                 val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
                 searchAdapter.submitList(users)
                 searchResultRecycler.visibility = if (users.isNotEmpty()) View.VISIBLE else View.GONE
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Search failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -407,7 +396,7 @@ class EventDetailsOFragment : Fragment() {
         }
 
         override fun getItemCount() = users.size
-        
+
         inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
             val userName: TextView = itemView.findViewById(R.id.userName)
             val userDetail: TextView = itemView.findViewById(R.id.userDetail)
