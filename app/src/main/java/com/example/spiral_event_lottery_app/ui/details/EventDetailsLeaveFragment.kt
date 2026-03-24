@@ -13,12 +13,14 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
+import com.example.spiral_event_lottery_app.acceptanceHandling
 import com.google.firebase.firestore.ListenerRegistration
 
 /**
  * Fragment that displays event details for joined entrants and winners.
- * Implements automated redrawing when a winner declines their invitation.
+ * Implements acceptance logic and automated redrawing when a winner declines.
  */
 class EventDetailsLeaveFragment : Fragment() {
     companion object {
@@ -50,7 +52,9 @@ class EventDetailsLeaveFragment : Fragment() {
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
+        
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
+        val acceptBtn = view.findViewById<Button>(R.id.acceptInvitationButton)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
@@ -67,17 +71,28 @@ class EventDetailsLeaveFragment : Fragment() {
                 posterImage.setImageResource(R.drawable.ic_event)
             }
 
-            // Determine if user is a winner or just a waitlist entrant
+            // Determine UI state based on user status (Winner vs Entrant)
             repository.isSelected(eventId, { isWinner ->
+                if (!isAdded) return@isSelected
+                
                 if (isWinner) {
+                    // State: WINNER - show both Accept and Decline
+                    acceptBtn.visibility = View.VISIBLE
                     actionBtn.text = "Decline Invitation"
+                    
+                    acceptBtn.setOnClickListener {
+                        val handler = acceptanceHandling()
+                        handler.invitation_accepted(requireContext(), eventId, DeviceIdProvider.getDeviceId(requireContext()))
+                        parentFragmentManager.popBackStack()
+                    }
+
                     actionBtn.setOnClickListener {
                         AlertDialog.Builder(requireContext())
                             .setTitle("Decline Invitation")
                             .setMessage("Are you sure you want to decline? You will not be able to join again.")
                             .setPositiveButton("Decline") { _, _ ->
                                 repository.declineInvitation(eventId, {
-                                    // TRIGGER AUTOMATION: A spot opened up, so pull a new person
+                                    // Automation: spot opens, trigger redraw
                                     repository.triggerAutomaticRedraw(eventId, event.name)
                                     parentFragmentManager.popBackStack()
                                 }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
@@ -86,6 +101,8 @@ class EventDetailsLeaveFragment : Fragment() {
                             .show()
                     }
                 } else {
+                    // State: ENTRANT - only show Leave button
+                    acceptBtn.visibility = View.GONE
                     actionBtn.text = "Leave Waiting List"
                     actionBtn.setOnClickListener {
                         AlertDialog.Builder(requireContext())
