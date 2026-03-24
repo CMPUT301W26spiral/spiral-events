@@ -58,7 +58,6 @@ class EventDetailsOFragment : Fragment() {
     // UI elements
     private lateinit var title: TextView
     private lateinit var locationName: TextView
-    private lateinit var locationAddress: TextView
     private lateinit var time: TextView
     private lateinit var waiting: TextView
     private lateinit var description: TextView
@@ -149,6 +148,7 @@ class EventDetailsOFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
+        // Draw Navigation
         drawBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
@@ -156,6 +156,7 @@ class EventDetailsOFragment : Fragment() {
                 .commit()
         }
 
+        // Entrants List Navigation
         viewEntrantsBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
@@ -311,20 +312,6 @@ class EventDetailsOFragment : Fragment() {
             "email" -> "email"
             "phone" -> "phoneNumber"
             else -> "name"
-        // Draw Navigation
-        drawBtn.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
-                .addToBackStack(null)
-                .commit()
-        }
-
-        // Entrants List Navigation
-        viewEntrantsBtn.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
-                .addToBackStack(null)
-                .commit()
         }
 
         db.collection("users")
