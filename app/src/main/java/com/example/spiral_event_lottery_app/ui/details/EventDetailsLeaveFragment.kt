@@ -6,16 +6,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
-import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.example.spiral_event_lottery_app.acceptanceHandling
 import com.google.firebase.firestore.ListenerRegistration
 
+/**
+ * Fragment that displays event details for joined entrants and winners.
+ * Hides action buttons if the invitation has already been accepted.
+ */
 class EventDetailsLeaveFragment : Fragment() {
     companion object {
         private const val ARG_EVENT_ID = "event_id"
@@ -45,9 +51,11 @@ class EventDetailsLeaveFragment : Fragment() {
         val location = view.findViewById<TextView>(R.id.detailsLocation)
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
+        val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
+        
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
+        val acceptBtn = view.findViewById<Button>(R.id.acceptInvitationButton)
 
-        actionBtn.text = "Leave Waiting List"
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
         eventListener = repository.listenToEvent(eventId, { event ->
@@ -57,20 +65,71 @@ class EventDetailsLeaveFragment : Fragment() {
             time.text = event.timeText
             waiting.text = "${event.waitingCount} People on Waiting List"
 
-            actionBtn.setOnClickListener {
-                repository.isJoined(eventId, { joined ->
-                    if (!joined) {
-                        AlertDialog.Builder(requireContext()).setTitle("Not registered").setMessage("You're not on the waiting list for\n${event.name}.").setPositiveButton("OK", null).show()
-                    } else {
-                        AlertDialog.Builder(requireContext()).setTitle("You have successfully left the waiting list for ${event.name}").setPositiveButton("Confirm") { _, _ ->
-                            repository.leaveWaitlist(eventId, {
-                                // FIXED: Added eventId parameter
-                                NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Cancelled", "You have left the waiting list.", "DENIED", event.name, eventId)
+            if (!event.posterUriString.isNullOrEmpty()) {
+                Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
+            } else {
+                posterImage.setImageResource(R.drawable.ic_event)
+            }
+
+            // CHECK STATUS: Only show buttons if the user hasn't already accepted/declined
+            repository.getWinnerStatus(eventId) { status ->
+                if (!isAdded) return@getWinnerStatus
+                
+                if ("Accepted" == status) {
+                    // Already accepted: Hide all action buttons
+                    acceptBtn.visibility = View.GONE
+                    actionBtn.visibility = View.GONE
+                } else {
+                    // Not yet confirmed: Show buttons based on selection status
+                    repository.isSelected(eventId, { isWinner ->
+                        if (!isAdded) return@isSelected
+                        
+                        // FIXED: Make the main action button visible now that we have data
+                        actionBtn.visibility = View.VISIBLE
+                        
+                        if (isWinner) {
+                            // State: WINNER - show both Accept and Decline
+                            acceptBtn.visibility = View.VISIBLE
+                            actionBtn.text = "Decline Invitation"
+                            
+                            acceptBtn.setOnClickListener {
+                                val handler = acceptanceHandling()
+                                handler.invitation_accepted(requireContext(), eventId, DeviceIdProvider.getDeviceId(requireContext()))
                                 parentFragmentManager.popBackStack()
-                            }, {}, { e -> Toast.makeText(requireContext(), e.message ?: "Leave failed", Toast.LENGTH_LONG).show() })
-                        }.setNegativeButton("Cancel", null).show()
-                    }
-                }, {})
+                            }
+
+                            actionBtn.setOnClickListener {
+                                AlertDialog.Builder(requireContext())
+                                    .setTitle("Decline Invitation")
+                                    .setMessage("Are you sure you want to decline? You will not be able to join again.")
+                                    .setPositiveButton("Decline") { _, _ ->
+                                        repository.declineInvitation(eventId, {
+                                            repository.triggerAutomaticRedraw(eventId, event.name)
+                                            parentFragmentManager.popBackStack()
+                                        }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
+                                    }
+                                    .setNegativeButton("Cancel", null)
+                                    .show()
+                            }
+                        } else {
+                            // State: ENTRANT - only show Leave button
+                            acceptBtn.visibility = View.GONE
+                            actionBtn.text = "Leave Waiting List"
+                            actionBtn.setOnClickListener {
+                                AlertDialog.Builder(requireContext())
+                                    .setTitle("Leave Waiting List")
+                                    .setMessage("Are you sure you want to leave the waiting list?")
+                                    .setPositiveButton("Confirm") { _, _ ->
+                                        repository.leaveWaitlist(eventId, {
+                                            parentFragmentManager.popBackStack()
+                                        }, {}, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
+                                    }
+                                    .setNegativeButton("Cancel", null)
+                                    .show()
+                            }
+                        }
+                    }, {})
+                }
             }
         }, {})
     }

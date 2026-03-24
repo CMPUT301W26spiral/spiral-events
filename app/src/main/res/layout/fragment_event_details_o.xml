@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8FBF8"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Top App Bar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp">
+
+            <ImageButton
+                android:id="@+id/backButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Back"
+                android:src="@drawable/ic_back"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#0F3D2E" />
+
+            <TextView
+                android:id="@+id/headerTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Event Details"
+                android:textColor="#0F3D2E"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/backButton"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/organizerActionTray"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/appBarLayout">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Event Poster Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/imageCard"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#EEEEEE">
+
+                    <ImageView
+                        android:id="@+id/eventPosterImage"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        tools:src="@drawable/ic_event" />
+
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/editImageButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|end"
+                        android:layout_margin="12dp"
+                        android:contentDescription="Edit Poster"
+                        app:fabSize="mini"
+                        app:srcCompat="@drawable/baseline_edit_24"
+                        app:tint="#FFFFFF"
+                        app:backgroundTint="#2E5A27" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Event Info Section -->
+            <TextView
+                android:id="@+id/detailsTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:textColor="#0F3D2E"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                tools:text="Family Swimming Lessons" />
+
+            <TextView
+                android:id="@+id/detailsLocation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="#666666"
+                android:textSize="16sp"
+                tools:text="Peter Hemingway Aquatic Centre" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_calendar"
+                    app:tint="#2E5A27" />
+
+                <TextView
+                    android:id="@+id/detailsTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textColor="#333333"
+                    android:textSize="14sp"
+                    tools:text="Sat, Mar. 4, 2026 10:00-11:00 AM" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_people"
+                    app:tint="#2E5A27" />
+
+                <TextView
+                    android:id="@+id/detailsWaiting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textColor="#333333"
+                    android:textSize="14sp"
+                    tools:text="71 People on Waiting List" />
+            </LinearLayout>
+
+            <!-- Private Invitation Section -->
+            <LinearLayout
+                android:id="@+id/inviteSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/inviteHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="Invite Entrants"
+                    android:textColor="#0F3D2E"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/inviteRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#DDDDDD"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="4dp">
+
+                        <EditText
+                            android:id="@+id/inviteSearchInput"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:background="@android:color/transparent"
+                            android:hint="Search user..."
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:textSize="14sp" />
+
+                        <Spinner
+                            android:id="@+id/inviteCategorySpinner"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/searchResultRecycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:maxHeight="200dp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- Description -->
+            <TextView
+                android:id="@+id/descriptionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Event Description"
+                android:textColor="#0F3D2E"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/detailsDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="#666666"
+                android:textSize="14sp"
+                tools:text="This is a sample description of the event." />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="32dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Bottom Action Tray -->
+    <LinearLayout
+        android:id="@+id/organizerActionTray"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/drawButton"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:backgroundTint="#2E5A27"
+            android:text="Perform Lottery Draw"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="26dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/viewEntrantsButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="Entrants"
+                android:textAllCaps="false"
+                android:textColor="#2E5A27"
+                app:cornerRadius="24dp"
+                app:strokeColor="#2E5A27" />
+
+            <Button
+                android:id="@+id/notifyEntrantsButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="Notify"
+                android:textAllCaps="false"
+                android:textColor="#2E5A27"
+                app:cornerRadius="24dp"
+                app:strokeColor="#2E5A27" />
+
+            <Button
+                android:id="@+id/viewLocButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Map"
+                android:textAllCaps="false"
+                android:textColor="#2E5A27"
+                app:cornerRadius="24dp"
+                app:strokeColor="#2E5A27" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/deleteEventButton"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="Delete Event"
+            android:textAllCaps="false"
+            android:textColor="#B71C1C" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

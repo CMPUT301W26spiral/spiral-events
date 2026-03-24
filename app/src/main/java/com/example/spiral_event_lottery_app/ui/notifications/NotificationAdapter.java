@@ -53,11 +53,11 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Notification notification = notificationList.get(position);
-        
-        String displayTitle = notification.getEventName() != null ? 
-            notification.getTitle() + ": " + notification.getEventName() : 
-            notification.getTitle();
-            
+
+        String displayTitle = notification.getEventName() != null ?
+                notification.getTitle() + ": " + notification.getEventName() :
+                notification.getTitle();
+
         holder.title.setText(displayTitle);
         holder.message.setText(notification.getMessage());
         holder.date.setText(notification.getFormattedDate());
@@ -69,56 +69,54 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             case "ACCEPTED":
                 holder.title.setTextColor(Color.parseColor("#2E5A27")); // Green
                 holder.goButton.setVisibility(View.VISIBLE);
+                holder.goButton.setText("View Details"); // Leads to My Events logic
                 break;
             case "DENIED":
                 holder.title.setTextColor(Color.parseColor("#B71C1C")); // Red
-                holder.goButton.setVisibility(View.GONE); 
+                holder.goButton.setVisibility(View.GONE);
                 break;
             case "REQUESTED":
                 holder.title.setTextColor(Color.parseColor("#FF8F00")); // Amber
-                holder.goButton.setVisibility(View.VISIBLE); 
+                holder.goButton.setVisibility(View.VISIBLE);
+                holder.goButton.setText("Go");
                 break;
             case "ORGANIZER":
                 holder.title.setTextColor(Color.parseColor("#6A1B9A")); // Purple
                 holder.goButton.setVisibility(View.VISIBLE);
+                holder.goButton.setText("Go");
                 break;
             default:
                 holder.title.setTextColor(Color.BLACK);
+                holder.goButton.setText("Go");
                 break;
         }
 
-        // Handle navigation to event details
+        // Handle navigation to event details or special handling for wins
         holder.goButton.setOnClickListener(v -> {
             String eventId = notification.getEventId();
             if (eventId != null) {
                 Context context = v.getContext();
                 AppCompatActivity activity = getActivity(context);
-                
                 if (activity == null) return;
 
-                EventRepository repository = new EventRepository(activity);
+                // Special handling for ACCEPTED (Wins): Should navigate to where they can Accept/Decline
+                // Standard behavior: Go to EventDetailsLeaveFragment which contains the My Events context logic
                 
-                // Verify user status before allowing navigation to details
+                EventRepository repository = new EventRepository(activity);
                 repository.isJoined(eventId, joined -> {
                     if (activity.isFinishing() || activity.isDestroyed()) return;
 
-                    if (joined) {
-                        // Navigate to Leave version if already joined
-                        activity.getSupportFragmentManager().beginTransaction()
+                    // If they are selected/joined, they should go to the version of details that has action buttons
+                    activity.getSupportFragmentManager().beginTransaction()
                             .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
                             .addToBackStack("details")
                             .commit();
-                    } else if (notification.getType().equals("DENIED") || notification.getType().equals("CANCELLED")) {
-                        // Navigate to standard Details if viewing result of a rejection
-                        activity.getSupportFragmentManager().beginTransaction()
+                }, e -> {
+                    // Fallback to standard details if check fails
+                    activity.getSupportFragmentManager().beginTransaction()
                             .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
                             .addToBackStack("details")
                             .commit();
-                    } else {
-                        Toast.makeText(activity, "You are no longer on the waiting list for this event.", Toast.LENGTH_SHORT).show();
-                    }
-                }, e -> {
-                    Toast.makeText(activity, "Error checking event status", Toast.LENGTH_SHORT).show();
                 });
             }
         });

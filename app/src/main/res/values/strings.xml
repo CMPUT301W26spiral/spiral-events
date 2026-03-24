@@ -1,14 +1,40 @@
 <resources>
     <string name="app_name">spiral_event_lottery_app</string>
-    <string name="device_id_label">Device ID: %1$s</string>
-    <string name="full_name_label">Full Name: %1$s</string>
-    <string name="email_label">Email address: %1$s</string>
-    <string name="phone_label">Phone: %1$s</string>
+    <string name="instructionstoscan">Line up the QR Code with your camera</string>
+    <string name="create_an_event">Create an Event</string>
+    <string name="add_posters">Add Posters</string>
+    <string name="event_name">Event Name</string>
+    <string name="location">Location</string>
+    <string name="access">Access</string>
+    <string name="related_interests">Related Interests</string>
+    <string name="day_of_event">Day of Event</string>
+    <string name="dd">DD</string>
+    <string name="mm">MM</string>
+    <string name="yyyy">YYYY</string>
+    <string name="time_of_event">Time of Event</string>
+    <string name="to">To</string>
+    <string name="day_of_draw">Day of Draw</string>
+    <string name="time_of_draw">Time of Draw</string>
+    <string name="geolocation_requirement">Geolocation Requirement</string>
+    <string name="enable_disable">Enable/Disable</string>
+    <string name="max_entrants">Max Entrants</string>
+    <string name="event_description">Event Description</string>
+    <string name="create">Create</string>
+    <string name="successfully_created">Successfully Created: %s</string>
+    <string name="qr_code_description">Save the QR code or share it with others.</string>
+    <string name="save_qr_code">Save QR Code</string>
+    <string name="confirm">Confirm</string>
+
+    <!-- Profile Strings -->
     <string name="unnamed_user">Unnamed User</string>
-    <string name="profile_updated">Profile updated.</string>
-    <string name="profile_deleted">Profile deleted.</string>
-    <string name="photo_upload_failed">Photo upload failed: %1$s</string>
-    <string name="failed_to_load_profile">Failed to load profile: %1$s</string>
-    <string name="failed_to_save_profile">Failed to save profile: %1$s</string>
-    <string name="notification_settings_updated">Notification settings updated.</string>
+    <string name="device_id_label">Device ID: %s</string>
+    <string name="full_name_label">Full Name: %s</string>
+    <string name="email_label">Email: %s</string>
+    <string name="phone_label">Phone: %s</string>
+    <string name="failed_to_load_profile">Failed to load profile: %s</string>
+    <string name="photo_upload_failed">Photo upload failed: %s</string>
+    <string name="profile_updated">Profile updated successfully</string>
+    <string name="failed_to_save_profile">Failed to save profile: %s</string>
+    <string name="notification_settings_updated">Notification settings updated</string>
+    <string name="profile_deleted">Profile deleted</string>
 </resources>

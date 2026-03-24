@@ -149,13 +149,14 @@ public class NotificationFragment extends Fragment {
      */
     private void listenForNotifications(String userId) {
         stopListening();
-        // FIXED: Added .orderBy("timestamp", Query.Direction.DESCENDING)
+
+        // US 01.02.01 - Users are identified by their ANDROID_ID
         notificationListener = db.collection("notifications")
                 .whereEqualTo("recipientId", userId)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null) {
-                        Log.e(TAG, "Listen failed. Have you created the required Firestore index? See Logcat link.", error);
+                        Log.e(TAG, "Listen failed! If this is a new environment, click the Logcat link to create the Index: " + error.getMessage());
                         return;
                     }
 
@@ -169,7 +170,6 @@ public class NotificationFragment extends Fragment {
                     adapter.notifyDataSetChanged();
                 });
     }
-
     /**
      * Stops the active Firestore snapshot listener to prevent memory leaks and unnecessary data usage.
      */

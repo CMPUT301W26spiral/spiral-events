@@ -141,19 +141,6 @@
             android:textStyle="bold"/>
 
         <TextView
-            android:id="@+id/chipWaiting"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginStart="10dp"
-            android:background="@drawable/bg_chip_unselected"
-            android:paddingLeft="14dp"
-            android:paddingRight="14dp"
-            android:gravity="center"
-            android:text="Waiting List"
-            android:textColor="#1F1F1F"
-            android:textStyle="bold"/>
-
-        <TextView
             android:id="@+id/chipFull"
             android:layout_width="wrap_content"
             android:layout_height="34dp"
