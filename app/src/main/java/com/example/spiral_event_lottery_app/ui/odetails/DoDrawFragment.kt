@@ -183,7 +183,7 @@ class DoDrawFragment : Fragment() {
                         NotificationManager.sendNotification(
                             userId,
                             "Lottery Result",
-                            "We're sorry, you were not selected for $eventName this time.",
+                            "We're sorry, you were not selected for $eventName this time. Stay tuned—we will redraw if anyone drops out!",
                             "DENIED",
                             eventName,
                             eventId
