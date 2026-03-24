@@ -60,7 +60,6 @@ class EventDetailsLeaveFragment : Fragment() {
             time.text = event.timeText
             waiting.text = "${event.waitingCount} People on Waiting List"
 
-            // Load the event poster from Firestore URL
             if (!event.posterUriString.isNullOrEmpty()) {
                 Glide.with(this)
                     .load(event.posterUriString)
@@ -75,9 +74,25 @@ class EventDetailsLeaveFragment : Fragment() {
                     if (!joined) {
                         AlertDialog.Builder(requireContext()).setTitle("Not registered").setMessage("You're not on the waiting list for\n${event.name}.").setPositiveButton("OK", null).show()
                     } else {
-                        AlertDialog.Builder(requireContext()).setTitle("You have successfully left the waiting list for ${event.name}").setPositiveButton("Confirm") { _, _ ->
+                        AlertDialog.Builder(requireContext()).setTitle("Leave Waiting List").setMessage("Are you sure you want to leave the waiting list for ${event.name}?").setPositiveButton("Confirm") { _, _ ->
                             repository.leaveWaitlist(eventId, {
-                                NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Cancelled", "You have left the waiting list.", "DENIED", event.name, eventId)
+                                val currentUserId = DeviceIdProvider.getDeviceId(requireContext())
+                                
+                                // 1. Notify the Entrant (Confirmation)
+                                NotificationManager.sendNotification(currentUserId, "Cancelled", "You have left the waiting list for ${event.name}.", "DENIED", event.name, eventId)
+                                
+                                // 2. Notify the Organizer (Update)
+                                if (!event.organizerId.isNullOrEmpty()) {
+                                    NotificationManager.sendNotification(
+                                        event.organizerId,
+                                        "Entrant Left",
+                                        "An entrant has left the waiting list for your event: ${event.name}.",
+                                        "ORGANIZER",
+                                        event.name,
+                                        eventId
+                                    )
+                                }
+                                
                                 parentFragmentManager.popBackStack()
                             }, {}, { e -> Toast.makeText(requireContext(), e.message ?: "Leave failed", Toast.LENGTH_LONG).show() })
                         }.setNegativeButton("Cancel", null).show()
