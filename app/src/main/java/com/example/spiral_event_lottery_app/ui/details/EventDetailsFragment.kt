@@ -83,6 +83,10 @@ class EventDetailsFragment : Fragment() {
 
                 repository.isJoined(eventId, { joined ->
                     if (!isAdded) return@isJoined
+                    
+                    // Show the button only after its state is determined
+                    joinBtn.visibility = View.VISIBLE
+                    
                     if (joined) {
                         joinBtn.text = "You're in the waiting list"
                         joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
@@ -99,8 +103,6 @@ class EventDetailsFragment : Fragment() {
                             AlertDialog.Builder(requireContext()).setTitle("Already registered").setMessage("You're already on the waiting list for\n$currentEventName.").setPositiveButton("OK", null).show()
                         } else {
                             AlertDialog.Builder(requireContext()).setTitle("Join Waitlist").setMessage("Confirm joining the waiting list for $currentEventName?").setPositiveButton("Confirm") { _, _ ->
-                                
-                                // FIXED: Using explicit SAM conversions so Kotlin knows which interface is which
                                 repository.joinWaitlist(
                                     eventId,
                                     EventRepository.SuccessCallback {
