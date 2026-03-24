@@ -143,7 +143,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                     snapshot.documents.forEach { doc ->
                         NotificationManager.sendNotification(
                             doc.id,
-                            "Organizer Update: $eventName",
+                            "Organizer Update",
                             message,
                             "ORGANIZER",
                             eventName,
