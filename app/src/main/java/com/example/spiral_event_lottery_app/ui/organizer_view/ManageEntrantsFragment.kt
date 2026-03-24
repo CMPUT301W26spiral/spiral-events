@@ -17,7 +17,7 @@ import androidx.core.content.ContextCompat
 
 /**
  * ManageEntrantsFragment displays the list of entrants for a specific event.
- * Handles custom mass notifications and private invitations.
+ * Handles mass notifications and private invitations.
  */
 class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
 
@@ -51,7 +51,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
 
         eventId = arguments?.getString("event_id") ?: ""
 
-        // Bind buttons
+        // Bind new buttons
         btnInvitePrivate = view.findViewById(R.id.btnInvitePrivate)
         btnNotifyAll = view.findViewById(R.id.btnNotifyAll)
         
@@ -77,11 +77,12 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         btnWaiting.setOnClickListener { showTab("waiting") }
         btnCancelled.setOnClickListener { showTab("cancelled") }
 
-        // Logic for custom mass notification
+        // US 02.07.01, 02.07.02, 02.07.03 logic
         btnNotifyAll.setOnClickListener {
-            showCustomNotificationDialog()
+            notifyAllInCurrentTab()
         }
 
+        // US 01.05.06 logic
         btnInvitePrivate.setOnClickListener {
             showInviteDialog()
         }
@@ -96,33 +97,10 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     }
 
     /**
-     * Shows a dialog allowing the organizer to compose a custom message for entrants.
+     * Sends a notification to every entrant in the currently visible list.
+     * Handles US 02.07.01 (Waiting), 02.07.02 (Selected), and 02.07.03 (Cancelled).
      */
-    private fun showCustomNotificationDialog() {
-        val input = EditText(requireContext())
-        input.hint = "Enter update message..."
-        input.setPadding(48, 32, 48, 32)
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Send Notification to $currentTab list")
-            .setMessage("Type the message you want to send to everyone in the current list.")
-            .setView(input)
-            .setPositiveButton("Send") { _, _ ->
-                val customMessage = input.text.toString().trim()
-                if (customMessage.isNotEmpty()) {
-                    notifyAllWithCustomMessage(customMessage)
-                } else {
-                    Toast.makeText(requireContext(), "Message cannot be empty", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    /**
-     * Sends the custom message to all entrants in the currently visible list.
-     */
-    private fun notifyAllWithCustomMessage(message: String) {
+    private fun notifyAllInCurrentTab() {
         val collectionPath = when (currentTab) {
             "invited" -> "selected_list"
             "waiting" -> "waitlist"
@@ -144,24 +122,24 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                         NotificationManager.sendNotification(
                             doc.id,
                             "Organizer Update",
-                            message,
+                            "New update for $eventName: Check your status!",
                             "ORGANIZER",
                             eventName,
                             eventId
                         )
                     }
-                    Toast.makeText(requireContext(), "Message sent successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Notifications sent to all entrants in $currentTab list.", Toast.LENGTH_SHORT).show()
                 }
         }
     }
 
     /**
      * Opens a dialog to invite a specific entrant to a private event.
+     * Implements US 01.05.06.
      */
     private fun showInviteDialog() {
         val input = EditText(requireContext())
         input.hint = "Enter Device ID"
-        input.setPadding(48, 32, 48, 32)
         
         AlertDialog.Builder(requireContext())
             .setTitle("Private Event Invitation")

@@ -69,7 +69,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             case "ACCEPTED":
                 holder.title.setTextColor(Color.parseColor("#2E5A27")); // Green
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("View Details"); // Leads to My Events logic
+                holder.goButton.setText("Accept/Decline"); // Let them know it's an action button
                 break;
             case "DENIED":
                 holder.title.setTextColor(Color.parseColor("#B71C1C")); // Red
@@ -78,45 +78,68 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             case "REQUESTED":
                 holder.title.setTextColor(Color.parseColor("#FF8F00")); // Amber
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Go");
                 break;
             case "ORGANIZER":
                 holder.title.setTextColor(Color.parseColor("#6A1B9A")); // Purple
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Go");
                 break;
             default:
                 holder.title.setTextColor(Color.BLACK);
-                holder.goButton.setText("Go");
                 break;
         }
 
-        // Handle navigation to event details or special handling for wins
+        // we Handle navigation OR Accept/Decline Dialog
         holder.goButton.setOnClickListener(v -> {
             String eventId = notification.getEventId();
             if (eventId != null) {
                 Context context = v.getContext();
+
+                // ACCEPTED is to show the choice dialog
+                if ("ACCEPTED".equals(notification.getType())) {
+                    new androidx.appcompat.app.AlertDialog.Builder(context)
+                            .setTitle("Congratulations!")
+                            .setMessage("You have been chosen for this event! Do you want to accept or decline the invitation?")
+                            .setPositiveButton("Accept", (dialog, which) -> {
+                                // Trigger the acceptanceHandling class
+                                com.example.spiral_event_lottery_app.acceptanceHandling handler = 
+                                    new com.example.spiral_event_lottery_app.acceptanceHandling();
+                                handler.invitation_accepted(context, eventId, notification.getRecipientId());
+                                holder.goButton.setText("Accepted");
+                                holder.goButton.setEnabled(false);
+                            })
+                            .setNegativeButton("Decline", (dialog, which) -> {
+                                com.example.spiral_event_lottery_app.acceptanceHandling handler = 
+                                    new com.example.spiral_event_lottery_app.acceptanceHandling();
+                                handler.invitation_declined(context, eventId, notification.getRecipientId());
+                                holder.goButton.setText("Declined");
+                                holder.goButton.setEnabled(false);
+                            })
+                            .show();
+                    return; // Stop execution here so it doesn't navigate to the details fragment
+                }
+
                 AppCompatActivity activity = getActivity(context);
                 if (activity == null) return;
 
-                // Special handling for ACCEPTED (Wins): Should navigate to where they can Accept/Decline
-                // Standard behavior: Go to EventDetailsLeaveFragment which contains the My Events context logic
-                
                 EventRepository repository = new EventRepository(activity);
                 repository.isJoined(eventId, joined -> {
                     if (activity.isFinishing() || activity.isDestroyed()) return;
 
-                    // If they are selected/joined, they should go to the version of details that has action buttons
-                    activity.getSupportFragmentManager().beginTransaction()
-                            .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
-                            .addToBackStack("details")
-                            .commit();
+                    if (joined) {
+                        activity.getSupportFragmentManager().beginTransaction()
+                                .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
+                                .addToBackStack("details")
+                                .commit();
+                    } else if (notification.getType().equals("DENIED") || notification.getType().equals("CANCELLED")) {
+                        activity.getSupportFragmentManager().beginTransaction()
+                                .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                                .addToBackStack("details")
+                                .commit();
+                    } else {
+                        Toast.makeText(activity, "You are no longer on the waiting list for this event.", Toast.LENGTH_SHORT).show();
+                    }
                 }, e -> {
-                    // Fallback to standard details if check fails
-                    activity.getSupportFragmentManager().beginTransaction()
-                            .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
-                            .addToBackStack("details")
-                            .commit();
+                    Toast.makeText(activity, "Error checking event status", Toast.LENGTH_SHORT).show();
                 });
             }
         });

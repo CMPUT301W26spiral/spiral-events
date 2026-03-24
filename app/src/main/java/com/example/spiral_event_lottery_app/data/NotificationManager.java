@@ -6,59 +6,32 @@ import com.google.firebase.firestore.FirebaseFirestore;
 /**
  * Helper class to manage the sending of notifications to Firebase Firestore.
  * Provides static methods to create notification documents that are monitored by the app.
- * Now respects user notification preferences stored in their profile.
  */
 public class NotificationManager {
     private static final String COLLECTION_NAME = "notifications";
 
     /**
-     * Sends a notification to a specific user by saving it to Firestore, 
-     * but only if the user has enabled that specific type of notification in their profile.
+     * Sends a notification to a specific user by saving it to Firestore.
+     * This method is decoupled from the UI and can be called from anywhere in the app logic.
      *
      * @param recipientId The device ID of the user (Entrant) receiving the notification.
-     * @param title       The header title of the notification.
+     * @param title       The header title of the notification (e.g., "Accepted").
      * @param message     The body text of the notification.
-     * @param type        The category: "ACCEPTED", "DENIED", "ORGANIZER", or "REQUESTED".
-     * @param eventName   The name of the event.
+     * @param type        The category of notification (e.g., "ACCEPTED", "DENIED", "REQUESTED").
+     * @param eventName   The name of the event associated with the notification.
      * @param eventId     The unique ID of the event for navigation.
      */
     public static void sendNotification(String recipientId, String title, String message, String type, String eventName, String eventId) {
+        Notification notification = new Notification(title, message, type, recipientId, eventName, eventId);
+        
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        // 1. Fetch the user's notification preferences from their profile
-        db.collection("users").document(recipientId).get().addOnSuccessListener(documentSnapshot -> {
-            boolean shouldSend = true;
-
-            if (documentSnapshot.exists()) {
-                // Map the notification 'type' to the user's preference fields
-                switch (type) {
-                    case "ACCEPTED":
-                        // US 01.04.01 - Receive notification when chosen
-                        shouldSend = documentSnapshot.getBoolean("notifyWhenChosen") != null ? 
-                                     documentSnapshot.getBoolean("notifyWhenChosen") : true;
-                        break;
-                    case "DENIED":
-                        // US 01.04.02 - Receive notification when not chosen
-                        shouldSend = documentSnapshot.getBoolean("notifyWhenNotChosen") != null ? 
-                                     documentSnapshot.getBoolean("notifyWhenNotChosen") : true;
-                        break;
-                    case "ORGANIZER":
-                        // US 01.04.03 - Opt out of receiving notifications from organizers
-                        shouldSend = documentSnapshot.getBoolean("notifyOrganizersAdmins") != null ? 
-                                     documentSnapshot.getBoolean("notifyOrganizersAdmins") : true;
-                        break;
-                    case "REQUESTED":
-                        // Confirmation of joining - usually always sent unless otherwise specified
-                        shouldSend = true;
-                        break;
-                }
-            }
-
-            // 2. Only add the notification to Firestore if the user hasn't "muted" it
-            if (shouldSend) {
-                Notification notification = new Notification(title, message, type, recipientId, eventName, eventId);
-                db.collection(COLLECTION_NAME).add(notification);
-            }
-        });
+        db.collection(COLLECTION_NAME)
+                .add(notification)
+                .addOnSuccessListener(documentReference -> {
+                    // Notification sent successfully to Firestore
+                })
+                .addOnFailureListener(e -> {
+                    // Potential logging for failed network requests
+                });
     }
 }
