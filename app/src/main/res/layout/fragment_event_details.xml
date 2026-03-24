@@ -144,7 +144,7 @@
             android:visibility="gone"
             app:cornerRadius="27dp" />
 
-        <!-- Join/Decline Button (Hidden by default to prevent "Flash") -->
+        <!-- Join/Decline Button (VISIBLE by default to remove delay) -->
         <Button
             android:id="@+id/joinLeaveButton"
             style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
@@ -157,7 +157,7 @@
             android:textStyle="bold"
             android:backgroundTint="#2E5A27"
             android:textColor="#FFFFFF"
-            android:visibility="gone"
+            android:visibility="visible"
             app:cornerRadius="27dp" />
 
     </LinearLayout>
