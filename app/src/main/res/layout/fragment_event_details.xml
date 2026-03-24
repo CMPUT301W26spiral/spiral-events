@@ -129,7 +129,7 @@
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Accept Button (Solid Green) -->
+        <!-- Accept Button (Hidden by default) -->
         <Button
             android:id="@+id/acceptInvitationButton"
             style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
@@ -142,22 +142,22 @@
             android:backgroundTint="#2E5A27"
             android:textColor="#FFFFFF"
             android:visibility="gone"
-            app:cornerRadius="27dp"
-            tools:visibility="visible"/>
+            app:cornerRadius="27dp" />
 
-        <!-- Leave/Decline Button (Solid Red) -->
+        <!-- Join/Decline Button (Hidden by default to prevent "Flash") -->
         <Button
             android:id="@+id/joinLeaveButton"
             style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="match_parent"
             android:layout_height="54dp"
             android:layout_marginTop="12dp"
-            android:text="Leave Waiting List"
+            android:text="Join Waiting List"
             android:textAllCaps="false"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:backgroundTint="#B71C1C"
+            android:backgroundTint="#2E5A27"
             android:textColor="#FFFFFF"
+            android:visibility="gone"
             app:cornerRadius="27dp" />
 
     </LinearLayout>
