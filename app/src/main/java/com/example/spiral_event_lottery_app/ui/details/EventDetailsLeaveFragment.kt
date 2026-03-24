@@ -20,7 +20,7 @@ import com.google.firebase.firestore.ListenerRegistration
 
 /**
  * Fragment that displays event details for joined entrants and winners.
- * Implements acceptance logic and automated redrawing when a winner declines.
+ * Hides action buttons if the invitation has already been accepted.
  */
 class EventDetailsLeaveFragment : Fragment() {
     companion object {
@@ -71,53 +71,54 @@ class EventDetailsLeaveFragment : Fragment() {
                 posterImage.setImageResource(R.drawable.ic_event)
             }
 
-            // Determine UI state based on user status (Winner vs Entrant)
-            repository.isSelected(eventId, { isWinner ->
-                if (!isAdded) return@isSelected
+            // CHECK STATUS: Only show buttons if the user hasn't already accepted/declined
+            repository.getWinnerStatus(eventId) { status ->
+                if (!isAdded) return@getWinnerStatus
                 
-                if (isWinner) {
-                    // State: WINNER - show both Accept and Decline
-                    acceptBtn.visibility = View.VISIBLE
-                    actionBtn.text = "Decline Invitation"
-                    
-                    acceptBtn.setOnClickListener {
-                        val handler = acceptanceHandling()
-                        handler.invitation_accepted(requireContext(), eventId, DeviceIdProvider.getDeviceId(requireContext()))
-                        parentFragmentManager.popBackStack()
-                    }
-
-                    actionBtn.setOnClickListener {
-                        AlertDialog.Builder(requireContext())
-                            .setTitle("Decline Invitation")
-                            .setMessage("Are you sure you want to decline? You will not be able to join again.")
-                            .setPositiveButton("Decline") { _, _ ->
-                                repository.declineInvitation(eventId, {
-                                    // Automation: spot opens, trigger redraw
-                                    repository.triggerAutomaticRedraw(eventId, event.name)
-                                    parentFragmentManager.popBackStack()
-                                }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
-                            }
-                            .setNegativeButton("Cancel", null)
-                            .show()
-                    }
-                } else {
-                    // State: ENTRANT - only show Leave button
+                if ("Accepted" == status) {
+                    // Already accepted: Hide all action buttons
                     acceptBtn.visibility = View.GONE
-                    actionBtn.text = "Leave Waiting List"
-                    actionBtn.setOnClickListener {
-                        AlertDialog.Builder(requireContext())
-                            .setTitle("Leave Waiting List")
-                            .setMessage("Are you sure you want to leave the waiting list?")
-                            .setPositiveButton("Confirm") { _, _ ->
+                    actionBtn.visibility = View.GONE
+                } else {
+                    // Not yet confirmed: Show buttons based on selection status
+                    repository.isSelected(eventId, { isWinner ->
+                        if (!isAdded) return@isSelected
+                        if (isWinner) {
+                            acceptBtn.visibility = View.VISIBLE
+                            actionBtn.text = "Decline Invitation"
+                            
+                            acceptBtn.setOnClickListener {
+                                val handler = acceptanceHandling()
+                                handler.invitation_accepted(requireContext(), eventId, DeviceIdProvider.getDeviceId(requireContext()))
+                                // Reload to update UI
+                                parentFragmentManager.popBackStack()
+                            }
+
+                            actionBtn.setOnClickListener {
+                                AlertDialog.Builder(requireContext())
+                                    .setTitle("Decline Invitation")
+                                    .setMessage("Are you sure you want to decline? You will not be able to join again.")
+                                    .setPositiveButton("Decline") { _, _ ->
+                                        repository.declineInvitation(eventId, {
+                                            repository.triggerAutomaticRedraw(eventId, event.name)
+                                            parentFragmentManager.popBackStack()
+                                        }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
+                                    }
+                                    .setNegativeButton("Cancel", null)
+                                    .show()
+                            }
+                        } else {
+                            acceptBtn.visibility = View.GONE
+                            actionBtn.text = "Leave Waiting List"
+                            actionBtn.setOnClickListener {
                                 repository.leaveWaitlist(eventId, {
                                     parentFragmentManager.popBackStack()
                                 }, {}, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
                             }
-                            .setNegativeButton("Cancel", null)
-                            .show()
-                    }
+                        }
+                    }, {})
                 }
-            }, {})
+            }
         }, {})
     }
 

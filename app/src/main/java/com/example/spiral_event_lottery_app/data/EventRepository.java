@@ -1,52 +1,29 @@
 package com.example.spiral_event_lottery_app.data;
 
 import android.content.Context;
-import android.util.Log;
-
 import com.example.spiral_event_lottery_app.model.Event;
-import com.example.spiral_event_lottery_app.model.Notification;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.Transaction;
 import com.google.firebase.firestore.WriteBatch;
-
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
-/**
- * EventRepository is the main data access class for the entrant side event functionality.
- */
 public class EventRepository {
 
-    public interface EventsCallback {
-        void onUpdate(List<Event> events);
-    }
-
-    public interface EventCallback {
-        void onUpdate(Event event);
-    }
-
-    public interface BooleanCallback {
-        void onResult(boolean value);
-    }
-
-    public interface ErrorCallback {
-        void onError(Exception e);
-    }
-
-    public interface SuccessCallback {
-        void onSuccess();
-    }
+    public interface EventsCallback { void onUpdate(List<Event> events); }
+    public interface EventCallback { void onUpdate(Event event); }
+    public interface BooleanCallback { void onResult(boolean value); }
+    public interface StatusCallback { void onStatus(String status); }
+    public interface ErrorCallback { void onError(Exception e); }
+    public interface SuccessCallback { void onSuccess(); }
 
     private final FirebaseFirestore db;
     private final String deviceId;
@@ -56,43 +33,22 @@ public class EventRepository {
         deviceId = DeviceIdProvider.getDeviceId(context);
     }
 
-    /**
-     * Listens for all events where the current user is on the waiting list.
-     * This populates the "Current Events" section in My Events.
-     */
     public ListenerRegistration listenToMyEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
         return db.collectionGroup("waitlist")
                 .whereEqualTo("device_id", deviceId)
                 .addSnapshotListener((snapshot, error) -> {
-                    if (error != null) {
-                        onError.onError(error);
-                        return;
-                    }
-                    if (snapshot == null || snapshot.isEmpty()) {
-                        onUpdate.onUpdate(new ArrayList<>());
-                        return;
-                    }
-
+                    if (error != null) { onError.onError(error); return; }
+                    if (snapshot == null || snapshot.isEmpty()) { onUpdate.onUpdate(new ArrayList<>()); return; }
                     List<DocumentReference> eventRefs = new ArrayList<>();
                     for (DocumentSnapshot doc : snapshot.getDocuments()) {
                         DocumentReference parentEvent = doc.getReference().getParent().getParent();
-                        if (parentEvent != null) {
-                            eventRefs.add(parentEvent);
-                        }
+                        if (parentEvent != null) eventRefs.add(parentEvent);
                     }
-
-                    if (eventRefs.isEmpty()) {
-                        onUpdate.onUpdate(new ArrayList<>());
-                        return;
-                    }
-
                     List<Event> results = new ArrayList<>();
                     final int[] remaining = {eventRefs.size()};
                     for (DocumentReference ref : eventRefs) {
                         ref.get().addOnSuccessListener(doc -> {
-                            if (doc.exists()) {
-                                results.add(toEvent(doc.getId(), doc.getData()));
-                            }
+                            if (doc.exists()) results.add(toEvent(doc.getId(), doc.getData()));
                             remaining[0]--;
                             if (remaining[0] == 0) {
                                 Collections.sort(results, Comparator.comparing(Event::getName));
@@ -102,6 +58,21 @@ public class EventRepository {
                             remaining[0]--;
                             if (remaining[0] == 0) onUpdate.onUpdate(results);
                         });
+                    }
+                });
+    }
+
+    /**
+     * Checks the winner's current acceptance status (e.g., "Accepted", "Declined").
+     */
+    public void getWinnerStatus(String eventId, final StatusCallback callback) {
+        db.collection("events").document(eventId).collection("selected_list").document(deviceId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        callback.onStatus(doc.getString("Status"));
+                    } else {
+                        callback.onStatus(null);
                     }
                 });
     }
@@ -137,23 +108,13 @@ public class EventRepository {
         return map;
     }
 
-    private String formatTimeText(Map<String, Object> data) {
-        String eventDate = data.get("eventDate") instanceof String ? (String) data.get("eventDate") : "";
-        String startTime = data.get("eventStartTime") instanceof String ? (String) data.get("eventStartTime") : "";
-        String endTime = data.get("eventEndTime") instanceof String ? (String) data.get("eventEndTime") : "";
-        if (eventDate.isEmpty()) return "No Date";
-        return eventDate + " " + startTime + " - " + endTime;
-    }
-
     private Event toEvent(String documentId, Map<String, Object> data) {
-        String name = data.get("name") instanceof String ? (String) data.get("name") : "";
-        String location = data.get("locationName") instanceof String ? (String) data.get("locationName") : "";
-        String timeText = formatTimeText(data);
+        String name = (String) data.get("name");
+        String location = (String) data.get("locationName");
         long waitingCount = data.get("waiting_count") instanceof Number ? ((Number) data.get("waiting_count")).longValue() : 0L;
         String posterUrl = (String) data.get("posterUriString");
         String organizerId = (String) data.get("organizerId");
-        boolean isPublic = data.get("isPublic") instanceof Boolean ? (Boolean) data.get("isPublic") : true;
-        return new Event(documentId, name, location, isPublic, "", "", "", null, "", "", "", "", "", "", posterUrl, "", timeText, waitingCount, organizerId);
+        return new Event(documentId, name, location, true, "", "", "", null, "", "", "", "", "", "", posterUrl, "", "", waitingCount, organizerId);
     }
 
     public ListenerRegistration listenToOpenEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
