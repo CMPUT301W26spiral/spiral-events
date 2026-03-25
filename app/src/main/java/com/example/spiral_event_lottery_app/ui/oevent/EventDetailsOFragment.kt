@@ -26,6 +26,8 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.model.User
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -64,6 +66,7 @@ class EventDetailsOFragment : Fragment() {
     private lateinit var waiting: TextView
     private lateinit var description: TextView
     private lateinit var posterImage: ImageView
+    private lateinit var interestsChipGroup: ChipGroup
     private lateinit var inviteHeader: TextView
     private lateinit var inviteRow: View
     private lateinit var inviteSearchInput: EditText
@@ -97,6 +100,7 @@ class EventDetailsOFragment : Fragment() {
         waiting = view.findViewById(R.id.detailsWaiting)
         description = view.findViewById(R.id.detailsDescription)
         posterImage = view.findViewById(R.id.eventPosterImage)
+        interestsChipGroup = view.findViewById(R.id.detailsInterestsChipGroup)
         val editPosterBtn = view.findViewById<ImageView>(R.id.editImageButton)
         
         inviteHeader = view.findViewById(R.id.inviteHeader)
@@ -211,6 +215,21 @@ class EventDetailsOFragment : Fragment() {
                 }
                 
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
+
+                // Populate interests chips
+                interestsChipGroup.removeAllViews()
+                if (!event.interests.isNullOrEmpty()) {
+                    val interestsList = event.interests.split(",").map { it.trim() }
+                    for (interest in interestsList) {
+                        if (interest.isNotEmpty()) {
+                            val chip = Chip(requireContext())
+                            chip.text = interest
+                            chip.isClickable = false
+                            chip.isCheckable = false
+                            interestsChipGroup.addView(chip)
+                        }
+                    }
+                }
 
                 if (!event.posterUriString.isNullOrEmpty()) {
                     Glide.with(this)

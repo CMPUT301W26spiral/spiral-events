@@ -7,6 +7,7 @@
     <string name="location">Location</string>
     <string name="access">Access</string>
     <string name="related_interests">Related Interests</string>
+    <string name="hint_type_interest">Type interest and press Enter</string>
     <string name="day_of_event">Day of Event</string>
     <string name="dd">DD</string>
     <string name="mm">MM</string>

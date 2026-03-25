@@ -4,8 +4,10 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -23,6 +25,8 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import com.example.spiral_event_lottery_app.R;
 import com.example.spiral_event_lottery_app.model.Event;
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -39,6 +43,7 @@ import java.util.Locale;
 public class CreateEventActivity extends AppCompatActivity {
 
     private EditText etEventName, etLocation, etInterests, etDescription, etMaxEntrants;
+    private ChipGroup cgInterests;
     private Spinner spinnerEventDay, spinnerEventMonth, spinnerEventYear;
     private Spinner spinnerEventStartHour, spinnerEventStartMin, spinnerEventEndHour, spinnerEventEndMin;
     private Spinner spinnerDrawDay, spinnerDrawMonth, spinnerDrawYear;
@@ -88,6 +93,7 @@ public class CreateEventActivity extends AppCompatActivity {
 
         initializeViews();
         setupSpinners();
+        setupInterestsTagSystem();
 
         View.OnClickListener posterClickListener = v -> launchImagePicker();
         postersContainer.setOnClickListener(posterClickListener);
@@ -111,6 +117,7 @@ public class CreateEventActivity extends AppCompatActivity {
         etEventName = findViewById(R.id.et_event_name);
         etLocation = findViewById(R.id.et_location);
         spinnerAccess = findViewById(R.id.spinner_access);
+        cgInterests = findViewById(R.id.cg_interests);
         etInterests = findViewById(R.id.et_interests);
         etDescription = findViewById(R.id.et_description);
         spinnerGeolocation = findViewById(R.id.spinner_geolocation);
@@ -135,6 +142,40 @@ public class CreateEventActivity extends AppCompatActivity {
         spinnerDrawEndMin = findViewById(R.id.spinner_draw_end_min);
 
         btnCreate = findViewById(R.id.btn_create);
+    }
+
+    private void setupInterestsTagSystem() {
+        etInterests.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
+                String interest = etInterests.getText().toString().trim();
+                if (!interest.isEmpty()) {
+                    addInterestTag(interest);
+                    etInterests.setText("");
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void addInterestTag(String interest) {
+        Chip chip = new Chip(this);
+        chip.setText(interest);
+        chip.setCloseIconVisible(true);
+        chip.setOnCloseIconClickListener(v -> cgInterests.removeView(chip));
+        cgInterests.addView(chip);
+    }
+
+    private String getInterestsFromChips() {
+        StringBuilder interests = new StringBuilder();
+        for (int i = 0; i < cgInterests.getChildCount(); i++) {
+            Chip chip = (Chip) cgInterests.getChildAt(i);
+            if (interests.length() > 0) {
+                interests.append(", ");
+            }
+            interests.append(chip.getText().toString());
+        }
+        return interests.toString();
     }
 
     private void setupSpinners() {
@@ -219,7 +260,7 @@ public class CreateEventActivity extends AppCompatActivity {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
         boolean isPublic = spinnerAccess.getSelectedItem().toString().equalsIgnoreCase("Public");
-        String interests = etInterests.getText().toString().trim();
+        String interests = getInterestsFromChips();
         String description = etDescription.getText().toString().trim();
         String geolocation = spinnerGeolocation.getSelectedItem().toString();
 

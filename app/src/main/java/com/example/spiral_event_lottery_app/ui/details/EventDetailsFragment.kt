@@ -21,6 +21,8 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
@@ -68,6 +70,7 @@ class EventDetailsFragment : Fragment() {
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
         val joinBtn = view.findViewById<Button>(R.id.joinLeaveButton)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
+        val interestsChipGroup = view.findViewById<ChipGroup>(R.id.detailsInterestsChipGroup)
 
         // SAFETY: Use a nullable reference for the edit button which might be missing in XML
         val editPosterBtn = view.findViewById<View?>(R.id.editImageButton)
@@ -103,6 +106,21 @@ class EventDetailsFragment : Fragment() {
 
                 waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
+
+                // Populate interests chips
+                interestsChipGroup.removeAllViews()
+                if (!event.interests.isNullOrEmpty()) {
+                    val interestsList = event.interests.split(",").map { it.trim() }
+                    for (interest in interestsList) {
+                        if (interest.isNotEmpty()) {
+                            val chip = Chip(requireContext())
+                            chip.text = interest
+                            chip.isClickable = false
+                            chip.isCheckable = false
+                            interestsChipGroup.addView(chip)
+                        }
+                    }
+                }
 
                 // Only allow the organizer to edit the poster (if button exists in XML)
                 val currentUserId = DeviceIdProvider.getDeviceId(requireContext())
@@ -217,7 +235,8 @@ class EventDetailsFragment : Fragment() {
      * Updates the 'posterUriString' field in the Firestore 'events' collection.
      */
     private fun updateFirestorePoster(url: String) {
-        FirebaseFirestore.getInstance().collection("events").document(eventId)
+        val db = FirebaseFirestore.getInstance()
+        db.collection("events").document(eventId)
             .update("posterUriString", url)
             .addOnSuccessListener {
                 if (isAdded) Toast.makeText(requireContext(), "Poster updated successfully", Toast.LENGTH_SHORT).show()
