@@ -29,7 +29,7 @@ import com.google.firebase.storage.FirebaseStorage
 
 /**
  * Fragment that displays the details of a specific event.
- * Now supports editing the event poster for organizers.
+ * Now supports editing the event poster for organizers and interest selection.
  */
 class EventDetailsFragment : Fragment() {
     companion object {
@@ -44,6 +44,12 @@ class EventDetailsFragment : Fragment() {
     private lateinit var eventId: String
     private lateinit var repository: EventRepository
     private var eventListener: ListenerRegistration? = null
+    private val db = FirebaseFirestore.getInstance()
+    private lateinit var uid: String
+
+    private val interestedList = mutableListOf<String>()
+    private val notInterestedList = mutableListOf<String>()
+    private val customInterests = mutableSetOf<String>()
 
     // Register the image picker at the class level
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -60,6 +66,8 @@ class EventDetailsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         repository = EventRepository(requireContext())
+        uid = DeviceIdProvider.getDeviceId(requireContext())
+        
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
         val title = view.findViewById<TextView>(R.id.detailsTitle)
         val locationName = view.findViewById<TextView>(R.id.detailsLocation)
@@ -72,7 +80,6 @@ class EventDetailsFragment : Fragment() {
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
         val interestsChipGroup = view.findViewById<ChipGroup>(R.id.detailsInterestsChipGroup)
 
-        // SAFETY: Use a nullable reference for the edit button which might be missing in XML
         val editPosterBtn = view.findViewById<View?>(R.id.editImageButton)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
@@ -84,99 +91,160 @@ class EventDetailsFragment : Fragment() {
             startActivity(intent)
         }
 
-        eventListener = repository.listenToEvent(
-            eventId,
-            { event ->
-                // SAFETY: Stop if fragment is gone
-                if (!isAdded || event == null) {
-                    title.text = "Event not found"
-                    return@listenToEvent
-                }
+        // Load user interests first to highlight correctly
+        loadUserInterests {
+            eventListener = repository.listenToEvent(
+                eventId,
+                { event ->
+                    if (!isAdded || event == null) {
+                        title.text = "Event not found"
+                        return@listenToEvent
+                    }
 
-                val currentEventName = event.name
-                title.text = currentEventName
-                locationName.text = event.locationName
-                locationAddress.text = event.locationName
-                time.text = event.timeText
+                    val currentEventName = event.name
+                    title.text = currentEventName
+                    locationName.text = event.locationName
+                    locationAddress.text = event.locationName
+                    time.text = event.timeText
 
-                // Type-safe calculation: convert all to Long before subtraction
-                val limit = event.maxEntrants?.toLong() ?: 0L
-                val spots = limit - event.waitingCount
-                val openSpots = if (spots > 0) spots else 0L
+                    val limit = event.maxEntrants?.toLong() ?: 0L
+                    val spots = limit - event.waitingCount
+                    val openSpots = if (spots > 0) spots else 0L
 
-                waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
-                description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
+                    waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+                    description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
-                // Populate interests chips
-                interestsChipGroup.removeAllViews()
-                if (!event.interests.isNullOrEmpty()) {
-                    val interestsList = event.interests.split(",").map { it.trim() }
-                    for (interest in interestsList) {
-                        if (interest.isNotEmpty()) {
-                            val chip = Chip(requireContext())
-                            chip.text = interest
-                            chip.isClickable = false
-                            chip.isCheckable = false
-                            interestsChipGroup.addView(chip)
+                    // Populate interests chips
+                    interestsChipGroup.removeAllViews()
+                    if (!event.interests.isNullOrEmpty()) {
+                        val interestsList = event.interests.split(",").map { it.trim() }
+                        for (interest in interestsList) {
+                            if (interest.isNotEmpty()) {
+                                addInterestChip(interestsChipGroup, interest)
+                            }
                         }
                     }
-                }
 
-                // Only allow the organizer to edit the poster (if button exists in XML)
-                val currentUserId = DeviceIdProvider.getDeviceId(requireContext())
-                editPosterBtn?.let { btn ->
-                    btn.visibility = if (event.organizerId == currentUserId) View.VISIBLE else View.GONE
-                    btn.setOnClickListener { imagePickerLauncher.launch("image/*") }
-                }
-
-                if (!event.posterUriString.isNullOrEmpty()) {
-                    Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
-                } else {
-                    posterImage.setImageResource(R.drawable.ic_event)
-                }
-
-                // Check waitlist and selection status whenever event data updates
-                repository.isJoined(eventId, { joined ->
-                    if (!isAdded) return@isJoined
-                    if (joined) {
-                        joinBtn.text = "You're in the waiting list"
-                        joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
-                    } else {
-                        repository.isSelected(eventId, { selected ->
-                            if (!isAdded) return@isSelected
-                            if (selected) {
-                                joinBtn.text = "You are selected/invited"
-                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.GRAY)
-                                joinBtn.isEnabled = false
-                            } else {
-                                joinBtn.text = "Join Waiting List"
-                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
-                                joinBtn.isEnabled = true
-                            }
-                        }, { /* error handled in repository */ })
+                    val currentUserId = DeviceIdProvider.getDeviceId(requireContext())
+                    editPosterBtn?.let { btn ->
+                        btn.visibility = if (event.organizerId == currentUserId) View.VISIBLE else View.GONE
+                        btn.setOnClickListener { imagePickerLauncher.launch("image/*") }
                     }
-                }, { /* error handled in repository */ })
 
-                joinBtn.setOnClickListener {
+                    if (!event.posterUriString.isNullOrEmpty()) {
+                        Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
+                    } else {
+                        posterImage.setImageResource(R.drawable.ic_event)
+                    }
+
                     repository.isJoined(eventId, { joined ->
                         if (!isAdded) return@isJoined
                         if (joined) {
-                            showSimpleDialog("Already registered", "You're already on the waiting list for\n$currentEventName.")
+                            joinBtn.text = "You're in the waiting list"
+                            joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
                         } else {
                             repository.isSelected(eventId, { selected ->
                                 if (!isAdded) return@isSelected
                                 if (selected) {
-                                    showSimpleDialog("Already Selected", "You have already been selected for $currentEventName.")
+                                    joinBtn.text = "You are selected/invited"
+                                    joinBtn.backgroundTintList = ColorStateList.valueOf(Color.GRAY)
+                                    joinBtn.isEnabled = false
                                 } else {
-                                    showJoinConfirmation(currentEventName)
+                                    joinBtn.text = "Join Waiting List"
+                                    joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
+                                    joinBtn.isEnabled = true
                                 }
-                            }, { /* error handled in repository */ })
+                            }, { })
                         }
-                    }, { /* error handled in repository */ })
-                }
-            },
-            { e -> if (isAdded) Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
+                    }, { })
+
+                    joinBtn.setOnClickListener {
+                        repository.isJoined(eventId, { joined ->
+                            if (!isAdded) return@isJoined
+                            if (joined) {
+                                showSimpleDialog("Already registered", "You're already on the waiting list for\n$currentEventName.")
+                            } else {
+                                repository.isSelected(eventId, { selected ->
+                                    if (!isAdded) return@isSelected
+                                    if (selected) {
+                                        showSimpleDialog("Already Selected", "You have already been selected for $currentEventName.")
+                                    } else {
+                                        showJoinConfirmation(currentEventName)
+                                    }
+                                }, { })
+                            }
+                        }, { })
+                    }
+                },
+                { e -> if (isAdded) Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
+            )
+        }
+    }
+
+    private fun loadUserInterests(onComplete: () -> Unit) {
+        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
+            if (doc.exists()) {
+                val interested = doc.get("interested") as? List<String>
+                val notInterested = doc.get("notInterested") as? List<String>
+                val custom = doc.get("customInterests") as? List<String>
+                interestedList.clear()
+                if (interested != null) interestedList.addAll(interested)
+                notInterestedList.clear()
+                if (notInterested != null) notInterestedList.addAll(notInterested)
+                customInterests.clear()
+                if (custom != null) customInterests.addAll(custom)
+            }
+            onComplete()
+        }.addOnFailureListener {
+            onComplete()
+        }
+    }
+
+    private fun addInterestChip(group: ChipGroup, interest: String) {
+        val chip = Chip(requireContext())
+        chip.text = interest
+        chip.isClickable = true
+        chip.isCheckable = false
+        
+        updateChipStyle(chip, interest)
+
+        chip.setOnClickListener {
+            customInterests.add(interest) // Mark as custom if user interacts with it
+            if (!interestedList.contains(interest) && !notInterestedList.contains(interest)) {
+                interestedList.add(interest) // Neutral -> Interested
+            } else if (interestedList.contains(interest)) {
+                interestedList.remove(interest)
+                notInterestedList.add(interest) // Interested -> Not Interested
+            } else {
+                notInterestedList.remove(interest) // Not Interested -> Neutral
+            }
+            updateChipStyle(chip, interest)
+            saveInterestsToFirebase()
+        }
+
+        group.addView(chip)
+    }
+
+    private fun updateChipStyle(chip: Chip, interest: String) {
+        if (interestedList.contains(interest)) {
+            chip.setChipBackgroundColorResource(R.color.interest_green_bg)
+            chip.setTextColor(Color.BLACK)
+        } else if (notInterestedList.contains(interest)) {
+            chip.setChipBackgroundColorResource(R.color.interest_red_bg)
+            chip.setTextColor(Color.BLACK)
+        } else {
+            chip.setChipBackgroundColorResource(android.R.color.white)
+            chip.setTextColor(Color.BLACK)
+        }
+    }
+
+    private fun saveInterestsToFirebase() {
+        val data = mapOf(
+            "interested" to interestedList,
+            "notInterested" to notInterestedList,
+            "customInterests" to customInterests.toList()
         )
+        db.collection("users").document(uid).update(data)
     }
 
     private fun showSimpleDialog(title: String, message: String) {
@@ -191,7 +259,6 @@ class EventDetailsFragment : Fragment() {
             .setMessage("Successfully join the waiting list for $currentEventName?\n\n• Entry is random\n• You may leave at any time")
             .setPositiveButton("Confirm") { _, _ ->
                 repository.joinWaitlist(eventId, {
-                    // Re-check context before showing confirmation
                     context?.let { safeCtx ->
                         NotificationManager.sendNotification(
                             DeviceIdProvider.getDeviceId(safeCtx),
@@ -211,9 +278,6 @@ class EventDetailsFragment : Fragment() {
             .show()
     }
 
-    /**
-     * Uploads the selected image to Firebase Storage and updates the Firestore document.
-     */
     private fun uploadPoster(uri: Uri) {
         val storageRef = FirebaseStorage.getInstance().getReference("event_posters/${eventId}_${System.currentTimeMillis()}.jpg")
         if (isAdded) Toast.makeText(requireContext(), "Uploading new poster...", Toast.LENGTH_SHORT).show()
@@ -231,9 +295,6 @@ class EventDetailsFragment : Fragment() {
             }
     }
 
-    /**
-     * Updates the 'posterUriString' field in the Firestore 'events' collection.
-     */
     private fun updateFirestorePoster(url: String) {
         val db = FirebaseFirestore.getInstance()
         db.collection("events").document(eventId)

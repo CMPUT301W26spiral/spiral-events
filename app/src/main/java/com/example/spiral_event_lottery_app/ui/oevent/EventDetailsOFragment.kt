@@ -2,6 +2,7 @@ package com.example.spiral_event_lottery_app.ui.oevent
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -23,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.model.User
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
@@ -57,6 +59,11 @@ class EventDetailsOFragment : Fragment() {
     private lateinit var repository: EventRepository
     private var eventListener: ListenerRegistration? = null
     private val db = FirebaseFirestore.getInstance()
+    private lateinit var uid: String
+
+    private val interestedList = mutableListOf<String>()
+    private val notInterestedList = mutableListOf<String>()
+    private val customInterests = mutableSetOf<String>()
 
     // UI elements
     private lateinit var title: TextView
@@ -91,6 +98,7 @@ class EventDetailsOFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         repository = EventRepository(requireContext())
+        uid = DeviceIdProvider.getDeviceId(requireContext())
 
         // Initialize UI elements
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
@@ -175,11 +183,33 @@ class EventDetailsOFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
+
+        loadUserInterests {
+            startEventListener()
+        }
+    }
+
+    private fun loadUserInterests(onComplete: () -> Unit) {
+        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
+            if (doc.exists()) {
+                val interested = doc.get("interested") as? List<String>
+                val notInterested = doc.get("notInterested") as? List<String>
+                val custom = doc.get("customInterests") as? List<String>
+                interestedList.clear()
+                if (interested != null) interestedList.addAll(interested)
+                notInterestedList.clear()
+                if (notInterested != null) notInterestedList.addAll(notInterested)
+                customInterests.clear()
+                if (custom != null) customInterests.addAll(custom)
+            }
+            onComplete()
+        }.addOnFailureListener {
+            onComplete()
+        }
     }
 
     override fun onStart() {
         super.onStart()
-        startEventListener()
     }
 
     /**
@@ -222,11 +252,7 @@ class EventDetailsOFragment : Fragment() {
                     val interestsList = event.interests.split(",").map { it.trim() }
                     for (interest in interestsList) {
                         if (interest.isNotEmpty()) {
-                            val chip = Chip(requireContext())
-                            chip.text = interest
-                            chip.isClickable = false
-                            chip.isCheckable = false
-                            interestsChipGroup.addView(chip)
+                            addInterestChip(interestsChipGroup, interest)
                         }
                     }
                 }
@@ -244,6 +270,53 @@ class EventDetailsOFragment : Fragment() {
                 if (isAdded) Toast.makeText(requireContext(), e.message ?: "Failed to load event", Toast.LENGTH_LONG).show()
             }
         )
+    }
+
+    private fun addInterestChip(group: ChipGroup, interest: String) {
+        val chip = Chip(requireContext())
+        chip.text = interest
+        chip.isClickable = true
+        chip.isCheckable = false
+        
+        updateChipStyle(chip, interest)
+
+        chip.setOnClickListener {
+            customInterests.add(interest) // Mark as custom if user interacts with it
+            if (!interestedList.contains(interest) && !notInterestedList.contains(interest)) {
+                interestedList.add(interest) // Neutral -> Interested
+            } else if (interestedList.contains(interest)) {
+                interestedList.remove(interest)
+                notInterestedList.add(interest) // Interested -> Not Interested
+            } else {
+                notInterestedList.remove(interest) // Not Interested -> Neutral
+            }
+            updateChipStyle(chip, interest)
+            saveInterestsToFirebase()
+        }
+
+        group.addView(chip)
+    }
+
+    private fun updateChipStyle(chip: Chip, interest: String) {
+        if (interestedList.contains(interest)) {
+            chip.setChipBackgroundColorResource(R.color.interest_green_bg)
+            chip.setTextColor(Color.BLACK)
+        } else if (notInterestedList.contains(interest)) {
+            chip.setChipBackgroundColorResource(R.color.interest_red_bg)
+            chip.setTextColor(Color.BLACK)
+        } else {
+            chip.setChipBackgroundColorResource(android.R.color.white)
+            chip.setTextColor(Color.BLACK)
+        }
+    }
+
+    private fun saveInterestsToFirebase() {
+        val data = mapOf(
+            "interested" to interestedList,
+            "notInterested" to notInterestedList,
+            "customInterests" to customInterests.toList()
+        )
+        db.collection("users").document(uid).update(data)
     }
 
     /**
