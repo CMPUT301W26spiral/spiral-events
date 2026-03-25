@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
+import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.example.spiral_event_lottery_app.model.User
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
 import com.google.firebase.Timestamp
@@ -203,8 +204,8 @@ class EventDetailsOFragment : Fragment() {
                 time.text = event.timeText
                 
                 // Logic for open spots calculation
-                val openSpots = event.maxEntrants?.minus(event.waitingCount) ?: 0
-                waiting.text = if (event.maxEntrants != null) {
+                val openSpots = event.maxEntrants?.minus(event.waitingCount.toInt()) ?: 0
+                waiting.text = if (event.maxEntrants != null && !event.lotteryDone) {
                     "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
                 } else {
                     "${event.waitingCount} People on Waiting List"
@@ -274,6 +275,7 @@ class EventDetailsOFragment : Fragment() {
     /**
      * Adds a user to the event's waitlist in Firestore.
      * Uses a transaction to ensure waitlist count accuracy.
+     * Sends a notification to the invited user.
      * @param user The user to add to the waitlist.
      */
     private fun inviteUserToEvent(user: User) {
@@ -292,62 +294,135 @@ class EventDetailsOFragment : Fragment() {
             
             val eventRef = db.collection("events").document(eventId)
             val eventDoc = transaction.get(eventRef)
-            val currentCount = eventDoc.getLong("waiting_count") ?: 0
+            val currentCount = eventDoc.getLong("waiting_count") ?: 0L
+            val eventName = eventDoc.getString("name") ?: "Private Event"
             
             transaction.set(waitlistRef, waitlistData)
             transaction.update(eventRef, "waiting_count", currentCount + 1)
-        }
-        .addOnSuccessListener {
-            Toast.makeText(requireContext(), "User invited successfully", Toast.LENGTH_SHORT).show()
-        }
-        .addOnFailureListener { e ->
-            if (e.message == "ALREADY_IN_WAITLIST") {
-                Toast.makeText(requireContext(), "User is already on waitlist", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(requireContext(), "Failed to invite: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+            eventName
+        }.addOnSuccessListener { eventName ->
+            Toast.makeText(requireContext(), "${user.name} has been added to the waiting list!", Toast.LENGTH_SHORT).show()
+
+            // Send notification to the invited user
+            NotificationManager.sendNotification(
+                user.deviceId,
+                "Private Invitation",
+                "You have been invited to join the waiting list for $eventName!",
+                "ORGANIZER",
+                eventName as String,
+                eventId
+            )
+
+            inviteSearchInput.text.clear()
+            searchAdapter.submitList(emptyList())
+            searchResultRecycler.visibility = View.GONE
+        }.addOnFailureListener { e ->
+            val msg = if (e.message == "ALREADY_IN_WAITLIST") "User is already on the waitlist." else "Failed to invite: ${e.message}"
+            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
         }
     }
 
+    /**
+     * Performs a Firestore search for users matching the query string.
+     * Limits search results to the first 5 matches.
+     * @param query The search string (name, email, or phone).
+     */
     private fun performUserSearch(query: String) {
-        val category = inviteCategorySpinner.selectedItem.toString()
+        val category = inviteCategorySpinner.selectedItem.toString().lowercase()
         val field = when(category) {
-            "Email" -> "email"
-            "Phone" -> "phone_number"
+            "name" -> "name"
+            "email" -> "email"
+            "phone" -> "phoneNumber"
             else -> "name"
         }
 
         db.collection("users")
             .whereGreaterThanOrEqualTo(field, query)
             .whereLessThanOrEqualTo(field, query + "\uf8ff")
-            .limit(10)
+            .limit(5)
             .get()
-            .addOnSuccessListener { documents ->
-                val users = documents.mapNotNull { it.toObject(User::class.java) }
+            .addOnSuccessListener { snapshot ->
+                val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
                 searchAdapter.submitList(users)
                 searchResultRecycler.visibility = if (users.isNotEmpty()) View.VISIBLE else View.GONE
             }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Search failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
+    /**
+     * Uploads a local image file to Firebase Storage.
+     * On success, updates the Firestore document with the new image URL.
+     * @param uri The local URI of the image to upload.
+     */
     private fun uploadPoster(uri: Uri) {
-        val storageRef = FirebaseStorage.getInstance().reference.child("event_posters/$eventId.jpg")
+        val storageRef = FirebaseStorage.getInstance().getReference("event_posters/${eventId}_${System.currentTimeMillis()}.jpg")
+        Toast.makeText(requireContext(), "Uploading new poster...", Toast.LENGTH_SHORT).show()
+
         storageRef.putFile(uri)
-            .addOnSuccessListener {
-                storageRef.downloadUrl.addOnSuccessListener { downloadUri ->
-                    db.collection("events").document(eventId)
-                        .update("poster_uri", downloadUri.toString())
-                        .addOnSuccessListener {
-                            Toast.makeText(requireContext(), "Poster updated", Toast.LENGTH_SHORT).show()
-                        }
-                }
+            .continueWithTask { task ->
+                if (!task.isSuccessful) task.exception?.let { throw it }
+                storageRef.downloadUrl
+            }
+            .addOnSuccessListener { downloadUri ->
+                updateFirestorePoster(downloadUri.toString())
             }
             .addOnFailureListener { e ->
                 Toast.makeText(requireContext(), "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
+    /**
+     * Updates the Firestore event document with a new poster image URL.
+     * @param url The public download URL of the new poster.
+     */
+    private fun updateFirestorePoster(url: String) {
+        FirebaseFirestore.getInstance().collection("events").document(eventId)
+            .update("posterUriString", url)
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "Poster updated successfully", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Failed to update database: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    override fun onStop() {
+        super.onStop()
         eventListener?.remove()
+        eventListener = null
+    }
+
+    /**
+     * Adapter for displaying matching entrants in the search dropdown.
+     */
+    private inner class UserSearchAdapter(private val onItemClick: (User) -> Unit) :
+        RecyclerView.Adapter<UserSearchAdapter.VH>() {
+        private var users = listOf<User>()
+
+        fun submitList(newList: List<User>) {
+            users = newList
+            notifyDataSetChanged()
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val v = LayoutInflater.from(parent.context).inflate(R.layout.item_user_search_result, parent, false)
+            return VH(v)
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val user = users[position]
+            holder.userName.text = user.name
+            holder.userDetail.text = user.email
+            holder.itemView.setOnClickListener { onItemClick(user) }
+        }
+
+        override fun getItemCount() = users.size
+
+        inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val userName: TextView = itemView.findViewById(R.id.userName)
+            val userDetail: TextView = itemView.findViewById(R.id.userDetail)
+        }
     }
 }
