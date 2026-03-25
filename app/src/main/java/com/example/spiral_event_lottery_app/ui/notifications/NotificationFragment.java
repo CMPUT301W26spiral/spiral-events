@@ -26,6 +26,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -150,13 +151,11 @@ public class NotificationFragment extends Fragment {
     private void listenForNotifications(String userId) {
         stopListening();
 
-        // US 01.02.01 - Users are identified by their ANDROID_ID
         notificationListener = db.collection("notifications")
                 .whereEqualTo("recipientId", userId)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null) {
-                        Log.e(TAG, "Listen failed! If this is a new environment, click the Logcat link to create the Index: " + error.getMessage());
+                        Log.e(TAG, "Listen failed: " + error.getMessage());
                         return;
                     }
 
@@ -166,6 +165,13 @@ public class NotificationFragment extends Fragment {
                             Notification notification = doc.toObject(Notification.class);
                             notificationList.add(notification);
                         }
+                        
+                        // Sort by timestamp descending manually to ensure correct order
+                        // especially if the server timestamp is not yet indexed or populated
+                        Collections.sort(notificationList, (n1, n2) -> {
+                            if (n1.getTimestamp() == null || n2.getTimestamp() == null) return 0;
+                            return n2.getTimestamp().compareTo(n1.getTimestamp());
+                        });
                     }
                     adapter.notifyDataSetChanged();
                 });
