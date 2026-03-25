@@ -51,6 +51,7 @@ class EventDetailsLeaveFragment : Fragment() {
         val location = view.findViewById<TextView>(R.id.detailsLocation)
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
+        val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
         
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
@@ -59,11 +60,16 @@ class EventDetailsLeaveFragment : Fragment() {
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
         eventListener = repository.listenToEvent(eventId, { event ->
-            if (event == null) return@listenToEvent
+            if (event == null || !isAdded) return@listenToEvent
+            
             title.text = event.name
             location.text = event.locationName
             time.text = event.timeText
             waiting.text = "${event.waitingCount} People on Waiting List"
+
+            // Display description and lottery rules
+            val rules = if (event.drawDate.isNotEmpty()) "\n\nLottery Rules: Draw on ${event.drawDate} at ${event.drawStartTime}" else ""
+            description.text = (if (event.description.isNullOrEmpty()) "No description available" else event.description) + rules
 
             if (!event.posterUriString.isNullOrEmpty()) {
                 Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
@@ -76,19 +82,15 @@ class EventDetailsLeaveFragment : Fragment() {
                 if (!isAdded) return@getWinnerStatus
                 
                 if ("Accepted" == status) {
-                    // Already accepted: Hide all action buttons
                     acceptBtn.visibility = View.GONE
                     actionBtn.visibility = View.GONE
                 } else {
-                    // Not yet confirmed: Show buttons based on selection status
                     repository.isSelected(eventId, { isWinner ->
                         if (!isAdded) return@isSelected
                         
-                        // FIXED: Make the main action button visible now that we have data
                         actionBtn.visibility = View.VISIBLE
                         
                         if (isWinner) {
-                            // State: WINNER - show both Accept and Decline
                             acceptBtn.visibility = View.VISIBLE
                             actionBtn.text = "Decline Invitation"
                             
@@ -112,7 +114,6 @@ class EventDetailsLeaveFragment : Fragment() {
                                     .show()
                             }
                         } else {
-                            // State: ENTRANT - only show Leave button
                             acceptBtn.visibility = View.GONE
                             actionBtn.text = "Leave Waiting List"
                             actionBtn.setOnClickListener {
