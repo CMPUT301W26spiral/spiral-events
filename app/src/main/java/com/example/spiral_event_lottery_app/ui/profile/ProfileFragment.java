@@ -54,7 +54,7 @@ public class ProfileFragment extends Fragment {
     private EditText editFullName, editEmail, editPhone;
 
     private LinearLayout personalInfoViewGroup, personalInfoEditGroup, profileEditActions, notificationEditActions;
-    private Button editProfileButton, cancelProfileEdit, saveProfileEdit, editNotificationsButton, cancelNotificationsEdit, saveNotificationsEdit, deleteProfileButton;
+    private Button editProfileButton, cancelProfileEdit, saveProfileEdit, editNotificationsButton, cancelNotificationsEdit, saveNotificationsEdit, deleteProfileButton, changeInterestsButton;
     private Button logoutButton;
     private CheckBox whenChosenCheck, whenNotChosenCheck, organizersAdminsCheck;
 
@@ -129,6 +129,7 @@ public class ProfileFragment extends Fragment {
         saveNotificationsEdit = view.findViewById(R.id.saveNotificationsEdit);
         deleteProfileButton = view.findViewById(R.id.deleteProfileButton);
         logoutButton = view.findViewById(R.id.logoutButton);
+        changeInterestsButton = view.findViewById(R.id.changeInterestsButton);
     }
 
     /**
@@ -158,6 +159,10 @@ public class ProfileFragment extends Fragment {
         saveNotificationsEdit.setOnClickListener(v -> saveNotificationsToFirebase());
         deleteProfileButton.setOnClickListener(v -> showDeleteDialog());
         logoutButton.setOnClickListener(v -> performLogout());
+        changeInterestsButton.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), InterestsActivity.class);
+            startActivity(intent);
+        });
     }
 
     /**
