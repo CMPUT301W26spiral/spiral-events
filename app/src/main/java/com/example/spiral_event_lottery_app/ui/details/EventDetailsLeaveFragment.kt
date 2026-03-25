@@ -1,5 +1,6 @@
 package com.example.spiral_event_lottery_app.ui.details
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -49,9 +50,17 @@ class EventDetailsLeaveFragment : Fragment() {
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
+        val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
 
         actionBtn.text = "Leave Waiting List"
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
+
+        viewQRBtn.setOnClickListener {
+            val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
+            intent.putExtra("EVENT_ID", eventId)
+            intent.putExtra("EVENT_NAME", title.text.toString())
+            startActivity(intent)
+        }
 
         eventListener = repository.listenToEvent(eventId, { event ->
             if (event == null) return@listenToEvent
