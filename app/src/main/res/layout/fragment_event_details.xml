@@ -64,30 +64,32 @@
                     android:scaleType="centerCrop" />
             </androidx.cardview.widget.CardView>
 
-    <TextView
-        android:id="@+id/detailsTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textStyle="bold"
-        android:textSize="24sp"
-        android:textColor="#0F3D2E"
-        android:layout_marginTop="16dp"
-        tools:text="Event Title"
-        app:layout_constraintTop_toBottomOf="@id/imageCard"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/viewQRButtonIcon"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="16dp">
 
-    <ImageButton
-        android:id="@+id/viewQRButtonIcon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_qr"
-        android:contentDescription="View QR Code"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/detailsTitle"
-        app:layout_constraintBottom_toBottomOf="@id/detailsTitle"
-        app:tint="#2E673B" />
+                <TextView
+                    android:id="@+id/detailsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+                    android:textSize="24sp"
+                    android:textColor="#0F3D2E"
+                    tools:text="Event Title"/>
+
+                <ImageButton
+                    android:id="@+id/viewQRButtonIcon"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_qr"
+                    android:contentDescription="View QR Code"
+                    app:tint="#2E673B" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/detailsLocation"
