@@ -111,10 +111,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         loadCurrentUser()
     }
     
-    private fun loadCurrentUser() {
+    /**
+     * Loads the current user's profile to apply interest-based sorting.
+     * Public so it can be triggered by MainActivity when interests change.
+     */
+    fun loadCurrentUser() {
+        if (!isAdded) return
         val uid = DeviceIdProvider.getDeviceId(requireContext())
         db.collection("users").document(uid).get().addOnSuccessListener { doc ->
-            if (doc.exists()) {
+            if (doc.exists() && isAdded) {
                 val user = doc.toObject(User::class.java)
                 adapter.setCurrentUser(user)
             }

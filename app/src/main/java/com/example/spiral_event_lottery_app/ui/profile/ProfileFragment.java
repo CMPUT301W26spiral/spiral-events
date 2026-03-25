@@ -1,5 +1,6 @@
 package com.example.spiral_event_lottery_app.ui.profile;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -68,6 +69,14 @@ public class ProfileFragment extends Fragment {
                 if (uri != null) {
                     selectedImageUri = uri;
                     profileImage.setImageURI(uri);
+                }
+            });
+
+    private final ActivityResultLauncher<Intent> interestActivityLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                // When returning from InterestsActivity, tell MainActivity to refresh Home
+                if (getActivity() instanceof com.example.spiral_event_lottery_app.MainActivity) {
+                    ((com.example.spiral_event_lottery_app.MainActivity) getActivity()).refreshHomeFragment();
                 }
             });
 
@@ -161,7 +170,7 @@ public class ProfileFragment extends Fragment {
         logoutButton.setOnClickListener(v -> performLogout());
         changeInterestsButton.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), InterestsActivity.class);
-            startActivity(intent);
+            interestActivityLauncher.launch(intent);
         });
     }
 
