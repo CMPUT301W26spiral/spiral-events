@@ -20,14 +20,11 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.example.spiral_event_lottery_app.ui.comments.EventCommentsFragment
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
 
-/**
- * Fragment that displays the details of a specific event.
- * Now supports editing the event poster for organizers.
- */
 class EventDetailsFragment : Fragment() {
     companion object {
         private const val ARG_EVENT_ID = "event_id"
@@ -42,7 +39,6 @@ class EventDetailsFragment : Fragment() {
     private lateinit var repository: EventRepository
     private var eventListener: ListenerRegistration? = null
 
-    // Register the image picker at the class level
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { uploadPoster(it) }
     }
@@ -66,20 +62,26 @@ class EventDetailsFragment : Fragment() {
         val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
         val joinBtn = view.findViewById<Button>(R.id.joinLeaveButton)
-
-        // SAFETY: Use a nullable reference for the edit button which might be missing in XML
+        val commentsBtn = view.findViewById<Button>(R.id.commentsButton)
         val editPosterBtn = view.findViewById<View?>(R.id.editImageButton)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
+        commentsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, EventCommentsFragment.newInstance(eventId, false))
+                .addToBackStack(null)
+                .commit()
+        }
+
         eventListener = repository.listenToEvent(
             eventId,
             { event ->
-                // SAFETY: Stop if fragment is gone
                 if (!isAdded || event == null) {
                     title.text = "Event not found"
                     return@listenToEvent
                 }
+
 
                 val currentEventName = event.name
                 title.text = currentEventName
@@ -87,7 +89,6 @@ class EventDetailsFragment : Fragment() {
                 locationAddress.text = event.locationName
                 time.text = event.timeText
 
-                // Type-safe calculation: convert all to Long before subtraction
                 val limit = event.maxEntrants?.toLong() ?: 0L
                 val spots = limit - event.waitingCount
                 val openSpots = if (spots > 0) spots else 0L
@@ -95,7 +96,6 @@ class EventDetailsFragment : Fragment() {
                 waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
-                // Only allow the organizer to edit the poster (if button exists in XML)
                 val currentUserId = DeviceIdProvider.getDeviceId(requireContext())
                 editPosterBtn?.let { btn ->
                     btn.visibility = if (event.organizerId == currentUserId) View.VISIBLE else View.GONE
@@ -108,7 +108,6 @@ class EventDetailsFragment : Fragment() {
                     posterImage.setImageResource(R.drawable.ic_event)
                 }
 
-                // Check waitlist and selection status whenever event data updates
                 repository.isJoined(eventId, { joined ->
                     if (!isAdded) return@isJoined
                     if (joined) {
@@ -126,9 +125,9 @@ class EventDetailsFragment : Fragment() {
                                 joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
                                 joinBtn.isEnabled = true
                             }
-                        }, { /* error handled in repository */ })
+                        }, {})
                     }
-                }, { /* error handled in repository */ })
+                }, {})
 
                 joinBtn.setOnClickListener {
                     repository.isJoined(eventId, { joined ->
@@ -143,9 +142,9 @@ class EventDetailsFragment : Fragment() {
                                 } else {
                                     showJoinConfirmation(currentEventName)
                                 }
-                            }, { /* error handled in repository */ })
+                            }, {})
                         }
-                    }, { /* error handled in repository */ })
+                    }, {})
                 }
             },
             { e -> if (isAdded) Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
@@ -164,7 +163,6 @@ class EventDetailsFragment : Fragment() {
             .setMessage("Successfully join the waiting list for $currentEventName?\n\n• Entry is random\n• You may leave at any time")
             .setPositiveButton("Confirm") { _, _ ->
                 repository.joinWaitlist(eventId, {
-                    // Re-check context before showing confirmation
                     context?.let { safeCtx ->
                         NotificationManager.sendNotification(
                             DeviceIdProvider.getDeviceId(safeCtx),
@@ -184,9 +182,6 @@ class EventDetailsFragment : Fragment() {
             .show()
     }
 
-    /**
-     * Uploads the selected image to Firebase Storage and updates the Firestore document.
-     */
     private fun uploadPoster(uri: Uri) {
         val storageRef = FirebaseStorage.getInstance().getReference("event_posters/${eventId}_${System.currentTimeMillis()}.jpg")
         if (isAdded) Toast.makeText(requireContext(), "Uploading new poster...", Toast.LENGTH_SHORT).show()
@@ -204,9 +199,6 @@ class EventDetailsFragment : Fragment() {
             }
     }
 
-    /**
-     * Updates the 'posterUriString' field in the Firestore 'events' collection.
-     */
     private fun updateFirestorePoster(url: String) {
         FirebaseFirestore.getInstance().collection("events").document(eventId)
             .update("posterUriString", url)

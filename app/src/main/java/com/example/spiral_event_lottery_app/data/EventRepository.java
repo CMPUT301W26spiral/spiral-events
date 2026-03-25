@@ -239,7 +239,15 @@ public class EventRepository {
                     if (selectedDoc.exists()) {
                         throw new IllegalStateException("ALREADY_SELECTED");
                     }
-                    
+                    DocumentReference coOrgRef = eventRef
+                            .collection("co_organizers")
+                            .document(deviceId);
+
+                    DocumentSnapshot coOrgDoc = transaction.get(coOrgRef);
+                    if (coOrgDoc.exists()) {
+                        throw new IllegalStateException("CO_ORGANIZER");
+                    }
+
                     DocumentSnapshot eventDoc = transaction.get(eventRef);
                     Long currentCount = eventDoc.getLong("waiting_count");
                     if (currentCount == null) currentCount = 0L;
@@ -255,6 +263,8 @@ public class EventRepository {
                         onAlreadyJoined.onSuccess();
                     } else if ("ALREADY_SELECTED".equals(e.getMessage())) {
                         onError.onError(new Exception("You have already been selected for this event."));
+                    } else if ("CO_ORGANIZER".equals(e.getMessage())) {
+                        onError.onError(new Exception("You are a co-organizer and cannot join this event."));
                     } else {
                         onError.onError(e);
                     }
