@@ -87,13 +87,11 @@ class EventDetailsFragment : Fragment() {
                 locationAddress.text = event.locationName
                 time.text = event.timeText
 
-                // Type-safe calculation: convert all to Long before subtraction
-                val limit = event.maxEntrants?.toLong() ?: 0L
-                val spots = limit - event.waitingCount
-                val openSpots = if (spots > 0) spots else 0L
-
-                waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
-                description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
+                waiting.text = "${event.waitingCount} People on Waiting List"
+                
+                // Display description and lottery rules
+                val rules = if (event.drawDate.isNotEmpty()) "\n\nLottery Rules: Draw on ${event.drawDate} at ${event.drawStartTime}" else ""
+                description.text = (if (event.description.isNullOrEmpty()) "No description available" else event.description) + rules
 
                 // Only allow the organizer to edit the poster (if button exists in XML)
                 val currentUserId = DeviceIdProvider.getDeviceId(requireContext())
@@ -136,14 +134,25 @@ class EventDetailsFragment : Fragment() {
                         if (joined) {
                             showSimpleDialog("Already registered", "You're already on the waiting list for\n$currentEventName.")
                         } else {
-                            repository.isSelected(eventId, { selected ->
-                                if (!isAdded) return@isSelected
-                                if (selected) {
-                                    showSimpleDialog("Already Selected", "You have already been selected for $currentEventName.")
-                                } else {
-                                    showJoinConfirmation(currentEventName)
-                                }
-                            }, { /* error handled in repository */ })
+                            // Updated confirmation dialog to match requested style and content
+                            AlertDialog.Builder(requireContext())
+                                .setTitle("Waitlist Confirmation")
+                                .setMessage("Successfully join the waiting list for $currentEventName?\n\n• Entry is random\n• You may leave at any time")
+                                .setPositiveButton("Confirm") { _, _ ->
+                                    repository.joinWaitlist(
+                                        eventId,
+                                        EventRepository.SuccessCallback {
+                                            NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Requested", "Your entry for $currentEventName was received!", "REQUESTED", currentEventName, eventId)
+                                            Toast.makeText(requireContext(), "Joined successfully!", Toast.LENGTH_SHORT).show()
+                                        },
+                                        EventRepository.SuccessCallback {
+                                            Toast.makeText(requireContext(), "You are already joined.", Toast.LENGTH_SHORT).show()
+                                        },
+                                        EventRepository.ErrorCallback { e ->
+                                            Toast.makeText(requireContext(), e.message ?: "Join failed", Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                }.setNegativeButton("Cancel", null).show()
                         }
                     }, { /* error handled in repository */ })
                 }

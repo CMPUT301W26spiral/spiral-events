@@ -124,43 +124,49 @@ public class EventRepository {
         );
     }
 
-    public void fetchMyEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
-        db.collection("events")
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    if (snapshot == null || snapshot.getDocuments().isEmpty()) {
-                        onUpdate.onUpdate(new ArrayList<>());
-                        return;
-                    }
-                    List<DocumentSnapshot> allEventDocs = snapshot.getDocuments();
-                    List<Event> results = new ArrayList<>();
-                    final int[] remaining = {allEventDocs.size()};
-                    final boolean[] failed = {false};
-                    for (DocumentSnapshot doc : allEventDocs) {
-                        DocumentReference eventRef = db.collection("events").document(doc.getId());
-                        DocumentReference waitlistDocRef = eventRef.collection("waitlist").document(deviceId);
-                        waitlistDocRef.get()
-                                .addOnSuccessListener(waitlistDoc -> {
-                                    if (waitlistDoc.exists()) {
-                                        Map<String, Object> map = doc.getData();
-                                        if (map == null) map = new HashMap<>();
-                                        results.add(toEvent(doc.getId(), map));
-                                    }
-                                    remaining[0]--;
-                                    if (remaining[0] == 0 && !failed[0]) {
-                                        Collections.sort(results, Comparator.comparing(e -> e.getName()));
-                                        onUpdate.onUpdate(results);
-                                    }
-                                })
-                                .addOnFailureListener(e -> {
-                                    if (!failed[0]) {
-                                        failed[0] = true;
-                                        onError.onError(e);
-                                    }
-                                });
-                    }
-                })
-                .addOnFailureListener(onError::onError);
+    private Event toEvent(String documentId, Map<String, Object> data) {
+        String name = data.get("name") instanceof String ? (String) data.get("name") : "";
+        String location = data.get("locationName") instanceof String ? (String) data.get("locationName") : "";
+        long waitingCount = data.get("waiting_count") instanceof Number ? ((Number) data.get("waiting_count")).longValue() : 0L;
+        String posterUrl = (String) data.get("posterUriString");
+        String organizerId = (String) data.get("organizerId");
+
+        String timeText = data.get("timeText") instanceof String ? (String) data.get("timeText") : "";
+        
+        // Fallback: If timeText is missing, format it from timestamps if available
+        if (timeText.isEmpty() && data.get("event_start_time") instanceof Timestamp) {
+            Timestamp start = (Timestamp) data.get("event_start_time");
+            Timestamp end = (Timestamp) data.get("event_end_time");
+            if (start != null && end != null) {
+                java.text.SimpleDateFormat df = new java.text.SimpleDateFormat("EEE, MMM d, yyyy", java.util.Locale.CANADA);
+                java.text.SimpleDateFormat tf = new java.text.SimpleDateFormat("h:mm a", java.util.Locale.CANADA);
+                java.util.Date startDate = start.toDate();
+                timeText = df.format(startDate) + " " + tf.format(startDate) + "-" + tf.format(end.toDate());
+            }
+        }
+
+        String description = data.get("description") instanceof String ? (String) data.get("description") : "";
+        boolean isPublic = data.get("isPublic") instanceof Boolean ? (Boolean) data.get("isPublic") : true;
+
+        Integer maxEntrants = null;
+        if (data.get("maxEntrants") instanceof Number) {
+            maxEntrants = ((Number) data.get("maxEntrants")).intValue();
+        }
+
+        // Fetching more fields to ensure rules (draw info) and other details are displayed
+        String interests = data.get("interests") instanceof String ? (String) data.get("interests") : "";
+        String geolocation = data.get("geolocation") instanceof String ? (String) data.get("geolocation") : "";
+        String eventDate = data.get("eventDate") instanceof String ? (String) data.get("eventDate") : "";
+        String eventStartTime = data.get("eventStartTime") instanceof String ? (String) data.get("eventStartTime") : "";
+        String eventEndTime = data.get("eventEndTime") instanceof String ? (String) data.get("eventEndTime") : "";
+        String drawDate = data.get("drawDate") instanceof String ? (String) data.get("drawDate") : "";
+        String drawStartTime = data.get("drawStartTime") instanceof String ? (String) data.get("drawStartTime") : "";
+        String drawEndTime = data.get("drawEndTime") instanceof String ? (String) data.get("drawEndTime") : "";
+        String eventCreated = data.get("eventCreated") instanceof String ? (String) data.get("eventCreated") : "";
+
+        return new Event(documentId, name, location, isPublic, interests, description, geolocation, maxEntrants, 
+                         eventDate, eventStartTime, eventEndTime, drawDate, drawStartTime, drawEndTime, 
+                         posterUrl, eventCreated, timeText, waitingCount, organizerId);
     }
 
     public ListenerRegistration listenToOpenEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
