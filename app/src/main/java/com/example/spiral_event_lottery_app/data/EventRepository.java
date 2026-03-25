@@ -112,7 +112,43 @@ public class EventRepository {
         long waitingCount = data.get("waiting_count") instanceof Number ? ((Number) data.get("waiting_count")).longValue() : 0L;
         String posterUrl = (String) data.get("posterUriString");
         String organizerId = (String) data.get("organizerId");
-        return new Event(documentId, name, location, true, "", "", "", null, "", "", "", "", "", "", posterUrl, "", "", waitingCount, organizerId);
+
+        String timeText = data.get("timeText") instanceof String ? (String) data.get("timeText") : "";
+        
+        // Fallback: If timeText is missing, format it from timestamps if available
+        if (timeText.isEmpty() && data.get("event_start_time") instanceof Timestamp) {
+            Timestamp start = (Timestamp) data.get("event_start_time");
+            Timestamp end = (Timestamp) data.get("event_end_time");
+            if (start != null && end != null) {
+                java.text.SimpleDateFormat df = new java.text.SimpleDateFormat("EEE, MMM d, yyyy", java.util.Locale.CANADA);
+                java.text.SimpleDateFormat tf = new java.text.SimpleDateFormat("h:mm a", java.util.Locale.CANADA);
+                java.util.Date startDate = start.toDate();
+                timeText = df.format(startDate) + " " + tf.format(startDate) + "-" + tf.format(end.toDate());
+            }
+        }
+
+        String description = data.get("description") instanceof String ? (String) data.get("description") : "";
+        boolean isPublic = data.get("isPublic") instanceof Boolean ? (Boolean) data.get("isPublic") : true;
+
+        Integer maxEntrants = null;
+        if (data.get("maxEntrants") instanceof Number) {
+            maxEntrants = ((Number) data.get("maxEntrants")).intValue();
+        }
+
+        // Fetching more fields to ensure rules (draw info) and other details are displayed
+        String interests = data.get("interests") instanceof String ? (String) data.get("interests") : "";
+        String geolocation = data.get("geolocation") instanceof String ? (String) data.get("geolocation") : "";
+        String eventDate = data.get("eventDate") instanceof String ? (String) data.get("eventDate") : "";
+        String eventStartTime = data.get("eventStartTime") instanceof String ? (String) data.get("eventStartTime") : "";
+        String eventEndTime = data.get("eventEndTime") instanceof String ? (String) data.get("eventEndTime") : "";
+        String drawDate = data.get("drawDate") instanceof String ? (String) data.get("drawDate") : "";
+        String drawStartTime = data.get("drawStartTime") instanceof String ? (String) data.get("drawStartTime") : "";
+        String drawEndTime = data.get("drawEndTime") instanceof String ? (String) data.get("drawEndTime") : "";
+        String eventCreated = data.get("eventCreated") instanceof String ? (String) data.get("eventCreated") : "";
+
+        return new Event(documentId, name, location, isPublic, interests, description, geolocation, maxEntrants, 
+                         eventDate, eventStartTime, eventEndTime, drawDate, drawStartTime, drawEndTime, 
+                         posterUrl, eventCreated, timeText, waitingCount, organizerId);
     }
 
     public ListenerRegistration listenToOpenEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
