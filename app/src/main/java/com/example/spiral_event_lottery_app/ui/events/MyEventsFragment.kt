@@ -23,7 +23,7 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
     private lateinit var joinedAdapter: MyEventsAdapter
     private lateinit var organizerAdapter: MyEventsAdapter
     private lateinit var pastAdapter: MyEventsAdapter
-    
+
     private lateinit var repository: EventRepository
     private lateinit var eventStoreO: EventStoreO
     private var myEventsListener: ListenerRegistration? = null
@@ -52,6 +52,7 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
         // 2. Setup Organizer Events RecyclerView
         val organizerRv = view.findViewById<RecyclerView>(R.id.organizerEventsRecyclerView)
         organizerAdapter = MyEventsAdapter(emptyList()) { event ->
+            // Use instance method or specific Organizer Details fragment if available
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, EventDetailsOFragment.newInstance(event.id))
                 .addToBackStack(null)
@@ -77,11 +78,11 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
     override fun onStart() {
         super.onStart()
         val myDeviceId = DeviceIdProvider.getDeviceId(requireContext())
-        
+
         myEventsListener = repository.listenToMyEvents(
             { allEvents ->
                 if (!isAdded) return@listenToMyEvents
-                
+
                 if (allEvents.isEmpty()) {
                     joinedAdapter.submitList(emptyList())
                     pastAdapter.submitList(emptyList())
@@ -100,7 +101,7 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
                         } else {
                             currentEvents.add(event)
                         }
-                        
+
                         processed++
                         if (processed == allEvents.size && isAdded) {
                             joinedAdapter.submitList(currentEvents.sortedBy { it.name })
@@ -133,6 +134,8 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
         // Fetch Organized Events (Organizer view)
         eventStoreO.organizerEvents { events ->
             if (isAdded) {
+                // Sort events by creation time descending (most recent first)
+                // Ensures that the newest created events appear at the top
                 val sortedEvents = events.sortedByDescending { it.eventCreated }
                 organizerAdapter.submitList(sortedEvents)
                 view?.let { updateOrganizerCount(it, events.size) }

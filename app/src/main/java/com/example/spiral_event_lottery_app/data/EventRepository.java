@@ -1,17 +1,22 @@
 package com.example.spiral_event_lottery_app.data;
 
 import android.content.Context;
+
 import com.example.spiral_event_lottery_app.model.Event;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Transaction;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -159,7 +164,7 @@ public class EventRepository {
         String posterUrl = (String) data.get("posterUriString");
         String organizerId = (String) data.get("organizerId");
         String timeText = data.get("timeText") instanceof String ? (String) data.get("timeText") : "";
-        
+
         Boolean isPublic = data.get("isPublic") instanceof Boolean ? (Boolean) data.get("isPublic") : true;
         String description = (String) data.get("description");
         Integer maxEntrants = data.get("maxEntrants") instanceof Number ? ((Number) data.get("maxEntrants")).intValue() : null;
@@ -169,14 +174,26 @@ public class EventRepository {
     }
 
     public ListenerRegistration listenToOpenEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
-        return db.collection("events").whereEqualTo("isPublic", true).addSnapshotListener((snapshot, error) -> {
-            if (error != null) { onError.onError(error); return; }
-            List<Event> events = new ArrayList<>();
-            if (snapshot != null) {
-                for (DocumentSnapshot doc : snapshot.getDocuments()) events.add(toEvent(doc.getId(), doc.getData()));
-            }
-            onUpdate.onUpdate(events);
-        });
+        // Only fetch events where isPublic is true for the Home screen
+        return db.collection("events")
+                .whereEqualTo("isPublic", true)
+                .addSnapshotListener((snapshot, error) -> {
+                    if (error != null) {
+                        onError.onError(error);
+                        return;
+                    }
+                    if (snapshot == null) {
+                        onUpdate.onUpdate(new ArrayList<>());
+                        return;
+                    }
+                    List<Event> events = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        Map<String, Object> map = doc.getData();
+                        if (map == null) map = new HashMap<>();
+                        events.add(toEvent(doc.getId(), map));
+                    }
+                    onUpdate.onUpdate(events);
+                });
     }
 
     public ListenerRegistration listenToEvent(String eventId, final EventCallback onUpdate, final ErrorCallback onError) {
@@ -206,31 +223,63 @@ public class EventRepository {
 
     public void joinWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onAlreadyJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
-        db.runTransaction(transaction -> {
-            if (transaction.get(eventRef.collection("waitlist").document(deviceId)).exists()) throw new IllegalStateException("ALREADY_JOINED");
-            DocumentSnapshot eventDoc = transaction.get(eventRef);
-            Long currentCount = eventDoc.getLong("waiting_count");
-            Map<String, Object> data = new HashMap<>();
-            data.put("joined_at", Timestamp.now());
-            data.put("device_id", deviceId);
-            transaction.set(eventRef.collection("waitlist").document(deviceId), data);
-            transaction.update(eventRef, "waiting_count", (currentCount != null ? currentCount : 0) + 1);
-            return null;
-        }).addOnSuccessListener(unused -> onSuccess.onSuccess()).addOnFailureListener(e -> {
-            if ("ALREADY_JOINED".equals(e.getMessage())) onAlreadyJoined.onSuccess();
-            else onError.onError(e);
-        });
+        DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
+        DocumentReference selectedRef = eventRef.collection("selected_list").document(deviceId);
+
+        db.runTransaction((Transaction.Function<Void>) transaction -> {
+                    DocumentSnapshot waitlistDoc = transaction.get(waitlistRef);
+                    if (waitlistDoc.exists()) {
+                        throw new IllegalStateException("ALREADY_JOINED");
+                    }
+
+                    DocumentSnapshot selectedDoc = transaction.get(selectedRef);
+                    if (selectedDoc.exists()) {
+                        throw new IllegalStateException("ALREADY_SELECTED");
+                    }
+
+                    DocumentSnapshot eventDoc = transaction.get(eventRef);
+                    Long currentCount = eventDoc.getLong("waiting_count");
+                    if (currentCount == null) currentCount = 0L;
+                    Map<String, Object> waitlistData = new HashMap<>();
+                    waitlistData.put("joined_at", Timestamp.now());
+                    waitlistData.put("device_id", deviceId);
+                    transaction.set(waitlistRef, waitlistData);
+                    transaction.update(eventRef, "waiting_count", currentCount + 1);
+                    return null;
+                }).addOnSuccessListener(unused -> onSuccess.onSuccess())
+                .addOnFailureListener(e -> {
+                    if ("ALREADY_JOINED".equals(e.getMessage())) {
+                        onAlreadyJoined.onSuccess();
+                    } else if ("ALREADY_SELECTED".equals(e.getMessage())) {
+                        onError.onError(new Exception("You have already been selected for this event."));
+                    } else {
+                        onError.onError(e);
+                    }
+                });
     }
 
     public void leaveWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onNotJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
-        db.runTransaction(transaction -> {
-            if (!transaction.get(eventRef.collection("waitlist").document(deviceId)).exists()) throw new IllegalStateException("NOT_JOINED");
-            Long currentCount = transaction.get(eventRef).getLong("waiting_count");
-            transaction.delete(eventRef.collection("waitlist").document(deviceId));
-            transaction.update(eventRef, "waiting_count", Math.max(0L, (currentCount != null ? currentCount : 1) - 1));
-            return null;
-        }).addOnSuccessListener(unused -> onSuccess.onSuccess()).addOnFailureListener(onError::onError);
+        DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
+        db.runTransaction((Transaction.Function<Void>) transaction -> {
+                    DocumentSnapshot waitlistDoc = transaction.get(waitlistRef);
+                    if (!waitlistDoc.exists()) {
+                        throw new IllegalStateException("NOT_JOINED");
+                    }
+                    DocumentSnapshot eventDoc = transaction.get(eventRef);
+                    Long currentCount = eventDoc.getLong("waiting_count");
+                    if (currentCount == null) currentCount = 0L;
+                    transaction.delete(waitlistRef);
+                    transaction.update(eventRef, "waiting_count", Math.max(0L, currentCount - 1));
+                    return null;
+                }).addOnSuccessListener(unused -> onSuccess.onSuccess())
+                .addOnFailureListener(e -> {
+                    if ("NOT_JOINED".equals(e.getMessage())) {
+                        onNotJoined.onSuccess();
+                    } else {
+                        onError.onError(e);
+                    }
+                });
     }
 
     /**
@@ -243,7 +292,7 @@ public class EventRepository {
         db.runTransaction(transaction -> {
             // Remove from selected_list
             transaction.delete(eventRef.collection("selected_list").document(deviceId));
-            
+
             // Also ensure they are removed from waitlist
             transaction.delete(eventRef.collection("waitlist").document(deviceId));
 

@@ -85,10 +85,12 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         btnCancelled.setOnClickListener { showTab("cancelled") }
 
         // Logic for custom mass notification
+        // US 02.07.01, 02.07.02, 02.07.03 logic
         btnNotifyAll.setOnClickListener {
             showCustomNotificationDialog()
         }
 
+        // US 01.05.06 logic
         btnInvitePrivate.setOnClickListener {
             showInviteDialog()
         }
@@ -171,6 +173,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
 
     /**
      * Opens a dialog to search for and invite a specific entrant to a private event.
+     * Implements US 01.05.06.
      */
     private fun showInviteDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_invite_user, null)
@@ -244,14 +247,14 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
 
     private fun inviteUserToWaitlist(user: User) {
         val waitlistRef = db.collection("events").document(eventId).collection("waitlist").document(user.deviceId)
-        
+
         db.runTransaction { transaction ->
             if (transaction.get(waitlistRef).exists()) throw Exception("ALREADY_IN_WAITLIST")
-            
+
             val eventRef = db.collection("events").document(eventId)
             val eventDoc = transaction.get(eventRef)
             val currentCount = eventDoc.getLong("waiting_count") ?: 0L
-            
+
             transaction.set(waitlistRef, mapOf("device_id" to user.deviceId, "joined_at" to Timestamp.now()))
             transaction.update(eventRef, "waiting_count", currentCount + 1)
             eventDoc.getString("name") ?: "Private Event"

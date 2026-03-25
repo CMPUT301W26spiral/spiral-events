@@ -16,6 +16,7 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.acceptanceHandling
+import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.google.firebase.firestore.ListenerRegistration
 
 /**
@@ -66,8 +67,12 @@ class EventDetailsLeaveFragment : Fragment() {
             time.text = event.timeText
             waiting.text = "${event.waitingCount} People on Waiting List"
 
+            // Load the event poster from Firestore URL
             if (!event.posterUriString.isNullOrEmpty()) {
-                Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
+                Glide.with(this)
+                    .load(event.posterUriString)
+                    .placeholder(R.drawable.ic_event)
+                    .into(posterImage)
             } else {
                 posterImage.setImageResource(R.drawable.ic_event)
             }
@@ -88,7 +93,7 @@ class EventDetailsLeaveFragment : Fragment() {
                     repository.getEntrantIds(eventId, "canceled_list", { canceledIds ->
                         if (!isAdded) return@getEntrantIds
                         val myId = DeviceIdProvider.getDeviceId(requireContext())
-                        
+
                         if (canceledIds.contains(myId)) {
                             // User declined: Hide all buttons and show status
                             joinedText.visibility = View.VISIBLE
