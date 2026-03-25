@@ -58,12 +58,6 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:layout_marginStart="6dp"
-                    android:src="@drawable/ic_dropdown"
-                    android:contentDescription="Dropdown" />
             </LinearLayout>
 
             <TextView
@@ -114,12 +108,6 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:layout_marginStart="6dp"
-                    android:src="@drawable/ic_dropdown"
-                    android:contentDescription="Dropdown" />
             </LinearLayout>
 
             <TextView
@@ -166,12 +154,6 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_marginStart="6dp"
-                android:src="@drawable/ic_chevron_right"
-                android:contentDescription="Expand past events" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView

@@ -129,6 +129,19 @@
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent">
 
+        <!-- Successfully Joined Text (Shown when status is Accepted) -->
+        <TextView
+            android:id="@+id/successfullyJoinedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Successfully joined!"
+            android:textColor="#2E5A27"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:padding="16dp"
+            android:visibility="gone" />
+
         <!-- Accept Button (Hidden by default) -->
         <Button
             android:id="@+id/acceptInvitationButton"

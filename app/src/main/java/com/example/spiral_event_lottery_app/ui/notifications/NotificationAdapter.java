@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import com.example.spiral_event_lottery_app.data.EventRepository;
 import com.example.spiral_event_lottery_app.model.Notification;
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment;
@@ -101,22 +102,42 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
                 // Special handling for ACCEPTED (Wins): Should navigate to where they can Accept/Decline
                 // Standard behavior: Go to EventDetailsLeaveFragment which contains the My Events context logic
-                
+
                 EventRepository repository = new EventRepository(activity);
-                repository.isJoined(eventId, joined -> {
+                String myDeviceId = DeviceIdProvider.getDeviceId(context);
+
+                // Check if user is in canceled_list before allowing navigation
+                repository.getEntrantIds(eventId, "canceled_list", canceledIds -> {
                     if (activity.isFinishing() || activity.isDestroyed()) return;
 
-                    // If they are selected/joined, they should go to the version of details that has action buttons
-                    activity.getSupportFragmentManager().beginTransaction()
-                            .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
-                            .addToBackStack("details")
-                            .commit();
+                    if (canceledIds.contains(myDeviceId)) {
+                        Toast.makeText(context, "You are not part of this event anymore.", Toast.LENGTH_LONG).show();
+                    } else {
+                        // Proceed with existing logic if not canceled
+                        repository.isJoined(eventId, joined -> {
+                            if (activity.isFinishing() || activity.isDestroyed()) return;
+
+                            activity.getSupportFragmentManager().beginTransaction()
+                                    .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
+                                    .addToBackStack("details")
+                                    .commit();
+                        }, e -> {
+                            // Fallback to standard details if check fails
+                            activity.getSupportFragmentManager().beginTransaction()
+                                    .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                                    .addToBackStack("details")
+                                    .commit();
+                        });
+                    }
                 }, e -> {
-                    // Fallback to standard details if check fails
-                    activity.getSupportFragmentManager().beginTransaction()
-                            .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
-                            .addToBackStack("details")
-                            .commit();
+                    // Fallback to standard navigation if canceled check fails
+                    repository.isJoined(eventId, joined -> {
+                        if (activity.isFinishing() || activity.isDestroyed()) return;
+                        activity.getSupportFragmentManager().beginTransaction()
+                                .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
+                                .addToBackStack("details")
+                                .commit();
+                    }, err -> {});
                 });
             }
         });

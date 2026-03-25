@@ -72,7 +72,14 @@ class EventDetailsFragment : Fragment() {
                 locationName.text = event.locationName
                 time.text = event.timeText
 
-                waiting.text = "${event.waitingCount} People on Waiting List"
+                // Calculate and display open spots ONLY if lottery is not done
+                val openSpots = event.maxEntrants?.minus(event.waitingCount.toInt()) ?: 0
+                waiting.text = if (event.maxEntrants != null && !event.lotteryDone) {
+                    "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+                } else {
+                    "${event.waitingCount} People on Waiting List"
+                }
+
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
                 if (!event.posterUriString.isNullOrEmpty()) {

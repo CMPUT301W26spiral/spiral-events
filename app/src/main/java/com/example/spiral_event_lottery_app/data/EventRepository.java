@@ -26,6 +26,7 @@ public class EventRepository {
     public interface StatusCallback { void onStatus(String status); }
     public interface ErrorCallback { void onError(Exception e); }
     public interface SuccessCallback { void onSuccess(); }
+    public interface UserIdsCallback { void onUpdate(List<String> userIds); }
 
     private final FirebaseFirestore db;
     private final String deviceId;
@@ -37,7 +38,7 @@ public class EventRepository {
 
     /**
      * Listens for all events where the current user is registered.
-     * Uses a direct collection listener for 100% accuracy and zero stale data.
+     * Includes waitlist, selected_list, and canceled_list.
      */
     public ListenerRegistration listenToMyEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
         return db.collection("events").addSnapshotListener((snapshot, error) -> {
@@ -61,18 +62,26 @@ public class EventRepository {
                     .addOnSuccessListener(waitlistDoc -> {
                         if (waitlistDoc.exists()) {
                             joinedResults.add(toEvent(eventId, eventDoc.getData()));
+                            checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
                         } else {
                             // If not in waitlist, check selected_list
                             db.collection("events").document(eventId).collection("selected_list").document(deviceId).get()
                                 .addOnSuccessListener(selectedDoc -> {
                                     if (selectedDoc.exists()) {
                                         joinedResults.add(toEvent(eventId, eventDoc.getData()));
+                                        checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
+                                    } else {
+                                        // NEW: Check canceled_list
+                                        db.collection("events").document(eventId).collection("canceled_list").document(deviceId).get()
+                                            .addOnSuccessListener(canceledDoc -> {
+                                                if (canceledDoc.exists()) {
+                                                    joinedResults.add(toEvent(eventId, eventDoc.getData()));
+                                                }
+                                                checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
+                                            });
                                     }
-                                    checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
                                 });
-                            return; // Wait for the second check
                         }
-                        checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
                     });
             }
         });
@@ -86,17 +95,54 @@ public class EventRepository {
         }
     }
 
+    /**
+     * Automatically picks a RANDOM person from the waitlist and invites them.
+     * If the waitlist is empty, no one is drawn.
+     */
     public void triggerAutomaticRedraw(String eventId, String eventName) {
-        db.collection("events").document(eventId).collection("waitlist").limit(1).get().addOnSuccessListener(snapshot -> {
-            if (snapshot.isEmpty()) return;
-            DocumentSnapshot winnerDoc = snapshot.getDocuments().get(0);
-            db.collection("events").document(eventId).collection("selected_list").document(winnerDoc.getId())
-                .set(createMap("selectedAt", System.currentTimeMillis(), "status", "invited"))
-                .addOnSuccessListener(aVoid -> {
-                    db.collection("events").document(eventId).collection("waitlist").document(winnerDoc.getId()).delete();
-                    NotificationManager.sendNotification(winnerDoc.getId(), "Invitation Accepted", "A spot opened up for " + eventName + "!", "ACCEPTED", eventName, eventId);
+        db.collection("events").document(eventId).collection("waitlist").get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.isEmpty()) {
+                        // No more people in waitlist, do not redraw.
+                        return;
+                    }
+
+                    // Pick a random index
+                    int randomIndex = new java.util.Random().nextInt(snapshot.size());
+                    DocumentSnapshot winnerDoc = snapshot.getDocuments().get(randomIndex);
+                    String winnerId = winnerDoc.getId();
+
+                    // Move from waitlist to selected_list
+                    Map<String, Object> selectedData = new HashMap<>();
+                    selectedData.put("selectedAt", System.currentTimeMillis());
+                    selectedData.put("status", "invited");
+                    selectedData.put("deviceId", winnerId);
+
+                    db.collection("events").document(eventId).collection("selected_list").document(winnerId)
+                            .set(selectedData)
+                            .addOnSuccessListener(aVoid -> {
+                                // Remove from waitlist
+                                db.collection("events").document(eventId).collection("waitlist").document(winnerId).delete();
+
+                                // Update the event's waiting count
+                                db.collection("events").document(eventId).get().addOnSuccessListener(eventDoc -> {
+                                    Long currentCount = eventDoc.getLong("waiting_count");
+                                    if (currentCount != null && currentCount > 0) {
+                                        db.collection("events").document(eventId).update("waiting_count", currentCount - 1);
+                                    }
+                                });
+
+                                // Notify the new lucky winner
+                                NotificationManager.sendNotification(
+                                        winnerId,
+                                        "You're Invited!",
+                                        "A spot opened up for " + eventName + "! You have been selected.",
+                                        "INVITATION",
+                                        eventName,
+                                        eventId
+                                );
+                            });
                 });
-        });
     }
 
     private Map<String, Object> createMap(String k1, Object v1, String k2, Object v2) {
@@ -112,7 +158,14 @@ public class EventRepository {
         long waitingCount = data.get("waiting_count") instanceof Number ? ((Number) data.get("waiting_count")).longValue() : 0L;
         String posterUrl = (String) data.get("posterUriString");
         String organizerId = (String) data.get("organizerId");
-        return new Event(documentId, name, location, true, "", "", "", null, "", "", "", "", "", "", posterUrl, "", "", waitingCount, organizerId);
+        String timeText = data.get("timeText") instanceof String ? (String) data.get("timeText") : "";
+        
+        Boolean isPublic = data.get("isPublic") instanceof Boolean ? (Boolean) data.get("isPublic") : true;
+        String description = (String) data.get("description");
+        Integer maxEntrants = data.get("maxEntrants") instanceof Number ? ((Number) data.get("maxEntrants")).intValue() : null;
+        Boolean lotteryDone = data.get("lottery_done") instanceof Boolean ? (Boolean) data.get("lottery_done") : false;
+
+        return new Event(documentId, name, location, isPublic, "", description != null ? description : "", "", maxEntrants, "", "", "", "", "", "", posterUrl, "", timeText, waitingCount, organizerId, lotteryDone);
     }
 
     public ListenerRegistration listenToOpenEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
@@ -180,15 +233,52 @@ public class EventRepository {
         }).addOnSuccessListener(unused -> onSuccess.onSuccess()).addOnFailureListener(onError::onError);
     }
 
+    /**
+     * Declines an invitation. Moves the user from selected_list to canceled_list
+     * and triggers an automatic redraw to fill the vacant spot.
+     */
     public void declineInvitation(String eventId, final SuccessCallback onSuccess, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
+
         db.runTransaction(transaction -> {
+            // Remove from selected_list
             transaction.delete(eventRef.collection("selected_list").document(deviceId));
+            
+            // Also ensure they are removed from waitlist
+            transaction.delete(eventRef.collection("waitlist").document(deviceId));
+
+            // Add to canceled_list
             Map<String, Object> data = new HashMap<>();
             data.put("status", "declined");
             data.put("deviceId", deviceId);
-            transaction.set(eventRef.collection("cancelled_list").document(deviceId), data);
+            data.put("declinedAt", Timestamp.now());
+            transaction.set(eventRef.collection("canceled_list").document(deviceId), data);
+
             return null;
-        }).addOnSuccessListener(unused -> onSuccess.onSuccess()).addOnFailureListener(onError::onError);
+        }).addOnSuccessListener(unused -> {
+            // Fetch event name first to use in notification, then redraw
+            db.collection("events").document(eventId).get().addOnSuccessListener(doc -> {
+                String eventName = doc.getString("name");
+                triggerAutomaticRedraw(eventId, eventName != null ? eventName : "the event");
+                onSuccess.onSuccess();
+            });
+        }).addOnFailureListener(onError::onError);
+    }
+
+    /**
+     * Fetches the list of device IDs from a specific sub-collection of an event.
+     * @param eventId The event ID.
+     * @param collectionName The sub-collection name (e.g., "waitlist", "selected_list", "canceled_list").
+     */
+    public void getEntrantIds(String eventId, String collectionName, final UserIdsCallback onUpdate, final ErrorCallback onError) {
+        db.collection("events").document(eventId).collection(collectionName).get()
+            .addOnSuccessListener(snapshot -> {
+                List<String> ids = new ArrayList<>();
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    ids.add(doc.getId());
+                }
+                onUpdate.onUpdate(ids);
+            })
+            .addOnFailureListener(onError::onError);
     }
 }
