@@ -109,6 +109,7 @@ class EventAdapter(
         private val waitingText: TextView = itemView.findViewById(R.id.waitingText)
         private val actionButton: Button = itemView.findViewById(R.id.signUpButton)
         private val posterImage: ImageView = itemView.findViewById(R.id.eventPosterImage)
+        private val statusPill: TextView = itemView.findViewById(R.id.statusPill)
 
         fun bind(
             event: Event,
@@ -130,16 +131,33 @@ class EventAdapter(
                 posterImage.setImageResource(R.drawable.ic_event)
             }
 
+            val isFull = event.maxEntrants != null && event.waitingCount >= event.maxEntrants!!
+            
+            // Update Status Pill
+            if (isFull) {
+                statusPill.text = "Full"
+                statusPill.setBackgroundResource(R.drawable.bg_full_pill) // Assuming this exists or falls back
+                statusPill.setTextColor(0xFFB00020.toInt()) // Red-ish
+            } else {
+                statusPill.text = "Open"
+                statusPill.setBackgroundResource(R.drawable.bg_open_pill)
+                statusPill.setTextColor(0xFF1F5E3B.toInt()) // Green-ish
+            }
+
             // Change button text and action based on organizer status
             if (event.organizerId == deviceId) {
                 actionButton.text = "Details"
+                actionButton.isEnabled = true
                 actionButton.setOnClickListener { onDetailsClicked(event) }
                 itemView.setOnClickListener { onDetailsClicked(event) }
             } else {
-                val isFull = event.maxEntrants != null && event.waitingCount >= event.maxEntrants!!
                 if (isFull) {
                     actionButton.text = "Full"
                     actionButton.isEnabled = false
+                    actionButton.setOnClickListener(null)
+                    // Even if full, we still allow clicking the item to view details
+                    // This ensures the correct event is always opened
+                    itemView.setOnClickListener { onSignUpClicked(event) }
                 } else {
                     actionButton.text = "Sign Up"
                     actionButton.isEnabled = true
