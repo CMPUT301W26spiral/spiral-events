@@ -92,6 +92,12 @@ public class EventRepository {
             posterUrl = data.get("posterUrl") instanceof String ? (String) data.get("posterUrl") : null;
         }
 
+        @SuppressWarnings("unchecked")
+        List<String> posterUriStrings = (List<String>) data.get("posterUriStrings");
+        if (posterUriStrings == null) {
+            posterUriStrings = new ArrayList<>();
+        }
+
         String description = data.get("description") instanceof String ? (String) data.get("description") : "";
         String interests = data.get("interests") instanceof String ? (String) data.get("interests") : "";
         String geolocation = data.get("geolocation") instanceof String ? (String) data.get("geolocation") : "";
@@ -120,7 +126,7 @@ public class EventRepository {
         return new Event(
             documentId, name, location, isPublic, interests, description, geolocation, maxEntrants,
             eventDate, eventStartTime, eventEndTime, drawDate, drawStartTime, drawEndTime,
-            posterUrl, eventCreated, timeText, waitingCount, organizerId
+            posterUrl, posterUriStrings, eventCreated, timeText, waitingCount, organizerId
         );
     }
 
@@ -335,5 +341,3 @@ public class EventRepository {
                 });
     }
 }
-
-//trying something wow i hope this fixes it for temi poor guy

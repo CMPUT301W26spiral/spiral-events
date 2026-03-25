@@ -16,20 +16,25 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.example.spiral_event_lottery_app.ui.events.PosterAdapter
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
+import java.util.UUID
 
 /**
  * Fragment that displays the details of a specific event.
- * Now supports editing the event poster for organizers and interest selection.
+ * Now supports multiple posters and interest selection.
  */
 class EventDetailsFragment : Fragment() {
     companion object {
@@ -50,6 +55,9 @@ class EventDetailsFragment : Fragment() {
     private val interestedList = mutableListOf<String>()
     private val notInterestedList = mutableListOf<String>()
     private val customInterests = mutableSetOf<String>()
+
+    private lateinit var posterViewPager: ViewPager2
+    private lateinit var posterIndicator: TabLayout
 
     // Register the image picker at the class level
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -75,10 +83,12 @@ class EventDetailsFragment : Fragment() {
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val description = view.findViewById<TextView>(R.id.detailsDescription)
-        val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
         val joinBtn = view.findViewById<Button>(R.id.joinLeaveButton)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
         val interestsChipGroup = view.findViewById<ChipGroup>(R.id.detailsInterestsChipGroup)
+
+        posterViewPager = view.findViewById(R.id.eventPosterViewPager)
+        posterIndicator = view.findViewById(R.id.posterIndicator)
 
         val editPosterBtn = view.findViewById<View?>(R.id.editImageButton)
 
@@ -131,10 +141,17 @@ class EventDetailsFragment : Fragment() {
                         btn.setOnClickListener { imagePickerLauncher.launch("image/*") }
                     }
 
-                    if (!event.posterUriString.isNullOrEmpty()) {
-                        Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
+                    val posters = event.posterUriStrings.ifEmpty { 
+                        if (event.posterUriString != null) listOf(event.posterUriString!!) else emptyList()
+                    }
+                    
+                    if (posters.isNotEmpty()) {
+                        posterViewPager.adapter = PosterAdapter(posters)
+                        TabLayoutMediator(posterIndicator, posterViewPager) { _, _ -> }.attach()
+                        posterIndicator.visibility = if (posters.size > 1) View.VISIBLE else View.GONE
                     } else {
-                        posterImage.setImageResource(R.drawable.ic_event)
+                        posterViewPager.adapter = PosterAdapter(listOf("")) // placeholder
+                        posterIndicator.visibility = View.GONE
                     }
 
                     repository.isJoined(eventId, { joined ->
@@ -209,14 +226,14 @@ class EventDetailsFragment : Fragment() {
         updateChipStyle(chip, interest)
 
         chip.setOnClickListener {
-            customInterests.add(interest) // Mark as custom if user interacts with it
+            customInterests.add(interest)
             if (!interestedList.contains(interest) && !notInterestedList.contains(interest)) {
-                interestedList.add(interest) // Neutral -> Interested
+                interestedList.add(interest)
             } else if (interestedList.contains(interest)) {
                 interestedList.remove(interest)
-                notInterestedList.add(interest) // Interested -> Not Interested
+                notInterestedList.add(interest)
             } else {
-                notInterestedList.remove(interest) // Not Interested -> Neutral
+                notInterestedList.remove(interest)
             }
             updateChipStyle(chip, interest)
             saveInterestsToFirebase()
@@ -279,7 +296,7 @@ class EventDetailsFragment : Fragment() {
     }
 
     private fun uploadPoster(uri: Uri) {
-        val storageRef = FirebaseStorage.getInstance().getReference("event_posters/${eventId}_${System.currentTimeMillis()}.jpg")
+        val storageRef = FirebaseStorage.getInstance().getReference("event_posters/" + UUID.randomUUID().toString() + ".jpg")
         if (isAdded) Toast.makeText(requireContext(), "Uploading new poster...", Toast.LENGTH_SHORT).show()
 
         storageRef.putFile(uri)
@@ -296,15 +313,21 @@ class EventDetailsFragment : Fragment() {
     }
 
     private fun updateFirestorePoster(url: String) {
-        val db = FirebaseFirestore.getInstance()
-        db.collection("events").document(eventId)
-            .update("posterUriString", url)
-            .addOnSuccessListener {
-                if (isAdded) Toast.makeText(requireContext(), "Poster updated successfully", Toast.LENGTH_SHORT).show()
+        db.collection("events").document(eventId).get().addOnSuccessListener { doc ->
+            if (doc.exists()) {
+                val currentPosters = doc.get("posterUriStrings") as? MutableList<String> ?: mutableListOf()
+                if (currentPosters.size < 3) {
+                    currentPosters.add(url)
+                    db.collection("events").document(eventId)
+                        .update("posterUriStrings", currentPosters, "posterUriString", currentPosters[0])
+                        .addOnSuccessListener {
+                            if (isAdded) Toast.makeText(requireContext(), "Poster added successfully", Toast.LENGTH_SHORT).show()
+                        }
+                } else {
+                    if (isAdded) Toast.makeText(requireContext(), "Max 3 posters allowed", Toast.LENGTH_SHORT).show()
+                }
             }
-            .addOnFailureListener { e ->
-                if (isAdded) Toast.makeText(requireContext(), "Failed to update database: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        }
     }
 
     override fun onStop() {

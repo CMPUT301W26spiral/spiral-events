@@ -43,12 +43,13 @@
                 app:layout_constraintBottom_toBottomOf="@id/backButton"
                 android:layout_marginStart="8dp"/>
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/imageCard"
                 android:layout_width="0dp"
                 android:layout_height="250dp"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
+                app:strokeWidth="0dp"
                 android:layout_marginTop="16dp"
                 app:layout_constraintTop_toBottomOf="@id/header"
                 app:layout_constraintStart_toStartOf="parent"
@@ -59,12 +60,22 @@
                     android:layout_height="match_parent"
                     android:background="#D9D9D9">
 
-                    <ImageView
-                        android:id="@+id/eventPosterImage"
+                    <androidx.viewpager2.widget.ViewPager2
+                        android:id="@+id/eventPosterViewPager"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        android:contentDescription="Event Poster" />
+                        android:layout_height="match_parent" />
+
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/posterIndicator"
+                        android:layout_width="match_parent"
+                        android:layout_height="12dp"
+                        android:layout_gravity="bottom"
+                        android:background="@android:color/transparent"
+                        app:tabBackground="@drawable/dot_selector"
+                        app:tabGravity="center"
+                        app:tabIndicatorHeight="0dp"
+                        app:tabMaxWidth="12dp"
+                        app:tabRippleColor="@null" />
 
                     <ImageView
                         android:id="@+id/editImageButton"
@@ -78,7 +89,7 @@
                         app:tint="#1F5E3B"
                         android:contentDescription="Edit Poster" />
                 </FrameLayout>
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/detailsTitle"

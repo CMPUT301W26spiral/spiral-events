@@ -21,12 +21,18 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.spiral_event_lottery_app.R;
 import com.example.spiral_event_lottery_app.model.Event;
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
+import com.example.spiral_event_lottery_app.ui.events.PosterAdapter;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -35,6 +41,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Activity for organizers to create and configure new lottery events.
@@ -51,39 +58,38 @@ public class CreateEventActivity extends AppCompatActivity {
     private Spinner spinnerGeolocation, spinnerAccess;
     private Button btnCreate;
 
-    private ConstraintLayout postersContainer;
-    private ImageView ivEventPoster;
+    private ViewPager2 posterViewPager;
+    private TabLayout posterIndicator;
     private LinearLayout llAddPosterPlaceholder;
-    private Uri selectedImageUri;
+    private List<Uri> selectedImageUris = new ArrayList<>();
 
-    private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.RequestPermission(),
-            isGranted -> {
-                if (isGranted) {
-                    launchImagePicker();
-                } else {
-                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
+    private final ActivityResultLauncher<String> pickImagesLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetMultipleContents(),
+            uris -> {
+                if (uris != null && !uris.isEmpty()) {
+                    selectedImageUris = uris.subList(0, Math.min(uris.size(), 3));
+                    updatePosterPreview();
                 }
             }
     );
 
-    private final ActivityResultLauncher<String> pickImageLauncher = registerForActivityResult(
-            new ActivityResultContracts.GetContent(),
-            uri -> {
-                if (uri != null) {
-                    selectedImageUri = uri;
-                    ivEventPoster.setImageURI(uri);
-                    llAddPosterPlaceholder.setVisibility(View.GONE);
-                    try {
-                        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
-                        getContentResolver().takePersistableUriPermission(uri, takeFlags);
-                    } catch (Exception e) {}
-                }
-            }
-    );
-
-    private void launchImagePicker() {
-        pickImageLauncher.launch("image/*");
+    private void updatePosterPreview() {
+        if (selectedImageUris.isEmpty()) {
+            llAddPosterPlaceholder.setVisibility(View.VISIBLE);
+            posterViewPager.setVisibility(View.GONE);
+            posterIndicator.setVisibility(View.GONE);
+        } else {
+            llAddPosterPlaceholder.setVisibility(View.GONE);
+            posterViewPager.setVisibility(View.VISIBLE);
+            posterIndicator.setVisibility(View.VISIBLE);
+            
+            List<String> uriStrings = new ArrayList<>();
+            for (Uri uri : selectedImageUris) uriStrings.add(uri.toString());
+            
+            PosterAdapter adapter = new PosterAdapter(uriStrings);
+            posterViewPager.setAdapter(adapter);
+            new TabLayoutMediator(posterIndicator, posterViewPager, (tab, position) -> {}).attach();
+        }
     }
 
     @Override
@@ -95,14 +101,13 @@ public class CreateEventActivity extends AppCompatActivity {
         setupSpinners();
         setupInterestsTagSystem();
 
-        View.OnClickListener posterClickListener = v -> launchImagePicker();
-        postersContainer.setOnClickListener(posterClickListener);
+        View.OnClickListener posterClickListener = v -> pickImagesLauncher.launch("image/*");
+        findViewById(R.id.posters_container).setOnClickListener(posterClickListener);
         llAddPosterPlaceholder.setOnClickListener(posterClickListener);
-        ivEventPoster.setOnClickListener(posterClickListener);
 
         btnCreate.setOnClickListener(v -> {
             if (validateForm()) {
-                saveEvent();
+                uploadPostersAndSaveEvent();
             }
         });
 
@@ -110,8 +115,8 @@ public class CreateEventActivity extends AppCompatActivity {
     }
 
     private void initializeViews() {
-        postersContainer = findViewById(R.id.posters_container);
-        ivEventPoster = findViewById(R.id.iv_event_poster);
+        posterViewPager = findViewById(R.id.iv_event_poster_pager);
+        posterIndicator = findViewById(R.id.posterIndicator);
         llAddPosterPlaceholder = findViewById(R.id.ll_add_poster_placeholder);
 
         etEventName = findViewById(R.id.et_event_name);
@@ -256,7 +261,36 @@ public class CreateEventActivity extends AppCompatActivity {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
     }
 
-    private void saveEvent() {
+    private void uploadPostersAndSaveEvent() {
+        if (selectedImageUris.isEmpty()) {
+            saveEvent(new ArrayList<>());
+            return;
+        }
+
+        List<String> uploadedUrls = new ArrayList<>();
+        int totalToUpload = selectedImageUris.size();
+        final int[] uploadedCount = {0};
+
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+
+        for (Uri uri : selectedImageUris) {
+            StorageReference ref = storage.getReference().child("event_posters/" + UUID.randomUUID().toString() + ".jpg");
+            ref.putFile(uri).continueWithTask(task -> ref.getDownloadUrl()).addOnSuccessListener(downloadUri -> {
+                uploadedUrls.add(downloadUri.toString());
+                uploadedCount[0]++;
+                if (uploadedCount[0] == totalToUpload) {
+                    saveEvent(uploadedUrls);
+                }
+            }).addOnFailureListener(e -> {
+                uploadedCount[0]++;
+                if (uploadedCount[0] == totalToUpload) {
+                    saveEvent(uploadedUrls);
+                }
+            });
+        }
+    }
+
+    private void saveEvent(List<String> posterUrls) {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
         boolean isPublic = spinnerAccess.getSelectedItem().toString().equalsIgnoreCase("Public");
@@ -283,8 +317,6 @@ public class CreateEventActivity extends AppCompatActivity {
 
         String timeText = eventDate + " " + eventStartTime + "-" + eventEndTime;
 
-        String posterUriString = (selectedImageUri != null) ? selectedImageUri.toString() : null;
-
         String organizerId = DeviceIdProvider.getDeviceId(this);
         Event newEvent = new Event(
                 "", // id
@@ -301,7 +333,8 @@ public class CreateEventActivity extends AppCompatActivity {
                 drawDate,
                 drawStartTime,
                 drawEndTime,
-                posterUriString,
+                posterUrls.isEmpty() ? null : posterUrls.get(0),
+                posterUrls,
                 getCurrentTimestamp(), // eventCreated
                 timeText, // timeText
                 0L, // waitingCount
