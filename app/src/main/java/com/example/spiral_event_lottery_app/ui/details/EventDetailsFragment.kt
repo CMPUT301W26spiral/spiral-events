@@ -1,5 +1,6 @@
 package com.example.spiral_event_lottery_app.ui.details
 
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.Uri
@@ -65,11 +66,19 @@ class EventDetailsFragment : Fragment() {
         val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
         val joinBtn = view.findViewById<Button>(R.id.joinLeaveButton)
+        val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
 
         // SAFETY: Use a nullable reference for the edit button which might be missing in XML
         val editPosterBtn = view.findViewById<View?>(R.id.editImageButton)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
+
+        viewQRBtn.setOnClickListener {
+            val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
+            intent.putExtra("EVENT_ID", eventId)
+            intent.putExtra("EVENT_NAME", title.text.toString())
+            startActivity(intent)
+        }
 
         eventListener = repository.listenToEvent(
             eventId,

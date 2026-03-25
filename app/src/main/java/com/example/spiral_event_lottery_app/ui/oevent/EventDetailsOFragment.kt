@@ -1,6 +1,7 @@
 package com.example.spiral_event_lottery_app.ui.oevent
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -121,7 +122,10 @@ class EventDetailsOFragment : Fragment() {
         // Buttons
         val drawBtn = view.findViewById<Button>(R.id.drawButton)
         val viewEntrantsBtn = view.findViewById<Button>(R.id.viewEntrantsButton)
+        val notifyEntrantsBtn = view.findViewById<Button>(R.id.notifyEntrantsButton)
+        val viewLocationsBtn = view.findViewById<Button>(R.id.viewLocButton)
         val deleteEventBtn = view.findViewById<Button>(R.id.deleteEventButton)
+        val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
@@ -131,6 +135,13 @@ class EventDetailsOFragment : Fragment() {
 
         deleteEventBtn.setOnClickListener {
             showDeleteEventDialog()
+        }
+
+        viewQRBtn.setOnClickListener {
+            val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
+            intent.putExtra("EVENT_ID", eventId)
+            intent.putExtra("EVENT_NAME", title.text.toString().removeSuffix(" (Private)"))
+            startActivity(intent)
         }
 
         // Implement Search Functionality
@@ -291,7 +302,7 @@ class EventDetailsOFragment : Fragment() {
             eventName
         }.addOnSuccessListener { eventName ->
             Toast.makeText(requireContext(), "${user.name} has been added to the waiting list!", Toast.LENGTH_SHORT).show()
-            
+
             // Send notification to the invited user
             NotificationManager.sendNotification(
                 user.deviceId,
