@@ -52,6 +52,17 @@ public class CreateEventActivity extends AppCompatActivity {
     private Uri selectedImageUri;
 
     private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    launchImagePicker();
+                } else {
+                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<String> pickImageLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
                 if (uri != null) {
@@ -66,6 +77,10 @@ public class CreateEventActivity extends AppCompatActivity {
             }
     );
 
+    private void launchImagePicker() {
+        pickImageLauncher.launch("image/*");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,7 +89,7 @@ public class CreateEventActivity extends AppCompatActivity {
         initializeViews();
         setupSpinners();
 
-        View.OnClickListener posterClickListener = v -> imagePickerLauncher.launch("image/*");
+        View.OnClickListener posterClickListener = v -> launchImagePicker();
         postersContainer.setOnClickListener(posterClickListener);
         llAddPosterPlaceholder.setOnClickListener(posterClickListener);
         ivEventPoster.setOnClickListener(posterClickListener);
@@ -211,7 +226,6 @@ public class CreateEventActivity extends AppCompatActivity {
         String maxEntrantsStr = etMaxEntrants.getText().toString().trim();
         Integer maxEntrants = maxEntrantsStr.isEmpty() ? null : Integer.parseInt(maxEntrantsStr);
 
-        String eventMonthStr = spinnerEventMonth.getSelectedItem().toString();
         String eventDayStr = spinnerEventDay.getSelectedItem().toString();
         String eventYearStr = spinnerEventYear.getSelectedItem().toString();
         String eventMonthNum = String.format(Locale.getDefault(), "%02d", spinnerEventMonth.getSelectedItemPosition());
@@ -226,7 +240,7 @@ public class CreateEventActivity extends AppCompatActivity {
         String drawStartTime = spinnerDrawStartHour.getSelectedItem().toString() + ":" + spinnerDrawStartMin.getSelectedItem().toString();
         String drawEndTime = spinnerDrawEndHour.getSelectedItem().toString() + ":" + spinnerDrawEndMin.getSelectedItem().toString();
 
-        String timeText = eventMonthStr + " " + eventDayStr + ", " + eventYearStr + " " + eventStartTime + "-" + eventEndTime;
+        String timeText = eventDate + " " + eventStartTime + "-" + eventEndTime;
 
         String posterUriString = (selectedImageUri != null) ? selectedImageUri.toString() : null;
 
@@ -259,6 +273,7 @@ public class CreateEventActivity extends AppCompatActivity {
             Intent intent = new Intent(this, QRCodeActivity.class);
             intent.putExtra("EVENT_NAME", eventName);
             intent.putExtra("EVENT_ID", newEvent.getId());
+            intent.putExtra("FROM_CREATION", true);
             startActivity(intent);
         } else {
             Intent intent = new Intent(this, PrivateEventSuccessActivity.class);

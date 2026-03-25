@@ -3,7 +3,9 @@ package com.example.event_creation;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -17,30 +19,32 @@ import com.google.zxing.WriterException;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
 
 /**
- * Activity that displays a generated QR code for a newly created event.
- * Organizers can save this QR code or share it with potential entrants.
- * The QR code contains the Firestore Event ID.
+ * Activity that displays a generated QR code for an event.
+ * Used both after event creation and when viewing QR from event details.
  */
 public class QRCodeActivity extends AppCompatActivity {
 
     private ImageView ivQRCode;
-    private TextView tvSuccessMsg;
-    private Button btnConfirm;
+    private TextView tvEventName;
+    private Button btnDone;
+    private ImageButton btnBack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_qr_code);
+        // Using the new layout requested for viewing event QR codes
+        setContentView(R.layout.qr_code_event);
 
         ivQRCode = findViewById(R.id.iv_qr_code);
-        tvSuccessMsg = findViewById(R.id.tv_success_msg);
-        btnConfirm = findViewById(R.id.btn_confirm);
+        tvEventName = findViewById(R.id.tv_event_name);
+        btnDone = findViewById(R.id.btn_done);
+        btnBack = findViewById(R.id.btn_back);
 
         String eventName = getIntent().getStringExtra("EVENT_NAME");
         String eventId = getIntent().getStringExtra("EVENT_ID");
 
         if (eventName != null) {
-            tvSuccessMsg.setText(getString(R.string.successfully_created, eventName));
+            tvEventName.setText(eventName);
         }
 
         if (eventId != null) {
@@ -49,16 +53,21 @@ public class QRCodeActivity extends AppCompatActivity {
             Toast.makeText(this, "Error: No event ID received", Toast.LENGTH_SHORT).show();
         }
 
-        btnConfirm.setOnClickListener(v -> {
-            // Navigate back to the home screen (MainActivity)
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            finish();
-        });
+        // Back button finishes the activity
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
-        findViewById(R.id.ll_save_qr).setOnClickListener(v -> {
-            Toast.makeText(this, "QR Code saved to gallery (simulated)", Toast.LENGTH_SHORT).show();
+        // Done button behavior:
+        // If coming from creation, go to MainActivity. If just viewing, finish.
+        btnDone.setOnClickListener(v -> {
+            boolean fromCreation = getIntent().getBooleanExtra("FROM_CREATION", false);
+            if (fromCreation) {
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+            }
+            finish();
         });
     }
 
@@ -69,7 +78,6 @@ public class QRCodeActivity extends AppCompatActivity {
     private void generateQRCode(String eventId) {
         try {
             BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
-            // US 01.06.01 - Encoding the event ID so entrants can scan to view details
             Bitmap bitmap = barcodeEncoder.encodeBitmap(eventId, BarcodeFormat.QR_CODE, 512, 512);
             ivQRCode.setImageBitmap(bitmap);
         } catch (WriterException e) {

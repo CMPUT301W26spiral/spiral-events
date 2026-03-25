@@ -91,7 +91,19 @@
                 android:layout_marginTop="16dp"
                 app:layout_constraintTop_toBottomOf="@id/imageCard"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintEnd_toStartOf="@+id/viewQRButtonIcon"/>
+
+            <ImageButton
+                android:id="@+id/viewQRButtonIcon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_qr"
+                android:contentDescription="View QR Code"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/detailsTitle"
+                app:layout_constraintBottom_toBottomOf="@id/detailsTitle"
+                app:tint="#1F5E3B" />
 
             <TextView
                 android:id="@+id/detailsLocation"
