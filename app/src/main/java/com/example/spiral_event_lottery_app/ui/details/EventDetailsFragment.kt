@@ -73,7 +73,10 @@ class EventDetailsFragment : Fragment() {
                 time.text = event.timeText
 
                 waiting.text = "${event.waitingCount} People on Waiting List"
-                description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
+                
+                // Display description and lottery rules
+                val rules = if (event.drawDate.isNotEmpty()) "\n\nLottery Rules: Draw on ${event.drawDate} at ${event.drawStartTime}" else ""
+                description.text = (if (event.description.isNullOrEmpty()) "No description available" else event.description) + rules
 
                 if (!event.posterUriString.isNullOrEmpty()) {
                     Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
@@ -102,21 +105,25 @@ class EventDetailsFragment : Fragment() {
                         if (joined) {
                             AlertDialog.Builder(requireContext()).setTitle("Already registered").setMessage("You're already on the waiting list for\n$currentEventName.").setPositiveButton("OK", null).show()
                         } else {
-                            AlertDialog.Builder(requireContext()).setTitle("Join Waitlist").setMessage("Confirm joining the waiting list for $currentEventName?").setPositiveButton("Confirm") { _, _ ->
-                                repository.joinWaitlist(
-                                    eventId,
-                                    EventRepository.SuccessCallback {
-                                        NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Requested", "Your entry for $currentEventName was received!", "REQUESTED", currentEventName, eventId)
-                                        Toast.makeText(requireContext(), "Joined successfully!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    EventRepository.SuccessCallback {
-                                        Toast.makeText(requireContext(), "You are already joined.", Toast.LENGTH_SHORT).show()
-                                    },
-                                    EventRepository.ErrorCallback { e ->
-                                        Toast.makeText(requireContext(), e.message ?: "Join failed", Toast.LENGTH_LONG).show()
-                                    }
-                                )
-                            }.setNegativeButton("Cancel", null).show()
+                            // Updated confirmation dialog to match requested style and content
+                            AlertDialog.Builder(requireContext())
+                                .setTitle("Waitlist Confirmation")
+                                .setMessage("Successfully join the waiting list for $currentEventName?\n\n• Entry is random\n• You may leave at any time")
+                                .setPositiveButton("Confirm") { _, _ ->
+                                    repository.joinWaitlist(
+                                        eventId,
+                                        EventRepository.SuccessCallback {
+                                            NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Requested", "Your entry for $currentEventName was received!", "REQUESTED", currentEventName, eventId)
+                                            Toast.makeText(requireContext(), "Joined successfully!", Toast.LENGTH_SHORT).show()
+                                        },
+                                        EventRepository.SuccessCallback {
+                                            Toast.makeText(requireContext(), "You are already joined.", Toast.LENGTH_SHORT).show()
+                                        },
+                                        EventRepository.ErrorCallback { e ->
+                                            Toast.makeText(requireContext(), e.message ?: "Join failed", Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                }.setNegativeButton("Cancel", null).show()
                         }
                     }, {})
                 }
