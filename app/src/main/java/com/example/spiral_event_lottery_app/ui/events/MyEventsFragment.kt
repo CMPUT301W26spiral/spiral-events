@@ -12,7 +12,6 @@ import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.EventStoreO
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsLeaveFragment
 import com.example.spiral_event_lottery_app.ui.oevent.EventDetailsOFragment
-import com.google.firebase.firestore.ListenerRegistration
 
 /**
  * Fragment that displays both joined events (Entrant) and organized events (Organizer).
@@ -24,7 +23,6 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
     
     private lateinit var repository: EventRepository
     private lateinit var eventStoreO: EventStoreO
-    private var myEventsListener: ListenerRegistration? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -50,6 +48,7 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
         // 2. Setup Organizer Events RecyclerView
         val organizerRv = view.findViewById<RecyclerView>(R.id.organizerEventsRecyclerView)
         organizerAdapter = MyEventsAdapter(emptyList()) { event ->
+            // Use instance method or specific Organizer Details fragment if available
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, EventDetailsOFragment.newInstance(event.id))
                 .addToBackStack(null)
@@ -61,33 +60,30 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
         refreshData()
     }
 
-    override fun onStart() {
-        super.onStart()
-        // Listen for real-time updates to joined events
-        myEventsListener = repository.listenToMyEvents(
-            { events ->
-                if (isAdded) {
-                    joinedAdapter.submitList(events)
-                    view?.let { updateJoinedCount(it, events.size) }
-                }
-            },
-            { }
-        )
-    }
-
-    override fun onStop() {
-        super.onStop()
-        myEventsListener?.remove()
-        myEventsListener = null
+    override fun onResume() {
+        super.onResume()
+        refreshData()
     }
 
     /**
      * Refreshes the lists of both joined and organized events.
+     * Must be public so MainActivity can trigger a refresh.
      */
     fun refreshData() {
+        // Fetch Joined Events (Entrant view)
+        repository.fetchMyEvents(
+            { events ->
+                joinedAdapter.submitList(events)
+                view?.let { updateJoinedCount(it, events.size) }
+            },
+            { }
+        )
+
         // Fetch Organized Events (Organizer view)
         eventStoreO.organizerEvents { events ->
             if (isAdded) {
+                // Sort events by creation time descending (most recent first)
+                // Ensures that the newest created events appear at the top
                 val sortedEvents = events.sortedByDescending { it.eventCreated }
                 organizerAdapter.submitList(sortedEvents)
                 view?.let { updateOrganizerCount(it, events.size) }

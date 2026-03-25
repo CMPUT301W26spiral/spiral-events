@@ -15,13 +15,9 @@ import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
-import com.example.spiral_event_lottery_app.acceptanceHandling
+import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.google.firebase.firestore.ListenerRegistration
 
-/**
- * Fragment that displays event details for joined entrants and winners.
- * Hides action buttons if the invitation has already been accepted.
- */
 class EventDetailsLeaveFragment : Fragment() {
     companion object {
         private const val ARG_EVENT_ID = "event_id"
@@ -53,10 +49,9 @@ class EventDetailsLeaveFragment : Fragment() {
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
-        
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
-        val acceptBtn = view.findViewById<Button>(R.id.acceptInvitationButton)
 
+        actionBtn.text = "Leave Waiting List"
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
         eventListener = repository.listenToEvent(eventId, { event ->
@@ -72,7 +67,10 @@ class EventDetailsLeaveFragment : Fragment() {
             description.text = (if (event.description.isNullOrEmpty()) "No description available" else event.description) + rules
 
             if (!event.posterUriString.isNullOrEmpty()) {
-                Glide.with(this).load(event.posterUriString).placeholder(R.drawable.ic_event).into(posterImage)
+                Glide.with(this)
+                    .load(event.posterUriString)
+                    .placeholder(R.drawable.ic_event)
+                    .into(posterImage)
             } else {
                 posterImage.setImageResource(R.drawable.ic_event)
             }

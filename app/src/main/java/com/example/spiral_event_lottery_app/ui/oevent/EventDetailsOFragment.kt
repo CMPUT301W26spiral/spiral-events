@@ -58,6 +58,7 @@ class EventDetailsOFragment : Fragment() {
     // UI elements
     private lateinit var title: TextView
     private lateinit var locationName: TextView
+    private lateinit var locationAddress: TextView
     private lateinit var time: TextView
     private lateinit var waiting: TextView
     private lateinit var description: TextView
@@ -148,7 +149,6 @@ class EventDetailsOFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        // Draw Navigation
         drawBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
@@ -156,7 +156,6 @@ class EventDetailsOFragment : Fragment() {
                 .commit()
         }
 
-        // Entrants List Navigation
         viewEntrantsBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
@@ -324,6 +323,9 @@ class EventDetailsOFragment : Fragment() {
                 searchAdapter.submitList(users)
                 searchResultRecycler.visibility = if (users.isNotEmpty()) View.VISIBLE else View.GONE
             }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Search failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     /**
@@ -394,7 +396,7 @@ class EventDetailsOFragment : Fragment() {
         }
 
         override fun getItemCount() = users.size
-        
+
         inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
             val userName: TextView = itemView.findViewById(R.id.userName)
             val userDetail: TextView = itemView.findViewById(R.id.userDetail)
