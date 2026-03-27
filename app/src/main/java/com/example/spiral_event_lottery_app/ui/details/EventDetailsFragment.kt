@@ -50,6 +50,15 @@ class EventDetailsFragment : Fragment() {
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { uploadPoster(it) }
     }
+    // is the Location permission launcher
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            saveLocationToFirestore(eventId, DeviceIdProvider.getDeviceId(requireContext()))
+        }
+        // If denied, wesilently skip location is optional per US 02.02.03
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -223,56 +232,48 @@ class EventDetailsFragment : Fragment() {
             }
     }
     /**
-     * Requests location permission then captures the device's last known location.
+     * this requests location permission then captures the device's last known location.
      * Stores latitude and longitude in the event's waitlist document so the organizer
      * can view entrant locations on a map (US 02.02.02).
-     *
      * @param eventId   The Firestore event document ID.
      * @param deviceId  The entrant's device ID used as the waitlist document key.
      */
+    /**
+     * Requests location permission then captures the device's last known location.
+     * Stores latitude and longitude in the event's waitlist document so the organizer
+     * can view entrant locations on a map (US 02.02.02).
+     * Location is optional and if denied the app continues normally (US 02.02.03).
+     *
+     * @param eventId  The Firestore event document ID.
+     * @param deviceId The entrant's device ID used as the waitlist document key.
+     */
     private fun captureAndStoreLocation(eventId: String, deviceId: String) {
-        val fusedClient = LocationServices.getFusedLocationProviderClient(requireContext())
-
-        val requestPermission = registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { granted ->
-            if (granted) {
-                fusedClient.lastLocation.addOnSuccessListener { location ->
-                    if (location != null) {
-                        // Store lat/lng in the waitlist document for the organizer's map
-                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                            .collection("events").document(eventId)
-                            .collection("waitlist").document(deviceId)
-                            .update(
-                                mapOf(
-                                    "latitude" to location.latitude,
-                                    "longitude" to location.longitude
-                                )
-                            )
-                    }
-                    // If location is null, we just don't store coordinates — no crash
-                }
-            }
-            // If denied, we silently skip — location is optional per US 02.02.03
-        }
-
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
             == PackageManager.PERMISSION_GRANTED) {
-            // Permission already granted, go straight to getting location
-            fusedClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                        .collection("events").document(eventId)
-                        .collection("waitlist").document(deviceId)
-                        .update(mapOf(
-                            "latitude" to location.latitude,
-                            "longitude" to location.longitude
-                        ))
-                }
-            }
+            saveLocationToFirestore(eventId, deviceId)
         } else {
-            // Ask the user for permission
-            requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    /**
+     * Gets the device's last known location and writes it to the waitlist document.
+     *
+     * @param eventId  The Firestore event document ID.
+     * @param deviceId The entrant's device ID.
+     */
+    private fun saveLocationToFirestore(eventId: String, deviceId: String) {
+        val fusedClient = LocationServices.getFusedLocationProviderClient(requireContext())
+        fusedClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("events").document(eventId)
+                    .collection("waitlist").document(deviceId)
+                    .update(mapOf(
+                        "latitude" to location.latitude,
+                        "longitude" to location.longitude
+                    ))
+            }
         }
     }
 
