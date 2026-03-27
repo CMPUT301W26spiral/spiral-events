@@ -23,6 +23,10 @@ import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
 
 /**
  * Fragment that displays the details of a specific event.
@@ -174,6 +178,7 @@ class EventDetailsFragment : Fragment() {
                             currentEventName,
                             eventId
                         )
+                        captureAndStoreLocation(eventId, DeviceIdProvider.getDeviceId(requireContext()))
                         Toast.makeText(safeCtx, "Joined successfully!", Toast.LENGTH_SHORT).show()
                     }
                 }, {}, { e ->
@@ -216,6 +221,59 @@ class EventDetailsFragment : Fragment() {
             .addOnFailureListener { e ->
                 if (isAdded) Toast.makeText(requireContext(), "Failed to update database: ${e.message}", Toast.LENGTH_SHORT).show()
             }
+    }
+    /**
+     * Requests location permission then captures the device's last known location.
+     * Stores latitude and longitude in the event's waitlist document so the organizer
+     * can view entrant locations on a map (US 02.02.02).
+     *
+     * @param eventId   The Firestore event document ID.
+     * @param deviceId  The entrant's device ID used as the waitlist document key.
+     */
+    private fun captureAndStoreLocation(eventId: String, deviceId: String) {
+        val fusedClient = LocationServices.getFusedLocationProviderClient(requireContext())
+
+        val requestPermission = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            if (granted) {
+                fusedClient.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        // Store lat/lng in the waitlist document for the organizer's map
+                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            .collection("events").document(eventId)
+                            .collection("waitlist").document(deviceId)
+                            .update(
+                                mapOf(
+                                    "latitude" to location.latitude,
+                                    "longitude" to location.longitude
+                                )
+                            )
+                    }
+                    // If location is null, we just don't store coordinates — no crash
+                }
+            }
+            // If denied, we silently skip — location is optional per US 02.02.03
+        }
+
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED) {
+            // Permission already granted, go straight to getting location
+            fusedClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("events").document(eventId)
+                        .collection("waitlist").document(deviceId)
+                        .update(mapOf(
+                            "latitude" to location.latitude,
+                            "longitude" to location.longitude
+                        ))
+                }
+            }
+        } else {
+            // Ask the user for permission
+            requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
     }
 
     override fun onStop() {

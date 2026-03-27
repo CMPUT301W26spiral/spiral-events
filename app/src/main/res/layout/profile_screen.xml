@@ -416,6 +416,15 @@
             android:layout_height="wrap_content"
             app:barrierDirection="bottom"
             app:constraint_referenced_ids="editNotificationsButton,notificationEditActions" />
+        <Button
+            android:id="@+id/adminDashboardButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/admin_dashboard"
+            android:backgroundTint="#B71C1C"
+            android:textColor="@android:color/white"
+            android:visibility="gone"
+            android:layout_margin="16dp"/>
 
         <!-- log out button -->
         <Button

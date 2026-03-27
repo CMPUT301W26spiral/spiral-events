@@ -1,5 +1,4 @@
 package com.example.spiral_event_lottery_app.ui.events
-
 import android.graphics.Color
 import android.text.Spannable
 import android.text.SpannableStringBuilder

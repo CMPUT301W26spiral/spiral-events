@@ -123,7 +123,14 @@ class EventDetailsOFragment : Fragment() {
         val notifyEntrantsBtn = view.findViewById<Button>(R.id.notifyEntrantsButton)
         val viewLocationsBtn = view.findViewById<Button>(R.id.viewLocButton)
         val deleteEventBtn = view.findViewById<Button>(R.id.deleteEventButton)
-
+        // US 02.02.02 we show map of where entrants joined from
+        viewLocationsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer,
+                    com.example.spiral_event_lottery_app.ui.admin.EntrantMapFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
         editPosterBtn.setOnClickListener {
