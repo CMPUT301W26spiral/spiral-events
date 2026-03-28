@@ -26,8 +26,11 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
 import android.Manifest
 import android.content.pm.PackageManager
+import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
+import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 
 /**
  * Fragment that displays the details of a specific event.
@@ -159,6 +162,7 @@ class EventDetailsFragment : Fragment() {
                                     eventId,
                                     EventRepository.SuccessCallback {
                                         NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Requested", "Your entry for $currentEventName was received!", "REQUESTED", currentEventName, eventId)
+                                        captureAndStoreLocation(eventId, DeviceIdProvider.getDeviceId(requireContext()))
                                         Toast.makeText(requireContext(), "Joined successfully!", Toast.LENGTH_SHORT).show()
                                     },
                                     EventRepository.SuccessCallback {
@@ -274,19 +278,24 @@ class EventDetailsFragment : Fragment() {
      * @param eventId  The Firestore event document ID.
      * @param deviceId The entrant's device ID.
      */
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     private fun saveLocationToFirestore(eventId: String, deviceId: String) {
         val fusedClient = LocationServices.getFusedLocationProviderClient(requireContext())
-        fusedClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                    .collection("events").document(eventId)
-                    .collection("waitlist").document(deviceId)
-                    .update(mapOf(
-                        "latitude" to location.latitude,
-                        "longitude" to location.longitude
-                    ))
+        val locationRequest = CurrentLocationRequest.Builder()
+            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+            .build()
+        fusedClient.getCurrentLocation(locationRequest, null)
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    FirebaseFirestore.getInstance()
+                        .collection("events").document(eventId)
+                        .collection("waitlist").document(deviceId)
+                        .update(mapOf(
+                            "latitude" to location.latitude,
+                            "longitude" to location.longitude
+                        ))
+                }
             }
-        }
     }
 
     override fun onStop() {
