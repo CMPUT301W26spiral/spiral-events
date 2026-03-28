@@ -24,6 +24,13 @@ import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.annotation.RequiresPermission
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.CurrentLocationRequest
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 
 /**
  * Fragment that displays the details of a specific event.
@@ -46,6 +53,15 @@ class EventDetailsFragment : Fragment() {
     // Register the image picker at the class level
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { uploadPoster(it) }
+    }
+    // is the Location permission launcher
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            saveLocationToFirestore(eventId, DeviceIdProvider.getDeviceId(requireContext()))
+        }
+        // If denied, wesilently skip location is optional per US 02.02.03
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -146,6 +162,7 @@ class EventDetailsFragment : Fragment() {
                                     eventId,
                                     EventRepository.SuccessCallback {
                                         NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Requested", "Your entry for $currentEventName was received!", "REQUESTED", currentEventName, eventId)
+                                        captureAndStoreLocation(eventId, DeviceIdProvider.getDeviceId(requireContext()))
                                         Toast.makeText(requireContext(), "Joined successfully!", Toast.LENGTH_SHORT).show()
                                     },
                                     EventRepository.SuccessCallback {
@@ -186,6 +203,7 @@ class EventDetailsFragment : Fragment() {
                             currentEventName,
                             eventId
                         )
+                        captureAndStoreLocation(eventId, DeviceIdProvider.getDeviceId(requireContext()))
                         Toast.makeText(safeCtx, "Joined successfully!", Toast.LENGTH_SHORT).show()
                     }
                 }, {}, { e ->
@@ -227,6 +245,56 @@ class EventDetailsFragment : Fragment() {
             }
             .addOnFailureListener { e ->
                 if (isAdded) Toast.makeText(requireContext(), "Failed to update database: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+    /**
+     * this requests location permission then captures the device's last known location.
+     * Stores latitude and longitude in the event's waitlist document so the organizer
+     * can view entrant locations on a map (US 02.02.02).
+     * @param eventId   The Firestore event document ID.
+     * @param deviceId  The entrant's device ID used as the waitlist document key.
+     */
+    /**
+     * Requests location permission then captures the device's last known location.
+     * Stores latitude and longitude in the event's waitlist document so the organizer
+     * can view entrant locations on a map (US 02.02.02).
+     * Location is optional and if denied the app continues normally (US 02.02.03).
+     *
+     * @param eventId  The Firestore event document ID.
+     * @param deviceId The entrant's device ID used as the waitlist document key.
+     */
+    private fun captureAndStoreLocation(eventId: String, deviceId: String) {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED) {
+            saveLocationToFirestore(eventId, deviceId)
+        } else {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    /**
+     * Gets the device's last known location and writes it to the waitlist document.
+     *
+     * @param eventId  The Firestore event document ID.
+     * @param deviceId The entrant's device ID.
+     */
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    private fun saveLocationToFirestore(eventId: String, deviceId: String) {
+        val fusedClient = LocationServices.getFusedLocationProviderClient(requireContext())
+        val locationRequest = CurrentLocationRequest.Builder()
+            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+            .build()
+        fusedClient.getCurrentLocation(locationRequest, null)
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    FirebaseFirestore.getInstance()
+                        .collection("events").document(eventId)
+                        .collection("waitlist").document(deviceId)
+                        .update(mapOf(
+                            "latitude" to location.latitude,
+                            "longitude" to location.longitude
+                        ))
+                }
             }
     }
 

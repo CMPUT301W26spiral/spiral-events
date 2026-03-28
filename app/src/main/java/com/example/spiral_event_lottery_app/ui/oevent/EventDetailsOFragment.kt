@@ -127,6 +127,14 @@ class EventDetailsOFragment : Fragment() {
         val deleteEventBtn = view.findViewById<Button>(R.id.deleteEventButton)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
 
+        // US 02.02.02 we show map of where entrants joined from
+        viewLocationsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer,
+                    com.example.spiral_event_lottery_app.ui.admin.EntrantMapFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
         editPosterBtn.setOnClickListener {
@@ -296,7 +304,7 @@ class EventDetailsOFragment : Fragment() {
             val eventDoc = transaction.get(eventRef)
             val currentCount = eventDoc.getLong("waiting_count") ?: 0L
             val eventName = eventDoc.getString("name") ?: "Private Event"
-            
+
             transaction.set(waitlistRef, waitlistData)
             transaction.update(eventRef, "waiting_count", currentCount + 1)
             eventName
