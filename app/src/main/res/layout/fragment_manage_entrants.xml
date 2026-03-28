@@ -173,18 +173,6 @@
             android:textSize="16sp"
             app:cornerRadius="26dp" />
 
-        <Button
-            android:id="@+id/btnDrawReplacement"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginBottom="8dp"
-            android:backgroundTint="#2E5A27"
-            android:text="Draw Replacement Applicant"
-            android:textAllCaps="false"
-            android:textSize="16sp"
-            app:cornerRadius="26dp" />
-
             <Button
                 android:id="@+id/btnExportCsv"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"

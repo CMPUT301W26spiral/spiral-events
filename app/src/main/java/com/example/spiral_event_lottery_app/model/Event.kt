@@ -38,5 +38,9 @@ data class Event @JvmOverloads constructor(
     @set:PropertyName("waiting_count")
     var waitingCount: Long = 0,
     
-    var organizerId: String = ""
+    var organizerId: String = "",
+
+    @get:PropertyName("lottery_done")
+    @set:PropertyName("lottery_done")
+    var lotteryDone: Boolean = false
 ) : Serializable

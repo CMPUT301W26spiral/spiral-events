@@ -36,7 +36,7 @@ public class acceptanceHandling {
                 .collection("selected_list").document(device_id);
         
         Map<String, Object> data = new HashMap<>();
-        data.put("Status", "Accepted");
+        data.put("status", "Accepted");
         data.put("device_id", device_id);
         data.put("accepted_at", com.google.firebase.Timestamp.now());
         

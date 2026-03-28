@@ -41,12 +41,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Send Notification Button pinned at the bottom -->
+    <!-- Return to Details Button pinned at the bottom -->
     <Button
         android:id="@+id/selectedNotif"
         android:layout_width="0dp"
         android:layout_height="50dp"
-        android:text="Send Notification"
+        android:text="Return to Details"
         android:textStyle="bold"
         android:backgroundTint="#1F5E3B"
         android:textColor="#FFFFFF"
