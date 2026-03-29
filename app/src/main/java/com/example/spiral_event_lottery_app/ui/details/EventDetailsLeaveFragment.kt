@@ -16,6 +16,7 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.example.spiral_event_lottery_app.ui.comments.EventCommentsFragment
 import com.google.firebase.firestore.ListenerRegistration
 
 class EventDetailsLeaveFragment : Fragment() {
@@ -49,9 +50,17 @@ class EventDetailsLeaveFragment : Fragment() {
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
+        val commentsBtn = view.findViewById<Button>(R.id.commentsButton)
 
         actionBtn.text = "Leave Waiting List"
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
+
+        commentsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, EventCommentsFragment.newInstance(eventId, false))
+                .addToBackStack(null)
+                .commit()
+        }
 
         eventListener = repository.listenToEvent(eventId, { event ->
             if (event == null) return@listenToEvent
