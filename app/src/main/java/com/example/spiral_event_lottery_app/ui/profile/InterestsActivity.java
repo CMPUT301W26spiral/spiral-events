@@ -1,5 +1,6 @@
 package com.example.spiral_event_lottery_app.ui.profile;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.ViewGroup;
@@ -9,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.spiral_event_lottery_app.MainActivity;
 import com.example.spiral_event_lottery_app.R;
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import com.google.android.flexbox.FlexboxLayout;
@@ -40,17 +42,26 @@ public class InterestsActivity extends AppCompatActivity {
     private FlexboxLayout flexbox;
     private final Map<String, State> interestStates = new HashMap<>();
     private final Map<String, TextView> interestViews = new HashMap<>();
+    private boolean isFirstTime = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_interests);
 
+        isFirstTime = getIntent().getBooleanExtra("IS_FIRST_TIME", false);
+
         db = FirebaseFirestore.getInstance();
         uid = DeviceIdProvider.getDeviceId(this);
 
         flexbox = findViewById(R.id.interestsFlexbox);
         Button saveButton = findViewById(R.id.saveInterestsButton);
+        
+        if (isFirstTime) {
+            saveButton.setText(R.string.finish_and_enter);
+        } else {
+            saveButton.setText(R.string.save_and_close);
+        }
 
         initializeInterests();
         loadInterestsFromFirebase();
@@ -192,15 +203,22 @@ public class InterestsActivity extends AppCompatActivity {
 
         db.collection("users").document(uid).update(data)
                 .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Interests saved", Toast.LENGTH_SHORT).show();
-                    finish();
+                    Toast.makeText(this, R.string.interests_saved, Toast.LENGTH_SHORT).show();
+                    onSaveComplete();
                 })
                 .addOnFailureListener(e -> {
                     db.collection("users").document(uid).set(data, com.google.firebase.firestore.SetOptions.merge())
                             .addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "Interests saved", Toast.LENGTH_SHORT).show();
-                                finish();
+                                Toast.makeText(this, R.string.interests_saved, Toast.LENGTH_SHORT).show();
+                                onSaveComplete();
                             });
                 });
+    }
+
+    private void onSaveComplete() {
+        if (isFirstTime) {
+            startActivity(new Intent(this, MainActivity.class));
+        }
+        finish();
     }
 }

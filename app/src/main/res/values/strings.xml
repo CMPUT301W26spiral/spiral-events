@@ -38,4 +38,9 @@
     <string name="failed_to_save_profile">Failed to save profile: %s</string>
     <string name="notification_settings_updated">Notification settings updated</string>
     <string name="profile_deleted">Profile deleted</string>
+
+    <!-- Interests Strings -->
+    <string name="interests_saved">Interests saved</string>
+    <string name="finish_and_enter">Finish and Enter App</string>
+    <string name="save_and_close">Save and Close</string>
 </resources>
