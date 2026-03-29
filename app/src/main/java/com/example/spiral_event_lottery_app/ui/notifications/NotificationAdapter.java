@@ -20,6 +20,7 @@ import com.example.spiral_event_lottery_app.data.EventRepository;
 import com.example.spiral_event_lottery_app.model.Notification;
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment;
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsLeaveFragment;
+import com.example.spiral_event_lottery_app.ui.oevent.EventDetailsOFragment;
 
 import java.util.List;
 
@@ -67,24 +68,33 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         // UI Styling based on notification category
         switch (notification.getType()) {
             case "ACCEPTED":
-                holder.title.setTextColor(Color.parseColor("#2E5A27")); // Green
+                holder.title.setTextColor(Color.parseColor("#2E5A27"));
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Accept/Decline"); // Let them know it's an action button
+                holder.goButton.setText("Accept/Decline");
                 break;
             case "DENIED":
-                holder.title.setTextColor(Color.parseColor("#B71C1C")); // Red
+                holder.title.setTextColor(Color.parseColor("#B71C1C"));
                 holder.goButton.setVisibility(View.GONE);
                 break;
             case "REQUESTED":
-                holder.title.setTextColor(Color.parseColor("#FF8F00")); // Amber
+                holder.title.setTextColor(Color.parseColor("#FF8F00"));
                 holder.goButton.setVisibility(View.VISIBLE);
+                holder.goButton.setText("Go");
                 break;
             case "ORGANIZER":
-                holder.title.setTextColor(Color.parseColor("#6A1B9A")); // Purple
+                holder.title.setTextColor(Color.parseColor("#6A1B9A"));
                 holder.goButton.setVisibility(View.VISIBLE);
+                holder.goButton.setText("Go");
+                break;
+            case "CO_ORGANIZER_INVITE":
+                holder.title.setTextColor(Color.parseColor("#1565C0"));
+                holder.goButton.setVisibility(View.VISIBLE);
+                holder.goButton.setText("Go");
                 break;
             default:
                 holder.title.setTextColor(Color.BLACK);
+                holder.goButton.setVisibility(View.VISIBLE);
+                holder.goButton.setText("Go");
                 break;
         }
 
@@ -94,32 +104,38 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             if (eventId != null) {
                 Context context = v.getContext();
 
-                // ACCEPTED is to show the choice dialog
                 if ("ACCEPTED".equals(notification.getType())) {
                     new androidx.appcompat.app.AlertDialog.Builder(context)
                             .setTitle("Congratulations!")
                             .setMessage("You have been chosen for this event! Do you want to accept or decline the invitation?")
                             .setPositiveButton("Accept", (dialog, which) -> {
-                                // Trigger the acceptanceHandling class
-                                com.example.spiral_event_lottery_app.acceptanceHandling handler = 
-                                    new com.example.spiral_event_lottery_app.acceptanceHandling();
+                                com.example.spiral_event_lottery_app.acceptanceHandling handler =
+                                        new com.example.spiral_event_lottery_app.acceptanceHandling();
                                 handler.invitation_accepted(context, eventId, notification.getRecipientId());
                                 holder.goButton.setText("Accepted");
                                 holder.goButton.setEnabled(false);
                             })
                             .setNegativeButton("Decline", (dialog, which) -> {
-                                com.example.spiral_event_lottery_app.acceptanceHandling handler = 
-                                    new com.example.spiral_event_lottery_app.acceptanceHandling();
+                                com.example.spiral_event_lottery_app.acceptanceHandling handler =
+                                        new com.example.spiral_event_lottery_app.acceptanceHandling();
                                 handler.invitation_declined(context, eventId, notification.getRecipientId());
                                 holder.goButton.setText("Declined");
                                 holder.goButton.setEnabled(false);
                             })
                             .show();
-                    return; // Stop execution here so it doesn't navigate to the details fragment
+                    return;
                 }
 
                 AppCompatActivity activity = getActivity(context);
                 if (activity == null) return;
+
+                if ("CO_ORGANIZER_INVITE".equals(notification.getType())) {
+                    activity.getSupportFragmentManager().beginTransaction()
+                            .add(R.id.fragmentContainer, EventDetailsOFragment.Companion.newInstance(eventId), "details_screen")
+                            .addToBackStack("details")
+                            .commit();
+                    return;
+                }
 
                 EventRepository repository = new EventRepository(activity);
                 repository.isJoined(eventId, joined -> {

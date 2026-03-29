@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.example.spiral_event_lottery_app.model.User
+import com.example.spiral_event_lottery_app.ui.coorganizer.AssignCoOrganizerDialog
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.core.content.ContextCompat
 
@@ -37,6 +39,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     private lateinit var btnExportCsv: Button
 
     private var currentTab = "waiting"
+    private var eventName = "Event"
 
     companion object {
         fun newInstance(eventId: String): ManageEntrantsFragment {
@@ -54,7 +57,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         // Bind new buttons
         btnInvitePrivate = view.findViewById(R.id.btnInvitePrivate)
         btnNotifyAll = view.findViewById(R.id.btnNotifyAll)
-        
+
         btnInvited = view.findViewById(R.id.btnInvited)
         btnWaiting = view.findViewById(R.id.btnWaiting)
         btnCancelled = view.findViewById(R.id.btnCancelled)
@@ -90,10 +93,18 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         btnDrawReplacement.setOnClickListener { }
         btnExportCsv.setOnClickListener { }
 
+        loadEventName()
         showTab("waiting")
         loadWaitingEntrants()
         loadInvitedEntrants()
         loadCancelledEntrants()
+    }
+
+    private fun loadEventName() {
+        db.collection("events").document(eventId).get()
+            .addOnSuccessListener { doc ->
+                eventName = doc.getString("name") ?: "Event"
+            }
     }
 
     /**
@@ -109,8 +120,8 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         }
 
         db.collection("events").document(eventId).get().addOnSuccessListener { eventDoc ->
-            val eventName = eventDoc.getString("name") ?: "Event"
-            
+            val currentEventName = eventDoc.getString("name") ?: "Event"
+
             db.collection("events").document(eventId).collection(collectionPath).get()
                 .addOnSuccessListener { snapshot ->
                     if (snapshot.isEmpty) {
@@ -122,9 +133,9 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                         NotificationManager.sendNotification(
                             doc.id,
                             "Organizer Update",
-                            "New update for $eventName: Check your status!",
+                            "New update for $currentEventName: Check your status!",
                             "ORGANIZER",
-                            eventName,
+                            currentEventName,
                             eventId
                         )
                     }
@@ -140,7 +151,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     private fun showInviteDialog() {
         val input = EditText(requireContext())
         input.hint = "Enter Device ID"
-        
+
         AlertDialog.Builder(requireContext())
             .setTitle("Private Event Invitation")
             .setMessage("Enter the Device ID of the person you want to invite.")
@@ -149,13 +160,13 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                 val deviceId = input.text.toString().trim()
                 if (deviceId.isNotEmpty()) {
                     db.collection("events").document(eventId).get().addOnSuccessListener { doc ->
-                        val eventName = doc.getString("name") ?: "Private Event"
+                        val currentEventName = doc.getString("name") ?: "Private Event"
                         NotificationManager.sendNotification(
                             deviceId,
                             "Private Invitation",
-                            "You have been invited to join the waiting list for $eventName!",
+                            "You have been invited to join the waiting list for $currentEventName!",
                             "ORGANIZER",
-                            eventName,
+                            currentEventName,
                             eventId
                         )
                         Toast.makeText(requireContext(), "Invite sent!", Toast.LENGTH_SHORT).show()
@@ -198,7 +209,15 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.id }
                 waitingCountText.text = "${deviceIds.size} People on Waiting List"
-                resolveNames(deviceIds) { names -> waitingRecycler.adapter = EntrantAdapter(names) }
+                resolveUsers(deviceIds) { users ->
+                    waitingRecycler.adapter = EntrantAdapter(
+                        users,
+                        onRemove = null,
+                        onAssignCoOrganizer = { user ->
+                            AssignCoOrganizerDialog(requireContext(), eventId, eventName).show(user)
+                        }
+                    )
+                }
             }
     }
 
@@ -206,7 +225,9 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         db.collection("events").document(eventId).collection("selected_list").get()
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.id }
-                resolveNames(deviceIds) { names -> invitedRecycler.adapter = EntrantAdapter(names) }
+                resolveUsers(deviceIds) { users ->
+                    invitedRecycler.adapter = EntrantAdapter(users)
+                }
             }
     }
 
@@ -214,27 +235,43 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         db.collection("events").document(eventId).collection("cancelled_list").get()
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.id }
-                resolveNames(deviceIds) { names -> cancelledRecycler.adapter = EntrantAdapter(names) }
+                resolveUsers(deviceIds) { users ->
+                    cancelledRecycler.adapter = EntrantAdapter(users)
+                }
             }
     }
 
-    private fun resolveNames(deviceIds: List<String>, onComplete: (List<String>) -> Unit) {
+    private fun resolveUsers(deviceIds: List<String>, onComplete: (List<User>) -> Unit) {
         if (deviceIds.isEmpty()) {
             onComplete(emptyList())
             return
         }
-        val names = MutableList(deviceIds.size) { deviceIds[it] }
+
+        val users = MutableList(deviceIds.size) { index ->
+            User(deviceId = deviceIds[index], name = deviceIds[index])
+        }
+
         var resolved = 0
         for ((index, deviceId) in deviceIds.withIndex()) {
             db.collection("users").document(deviceId).get()
                 .addOnSuccessListener { userDoc ->
-                    if (userDoc.exists()) names[index] = userDoc.getString("name") ?: deviceId
+                    if (userDoc.exists()) {
+                        users[index] = User(
+                            deviceId = deviceId,
+                            name = userDoc.getString("name") ?: deviceId,
+                            email = userDoc.getString("email") ?: "",
+                            phoneNumber = userDoc.getString("phoneNumber") ?: "",
+                            photoUrl = userDoc.getString("photoUrl"),
+                            isAdmin = userDoc.getBoolean("isAdmin") ?: false,
+                            eventList = mutableListOf()
+                        )
+                    }
                     resolved++
-                    if (resolved == deviceIds.size) onComplete(names)
+                    if (resolved == deviceIds.size) onComplete(users)
                 }
                 .addOnFailureListener {
                     resolved++
-                    if (resolved == deviceIds.size) onComplete(names)
+                    if (resolved == deviceIds.size) onComplete(users)
                 }
         }
     }
