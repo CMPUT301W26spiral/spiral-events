@@ -11,7 +11,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -19,8 +18,9 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.appcompat.widget.Toolbar;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.spiral_event_lottery_app.R;
@@ -67,11 +67,23 @@ public class CreateEventActivity extends AppCompatActivity {
             new ActivityResultContracts.GetMultipleContents(),
             uris -> {
                 if (uris != null && !uris.isEmpty()) {
-                    selectedImageUris = uris.subList(0, Math.min(uris.size(), 3));
-                    updatePosterPreview();
+                    if (uris.size() > 3) {
+                        showMaxImagesError();
+                    } else {
+                        selectedImageUris = new ArrayList<>(uris);
+                        updatePosterPreview();
+                    }
                 }
             }
     );
+
+    private void showMaxImagesError() {
+        new AlertDialog.Builder(this)
+                .setTitle("Too Many Posters")
+                .setMessage("You can only select up to 3 images for the event posters.")
+                .setPositiveButton("OK", null)
+                .show();
+    }
 
     private void updatePosterPreview() {
         if (selectedImageUris.isEmpty()) {
@@ -81,13 +93,15 @@ public class CreateEventActivity extends AppCompatActivity {
         } else {
             llAddPosterPlaceholder.setVisibility(View.GONE);
             posterViewPager.setVisibility(View.VISIBLE);
-            posterIndicator.setVisibility(View.VISIBLE);
+            posterIndicator.setVisibility(selectedImageUris.size() > 1 ? View.VISIBLE : View.GONE);
             
             List<String> uriStrings = new ArrayList<>();
             for (Uri uri : selectedImageUris) uriStrings.add(uri.toString());
             
             PosterAdapter adapter = new PosterAdapter(uriStrings);
             posterViewPager.setAdapter(adapter);
+            
+            // Re-attach TabLayoutMediator
             new TabLayoutMediator(posterIndicator, posterViewPager, (tab, position) -> {}).attach();
         }
     }
@@ -104,6 +118,15 @@ public class CreateEventActivity extends AppCompatActivity {
         View.OnClickListener posterClickListener = v -> pickImagesLauncher.launch("image/*");
         findViewById(R.id.posters_container).setOnClickListener(posterClickListener);
         llAddPosterPlaceholder.setOnClickListener(posterClickListener);
+        
+        // Ensure ViewPager2 doesn't block the click when it's visible, 
+        // but we can't just disable clicks on it or it might block swiping.
+        // Instead, we can add a listener to its child views in the adapter or use a transparent overlay.
+        // For simplicity, we'll set a click listener on the ViewPager itself if possible, 
+        // though ViewPager2 often consumes these.
+        // Actually, setting clickable=false on ViewPager2 allows clicks to pass to posters_container.
+        posterViewPager.setClickable(false);
+        posterViewPager.setFocusable(false);
 
         btnCreate.setOnClickListener(v -> {
             if (validateForm()) {
@@ -111,7 +134,8 @@ public class CreateEventActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.toolbar).setOnClickListener(v -> finish());
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setNavigationOnClickListener(v -> finish());
     }
 
     private void initializeViews() {
