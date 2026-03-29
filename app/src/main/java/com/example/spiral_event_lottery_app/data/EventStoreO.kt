@@ -23,11 +23,11 @@ class EventStoreO(private val context: Context) {
     fun organizerEvents(onComplete: (List<Event>) -> Unit) {
         val currentDeviceId = DeviceIdProvider.getDeviceId(context)
         val mergedEvents = linkedMapOf<String, Event>()
-        var finishedCalls = 0
+        var completedMainOrganizerQuery = false
+        var completedCoOrganizerQuery = false
 
-        fun tryComplete() {
-            finishedCalls++
-            if (finishedCalls == 2) {
+        fun tryFinish() {
+            if (completedMainOrganizerQuery && completedCoOrganizerQuery) {
                 onComplete(mergedEvents.values.toList())
             }
         }
@@ -40,10 +40,12 @@ class EventStoreO(private val context: Context) {
                     val data = doc.data ?: return@forEach
                     mergedEvents[doc.id] = toEvent(doc.id, data)
                 }
-                tryComplete()
+                completedMainOrganizerQuery = true
+                tryFinish()
             }
             .addOnFailureListener {
-                tryComplete()
+                completedMainOrganizerQuery = true
+                tryFinish()
             }
 
         db.collectionGroup("co_organizers")
@@ -55,11 +57,12 @@ class EventStoreO(private val context: Context) {
                 }
 
                 if (parentEventRefs.isEmpty()) {
-                    tryComplete()
+                    completedCoOrganizerQuery = true
+                    tryFinish()
                     return@addOnSuccessListener
                 }
 
-                var remainingEventDocs = parentEventRefs.size
+                var remaining = parentEventRefs.size
                 parentEventRefs.forEach { eventRef ->
                     eventRef.get()
                         .addOnSuccessListener { eventDoc ->
@@ -69,21 +72,24 @@ class EventStoreO(private val context: Context) {
                                     mergedEvents[eventDoc.id] = toEvent(eventDoc.id, data)
                                 }
                             }
-                            remainingEventDocs--
-                            if (remainingEventDocs == 0) {
-                                tryComplete()
+                            remaining--
+                            if (remaining == 0) {
+                                completedCoOrganizerQuery = true
+                                tryFinish()
                             }
                         }
                         .addOnFailureListener {
-                            remainingEventDocs--
-                            if (remainingEventDocs == 0) {
-                                tryComplete()
+                            remaining--
+                            if (remaining == 0) {
+                                completedCoOrganizerQuery = true
+                                tryFinish()
                             }
                         }
                 }
             }
             .addOnFailureListener {
-                tryComplete()
+                completedCoOrganizerQuery = true
+                tryFinish()
             }
     }
 
@@ -98,7 +104,6 @@ class EventStoreO(private val context: Context) {
     private fun toEvent(documentId: String, data: Map<String, Any>): Event {
         val name = data["name"] as? String ?: ""
 
-        // Handle variations in field naming
         val location = data["locationName"] as? String
             ?: data["location_name"] as? String
             ?: data["location"] as? String ?: ""
@@ -110,7 +115,6 @@ class EventStoreO(private val context: Context) {
             timeText = formatTimeRange(startTime, endTime)
         }
 
-        // Standardized to waiting_count in Firestore
         val waitingCount = (data["waiting_count"] as? Number)?.toLong() ?: 0L
 
         return Event(
