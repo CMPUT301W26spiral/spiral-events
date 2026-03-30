@@ -22,74 +22,62 @@ class EventStoreO(private val context: Context) {
      */
     fun organizerEvents(onComplete: (List<Event>) -> Unit) {
         val currentDeviceId = DeviceIdProvider.getDeviceId(context)
-        val mergedEvents = linkedMapOf<String, Event>()
-        var completedMainOrganizerQuery = false
-        var completedCoOrganizerQuery = false
-
-        fun tryFinish() {
-            if (completedMainOrganizerQuery && completedCoOrganizerQuery) {
-                onComplete(mergedEvents.values.toList())
-            }
-        }
 
         db.collection("events")
-            .whereEqualTo("organizerId", currentDeviceId)
             .get()
             .addOnSuccessListener { snapshot ->
-                snapshot.documents.forEach { doc ->
-                    val data = doc.data ?: return@forEach
-                    mergedEvents[doc.id] = toEvent(doc.id, data)
-                }
-                completedMainOrganizerQuery = true
-                tryFinish()
-            }
-            .addOnFailureListener {
-                completedMainOrganizerQuery = true
-                tryFinish()
-            }
-
-        db.collectionGroup("co_organizers")
-            .whereEqualTo("device_id", currentDeviceId)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val parentEventRefs = snapshot.documents.mapNotNull { doc ->
-                    doc.reference.parent.parent
-                }
-
-                if (parentEventRefs.isEmpty()) {
-                    completedCoOrganizerQuery = true
-                    tryFinish()
+                if (snapshot == null || snapshot.documents.isEmpty()) {
+                    onComplete(emptyList())
                     return@addOnSuccessListener
                 }
 
-                var remaining = parentEventRefs.size
-                parentEventRefs.forEach { eventRef ->
-                    eventRef.get()
-                        .addOnSuccessListener { eventDoc ->
-                            if (eventDoc.exists()) {
-                                val data = eventDoc.data
-                                if (data != null) {
-                                    mergedEvents[eventDoc.id] = toEvent(eventDoc.id, data)
+                val results = mutableListOf<Event>()
+                var remaining = snapshot.documents.size
+
+                snapshot.documents.forEach { doc ->
+                    val data = doc.data
+                    if (data == null) {
+                        remaining--
+                        if (remaining == 0) {
+                            onComplete(results.distinctBy { it.id })
+                        }
+                        return@forEach
+                    }
+
+                    val organizerId = data["organizerId"] as? String ?: ""
+
+                    if (organizerId == currentDeviceId) {
+                        results.add(toEvent(doc.id, data))
+                        remaining--
+                        if (remaining == 0) {
+                            onComplete(results.distinctBy { it.id })
+                        }
+                    } else {
+                        db.collection("events")
+                            .document(doc.id)
+                            .collection("co_organizers")
+                            .document(currentDeviceId)
+                            .get()
+                            .addOnSuccessListener { coOrgDoc ->
+                                if (coOrgDoc.exists()) {
+                                    results.add(toEvent(doc.id, data))
+                                }
+                                remaining--
+                                if (remaining == 0) {
+                                    onComplete(results.distinctBy { it.id })
                                 }
                             }
-                            remaining--
-                            if (remaining == 0) {
-                                completedCoOrganizerQuery = true
-                                tryFinish()
+                            .addOnFailureListener {
+                                remaining--
+                                if (remaining == 0) {
+                                    onComplete(results.distinctBy { it.id })
+                                }
                             }
-                        }
-                        .addOnFailureListener {
-                            remaining--
-                            if (remaining == 0) {
-                                completedCoOrganizerQuery = true
-                                tryFinish()
-                            }
-                        }
+                    }
                 }
             }
             .addOnFailureListener {
-                completedCoOrganizerQuery = true
-                tryFinish()
+                onComplete(emptyList())
             }
     }
 
