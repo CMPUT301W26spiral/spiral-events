@@ -21,6 +21,7 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.example.spiral_event_lottery_app.ui.comments.EventCommentsFragment
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
@@ -32,10 +33,6 @@ import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 
-/**
- * Fragment that displays the details of a specific event.
- * Now supports editing the event poster for organizers.
- */
 class EventDetailsFragment : Fragment() {
     companion object {
         private const val ARG_EVENT_ID = "event_id"
@@ -50,7 +47,6 @@ class EventDetailsFragment : Fragment() {
     private lateinit var repository: EventRepository
     private var eventListener: ListenerRegistration? = null
 
-    // Register the image picker at the class level
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { uploadPoster(it) }
     }
@@ -82,6 +78,7 @@ class EventDetailsFragment : Fragment() {
         val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
         val joinBtn = view.findViewById<Button>(R.id.joinLeaveButton)
+        val commentsBtn = view.findViewById<Button>(R.id.commentsButton)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
 
         // SAFETY: Use a nullable reference for the edit button which might be missing in XML
@@ -89,6 +86,11 @@ class EventDetailsFragment : Fragment() {
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
+        commentsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, EventCommentsFragment.newInstance(eventId, false))
+                .addToBackStack(null)
+                .commit()
         viewQRBtn.setOnClickListener {
             val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
             intent.putExtra("EVENT_ID", eventId)
@@ -99,11 +101,11 @@ class EventDetailsFragment : Fragment() {
         eventListener = repository.listenToEvent(
             eventId,
             { event ->
-                // SAFETY: Stop if fragment is gone
                 if (!isAdded || event == null) {
                     title.text = "Event not found"
                     return@listenToEvent
                 }
+
 
                 val currentEventName = event.name
                 title.text = currentEventName
@@ -122,7 +124,6 @@ class EventDetailsFragment : Fragment() {
 
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
-                // Only allow the organizer to edit the poster (if button exists in XML)
                 val currentUserId = DeviceIdProvider.getDeviceId(requireContext())
                 editPosterBtn?.let { btn ->
                     btn.visibility = if (event.organizerId == currentUserId) View.VISIBLE else View.GONE
@@ -135,7 +136,6 @@ class EventDetailsFragment : Fragment() {
                     posterImage.setImageResource(R.drawable.ic_event)
                 }
 
-                // Check waitlist and selection status whenever event data updates
                 repository.isJoined(eventId, { joined ->
                     if (!isAdded) return@isJoined
                     
@@ -146,8 +146,18 @@ class EventDetailsFragment : Fragment() {
                         joinBtn.text = "You're in the waiting list"
                         joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
                     } else {
-                        joinBtn.text = "Join Waiting List"
-                        joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
+                        repository.isSelected(eventId, { selected ->
+                            if (!isAdded) return@isSelected
+                            if (selected) {
+                                joinBtn.text = "You are selected/invited"
+                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.GRAY)
+                                joinBtn.isEnabled = false
+                            } else {
+                                joinBtn.text = "Join Waiting List"
+                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
+                                joinBtn.isEnabled = true
+                            }
+                        }, {})
                     }
                 }, {})
 
@@ -157,6 +167,14 @@ class EventDetailsFragment : Fragment() {
                         if (joined) {
                             AlertDialog.Builder(requireContext()).setTitle("Already registered").setMessage("You're already on the waiting list for\n$currentEventName.").setPositiveButton("OK", null).show()
                         } else {
+                            repository.isSelected(eventId, { selected ->
+                                if (!isAdded) return@isSelected
+                                if (selected) {
+                                    showSimpleDialog("Already Selected", "You have already been selected for $currentEventName.")
+                                } else {
+                                    showJoinConfirmation(currentEventName)
+                                }
+                            }, {})
                             AlertDialog.Builder(requireContext()).setTitle("Join Waitlist").setMessage("Confirm joining the waiting list for $currentEventName?").setPositiveButton("Confirm") { _, _ ->
                                 repository.joinWaitlist(
                                     eventId,
@@ -193,7 +211,6 @@ class EventDetailsFragment : Fragment() {
             .setMessage("Successfully join the waiting list for $currentEventName?\n\n• Entry is random\n• You may leave at any time")
             .setPositiveButton("Confirm") { _, _ ->
                 repository.joinWaitlist(eventId, {
-                    // Re-check context before showing confirmation
                     context?.let { safeCtx ->
                         NotificationManager.sendNotification(
                             DeviceIdProvider.getDeviceId(safeCtx),
@@ -214,9 +231,6 @@ class EventDetailsFragment : Fragment() {
             .show()
     }
 
-    /**
-     * Uploads the selected image to Firebase Storage and updates the Firestore document.
-     */
     private fun uploadPoster(uri: Uri) {
         val storageRef = FirebaseStorage.getInstance().getReference("event_posters/${eventId}_${System.currentTimeMillis()}.jpg")
         if (isAdded) Toast.makeText(requireContext(), "Uploading new poster...", Toast.LENGTH_SHORT).show()
@@ -234,9 +248,6 @@ class EventDetailsFragment : Fragment() {
             }
     }
 
-    /**
-     * Updates the 'posterUriString' field in the Firestore 'events' collection.
-     */
     private fun updateFirestorePoster(url: String) {
         FirebaseFirestore.getInstance().collection("events").document(eventId)
             .update("posterUriString", url)

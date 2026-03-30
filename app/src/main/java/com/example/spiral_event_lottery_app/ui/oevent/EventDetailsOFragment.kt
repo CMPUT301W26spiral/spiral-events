@@ -26,25 +26,17 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.example.spiral_event_lottery_app.model.User
+import com.example.spiral_event_lottery_app.ui.comments.EventCommentsFragment
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
 
-/**
- * Fragment that displays the details of a specific event from an organizer's perspective.
- * Supports editing the event poster and private event specific UI including entrant search.
- */
 class EventDetailsOFragment : Fragment() {
     companion object {
         private const val ARG_EVENT_ID = "event_id"
 
-        /**
-         * Creates a new instance of EventDetailsOFragment with the given event ID.
-         * @param eventId The unique identifier of the event.
-         * @return A new instance of this fragment.
-         */
         fun newInstance(eventId: String): EventDetailsOFragment {
             return EventDetailsOFragment().apply {
                 arguments = Bundle().apply { putString(ARG_EVENT_ID, eventId) }
@@ -57,7 +49,6 @@ class EventDetailsOFragment : Fragment() {
     private var eventListener: ListenerRegistration? = null
     private val db = FirebaseFirestore.getInstance()
 
-    // UI elements
     private lateinit var title: TextView
     private lateinit var locationName: TextView
     private lateinit var locationAddress: TextView
@@ -72,7 +63,6 @@ class EventDetailsOFragment : Fragment() {
     private lateinit var searchResultRecycler: RecyclerView
     private lateinit var searchAdapter: UserSearchAdapter
 
-    // Register the image picker at the class level
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { uploadPoster(it) }
     }
@@ -90,36 +80,34 @@ class EventDetailsOFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         repository = EventRepository(requireContext())
 
-        // Initialize UI elements
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
         title = view.findViewById(R.id.detailsTitle)
         locationName = view.findViewById(R.id.detailsLocation)
+        locationAddress = view.findViewById(R.id.detailsLocationAddress)
         time = view.findViewById(R.id.detailsTime)
         waiting = view.findViewById(R.id.detailsWaiting)
         description = view.findViewById(R.id.detailsDescription)
         posterImage = view.findViewById(R.id.eventPosterImage)
         val editPosterBtn = view.findViewById<ImageView>(R.id.editImageButton)
-        
+        val commentsBtn = view.findViewById<Button>(R.id.commentsButton)
+
         inviteHeader = view.findViewById(R.id.inviteHeader)
         inviteRow = view.findViewById(R.id.inviteRow)
         inviteSearchInput = view.findViewById(R.id.inviteSearchInput)
         inviteCategorySpinner = view.findViewById(R.id.inviteCategorySpinner)
         searchResultRecycler = view.findViewById(R.id.searchResultRecycler)
 
-        // Setup search results recycler
         searchAdapter = UserSearchAdapter { user ->
             showInviteDialog(user)
         }
         searchResultRecycler.layoutManager = LinearLayoutManager(requireContext())
         searchResultRecycler.adapter = searchAdapter
 
-        // Setup category spinner
         val categories = listOf("Name", "Email", "Phone")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categories)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         inviteCategorySpinner.adapter = adapter
 
-        // Buttons
         val drawBtn = view.findViewById<Button>(R.id.drawButton)
         val viewEntrantsBtn = view.findViewById<Button>(R.id.viewEntrantsButton)
         val notifyEntrantsBtn = view.findViewById<Button>(R.id.notifyEntrantsButton)
@@ -136,6 +124,13 @@ class EventDetailsOFragment : Fragment() {
                 .commit()
         }
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
+
+        commentsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, EventCommentsFragment.newInstance(eventId, true))
+                .addToBackStack(null)
+                .commit()
+        }
 
         editPosterBtn.setOnClickListener {
             imagePickerLauncher.launch("image/*")
@@ -187,12 +182,8 @@ class EventDetailsOFragment : Fragment() {
         startEventListener()
     }
 
-    /**
-     * Sets up a real-time Firestore listener for the event document.
-     * Updates the UI automatically when event data changes.
-     */
     private fun startEventListener() {
-        eventListener?.remove() // Ensure no duplicate listeners
+        eventListener?.remove()
         eventListener = repository.listenToEvent(
             eventId,
             { event ->
@@ -209,6 +200,7 @@ class EventDetailsOFragment : Fragment() {
                 }
 
                 locationName.text = event.locationName
+                locationAddress.text = event.locationName
                 time.text = event.timeText
                 
                 // Logic for open spots calculation
@@ -218,7 +210,7 @@ class EventDetailsOFragment : Fragment() {
                 } else {
                     "${event.waitingCount} People on Waiting List"
                 }
-                
+
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
                 if (!event.posterUriString.isNullOrEmpty()) {
@@ -236,9 +228,6 @@ class EventDetailsOFragment : Fragment() {
         )
     }
 
-    /**
-     * Shows a confirmation dialog for deleting the current event.
-     */
     private fun showDeleteEventDialog() {
         AlertDialog.Builder(requireContext())
             .setTitle("Delete Event")
@@ -250,9 +239,6 @@ class EventDetailsOFragment : Fragment() {
             .show()
     }
 
-    /**
-     * Deletes the current event from Firestore and returns to the previous screen.
-     */
     private fun deleteEvent() {
         db.collection("events").document(eventId)
             .delete()
@@ -265,10 +251,6 @@ class EventDetailsOFragment : Fragment() {
             }
     }
 
-    /**
-     * Shows a confirmation dialog for inviting a specific user to the event.
-     * @param user The user to potentially invite.
-     */
     private fun showInviteDialog(user: User) {
         AlertDialog.Builder(requireContext())
             .setTitle("Invite Entrant")
@@ -288,7 +270,7 @@ class EventDetailsOFragment : Fragment() {
      */
     private fun inviteUserToEvent(user: User) {
         val waitlistRef = db.collection("events").document(eventId).collection("waitlist").document(user.deviceId)
-        
+
         val waitlistData = hashMapOf(
             "device_id" to user.deviceId,
             "joined_at" to Timestamp.now()
@@ -299,7 +281,7 @@ class EventDetailsOFragment : Fragment() {
             if (waitlistDoc.exists()) {
                 throw Exception("ALREADY_IN_WAITLIST")
             }
-            
+
             val eventRef = db.collection("events").document(eventId)
             val eventDoc = transaction.get(eventRef)
             val currentCount = eventDoc.getLong("waiting_count") ?: 0L
@@ -330,11 +312,6 @@ class EventDetailsOFragment : Fragment() {
         }
     }
 
-    /**
-     * Performs a Firestore search for users matching the query string.
-     * Limits search results to the first 5 matches.
-     * @param query The search string (name, email, or phone).
-     */
     private fun performUserSearch(query: String) {
         val category = inviteCategorySpinner.selectedItem.toString().lowercase()
         val field = when(category) {
@@ -359,11 +336,6 @@ class EventDetailsOFragment : Fragment() {
             }
     }
 
-    /**
-     * Uploads a local image file to Firebase Storage.
-     * On success, updates the Firestore document with the new image URL.
-     * @param uri The local URI of the image to upload.
-     */
     private fun uploadPoster(uri: Uri) {
         val storageRef = FirebaseStorage.getInstance().getReference("event_posters/${eventId}_${System.currentTimeMillis()}.jpg")
         Toast.makeText(requireContext(), "Uploading new poster...", Toast.LENGTH_SHORT).show()
@@ -381,10 +353,6 @@ class EventDetailsOFragment : Fragment() {
             }
     }
 
-    /**
-     * Updates the Firestore event document with a new poster image URL.
-     * @param url The public download URL of the new poster.
-     */
     private fun updateFirestorePoster(url: String) {
         FirebaseFirestore.getInstance().collection("events").document(eventId)
             .update("posterUriString", url)
@@ -402,9 +370,6 @@ class EventDetailsOFragment : Fragment() {
         eventListener = null
     }
 
-    /**
-     * Adapter for displaying matching entrants in the search dropdown.
-     */
     private inner class UserSearchAdapter(private val onItemClick: (User) -> Unit) :
         RecyclerView.Adapter<UserSearchAdapter.VH>() {
         private var users = listOf<User>()

@@ -3,10 +3,12 @@ package com.example.spiral_event_lottery_app.ui.organizer_view
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.spiral_event_lottery_app.R
+import com.example.spiral_event_lottery_app.model.User
 
 /**
  * EntrantAdapter is a RecyclerView adapter that displays a list of entrants
@@ -18,19 +20,20 @@ import com.example.spiral_event_lottery_app.R
  * Used by: ManageEntrantsFragment
  *
  *
- * @param entrants List of entrant device IDs to display.
+ * @param entrants List of entrant users to display.
  */
 class EntrantAdapter(
-    private var entrants: List<String>,
-    private val onRemove: ((String) -> Unit)? = null
+    private var entrants: List<User>,
+    private val onRemove: ((User) -> Unit)? = null,
+    private val onAssignCoOrganizer: ((User) -> Unit)? = null
 ) : RecyclerView.Adapter<EntrantAdapter.VH>() {
 
     /**
      * Updates the list of entrants displayed by the adapter and refreshes the UI.
      *
-     * @param newList The new list of entrant device IDs to display
+     * @param newList The new list of entrant users to display
      */
-    fun submitList(newList: List<String>) {
+    fun submitList(newList: List<User>) {
         entrants = newList
         notifyDataSetChanged()
     }
@@ -55,7 +58,7 @@ class EntrantAdapter(
      * @param position The position in the list
      */
     override fun onBindViewHolder(holder: VH, position: Int) {
-        holder.bind(entrants[position], onRemove)
+        holder.bind(entrants[position], onRemove, onAssignCoOrganizer)
     }
 
     /**
@@ -79,22 +82,39 @@ class EntrantAdapter(
         /** Button allowing the organizer to remove/cancel this entrant */
         private val removeBtn: ImageButton = itemView.findViewById(R.id.removeButton)
 
+        /** Button allowing the organizer to assign this entrant as a co-organizer */
+        private val coOrganizerBtn: Button = itemView.findViewById(R.id.makeCoOrganizerButton)
+
         /**
          * Binds an entrant's data to this ViewHolder.
          *
-         * @param deviceId The entrant's device ID to display
+         * @param user The entrant user to display
          * @param onRemove Callback for when the remove button is clicked, or null to hide the button
+         * @param onAssignCoOrganizer Callback for when the co-organizer action is clicked, or null to hide the button
          */
-        fun bind(deviceId: String, onRemove: ((String) -> Unit)?) {
+        fun bind(
+            user: User,
+            onRemove: ((User) -> Unit)?,
+            onAssignCoOrganizer: ((User) -> Unit)?
+        ) {
             // Display the entrant identifier
-            nameText.text = deviceId
+            nameText.text = if (user.name.isNotBlank()) user.name else user.deviceId
 
             // Show remove button only if organizer has remove capability for this tab
             if (onRemove != null) {
                 removeBtn.visibility = View.VISIBLE
-                removeBtn.setOnClickListener { onRemove(deviceId) }
+                removeBtn.setOnClickListener { onRemove(user) }
             } else {
                 removeBtn.visibility = View.GONE
+            }
+
+            if (onAssignCoOrganizer != null) {
+                coOrganizerBtn.visibility = View.VISIBLE
+                coOrganizerBtn.setOnClickListener { onAssignCoOrganizer(user) }
+                itemView.setOnClickListener { onAssignCoOrganizer(user) }
+            } else {
+                coOrganizerBtn.visibility = View.GONE
+                itemView.setOnClickListener(null)
             }
         }
     }

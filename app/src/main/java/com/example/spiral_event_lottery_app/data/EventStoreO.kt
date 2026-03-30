@@ -5,7 +5,7 @@ import com.example.spiral_event_lottery_app.model.Event
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 /**
  * EventStoreO handles data access for the organizer-side event functionality.
@@ -17,21 +17,64 @@ class EventStoreO(private val context: Context) {
 
     /**
      * Fetches all events from Firestore where the organizerId matches the current device hardware ID.
-     * 
+     *
      * @param onComplete A callback function that receives the list of retrieved Event objects.
      */
     fun organizerEvents(onComplete: (List<Event>) -> Unit) {
         val currentDeviceId = DeviceIdProvider.getDeviceId(context)
-        
+
         db.collection("events")
-            .whereEqualTo("organizerId", currentDeviceId)
             .get()
             .addOnSuccessListener { snapshot ->
-                val events = snapshot.documents.mapNotNull { doc ->
-                    val data = doc.data ?: return@mapNotNull null
-                    toEvent(doc.id, data)
+                if (snapshot == null || snapshot.documents.isEmpty()) {
+                    onComplete(emptyList())
+                    return@addOnSuccessListener
                 }
-                onComplete(events)
+
+                val results = mutableListOf<Event>()
+                var remaining = snapshot.documents.size
+
+                snapshot.documents.forEach { doc ->
+                    val data = doc.data
+                    if (data == null) {
+                        remaining--
+                        if (remaining == 0) {
+                            onComplete(results.distinctBy { it.id })
+                        }
+                        return@forEach
+                    }
+
+                    val organizerId = data["organizerId"] as? String ?: ""
+
+                    if (organizerId == currentDeviceId) {
+                        results.add(toEvent(doc.id, data))
+                        remaining--
+                        if (remaining == 0) {
+                            onComplete(results.distinctBy { it.id })
+                        }
+                    } else {
+                        db.collection("events")
+                            .document(doc.id)
+                            .collection("co_organizers")
+                            .document(currentDeviceId)
+                            .get()
+                            .addOnSuccessListener { coOrgDoc ->
+                                if (coOrgDoc.exists()) {
+                                    results.add(toEvent(doc.id, data))
+                                }
+                                remaining--
+                                if (remaining == 0) {
+                                    onComplete(results.distinctBy { it.id })
+                                }
+                            }
+                            .addOnFailureListener {
+                                remaining--
+                                if (remaining == 0) {
+                                    onComplete(results.distinctBy { it.id })
+                                }
+                            }
+                    }
+                }
             }
             .addOnFailureListener {
                 onComplete(emptyList())
@@ -41,17 +84,16 @@ class EventStoreO(private val context: Context) {
     /**
      * Converts raw Firestore document data into a structured Event model object.
      * Maps fields based on the names used in the Event.kt data class.
-     * 
+     *
      * @param documentId The ID of the document in Firestore.
      * @param data The map of fields retrieved from the document.
      * @return A populated Event object.
      */
     private fun toEvent(documentId: String, data: Map<String, Any>): Event {
         val name = data["name"] as? String ?: ""
-        
-        // Handle variations in field naming
-        val location = data["locationName"] as? String 
-            ?: data["location_name"] as? String 
+
+        val location = data["locationName"] as? String
+            ?: data["location_name"] as? String
             ?: data["location"] as? String ?: ""
 
         var timeText = data["timeText"] as? String ?: ""
@@ -61,7 +103,6 @@ class EventStoreO(private val context: Context) {
             timeText = formatTimeRange(startTime, endTime)
         }
 
-        // Standardized to waiting_count in Firestore
         val waitingCount = (data["waiting_count"] as? Number)?.toLong() ?: 0L
 
         return Event(
@@ -73,13 +114,14 @@ class EventStoreO(private val context: Context) {
             eventCreated = data["eventCreated"] as? String ?: "",
             organizerId = data["organizerId"] as? String ?: "",
             description = data["description"] as? String ?: "",
-            posterUriString = data["posterUriString"] as? String ?: data["posterUrl"] as? String
+            posterUriString = data["posterUriString"] as? String ?: data["posterUrl"] as? String,
+            isPublic = data["isPublic"] as? Boolean ?: true
         )
     }
 
     /**
      * Formats event start and end timestamps into a readable date-time range string.
-     * 
+     *
      * @param start The starting Firebase timestamp.
      * @param end The ending Firebase timestamp.
      * @return A formatted string like "Mon, Oct 31, 2025 5:00 PM-7:00 PM".
