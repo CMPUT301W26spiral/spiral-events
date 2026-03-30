@@ -17,12 +17,35 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventCommentRepository
 import com.google.firebase.firestore.ListenerRegistration
 
+
+/**
+ * EventCommentsFragment displays and manages comments for a specific event.
+ *
+ * This fragment supports both entrant and organizer views:
+ * - Entrants can view and post comments.
+ * - Organizers can view, post, and delete comments.
+ *
+ * Used by: EventDetailsFragment, EventDetailsOFragment
+ *
+ * User Stories:
+ * - US 01.08.01: As an entrant, I want to post a comment on an event.
+ * - US 01.08.02: As an entrant, I want to view comments on an event.
+ * - US 02.08.01: As an organizer, I want to view and delete entrant comments on my event.
+ * - US 02.08.02: As an organizer, I want to comment on my events.
+ */
+
 class EventCommentsFragment : Fragment() {
 
     companion object {
         private const val ARG_EVENT_ID = "event_id"
         private const val ARG_ORGANIZER_MODE = "organizer_mode"
-
+        /**
+         * Creates a new instance of EventCommentsFragment.
+         *
+         * @param eventId The ID of the event whose comments are being displayed
+         * @param organizerMode Whether the fragment should operate in organizer mode
+         * @return A configured EventCommentsFragment instance
+         */
         fun newInstance(eventId: String, organizerMode: Boolean): EventCommentsFragment {
             return EventCommentsFragment().apply {
                 arguments = Bundle().apply {

@@ -7,6 +7,23 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 
+/**
+ * This class is responsible for:
+ * - Listening to real-time comment updates for an event
+ * - Posting new comments by entrants or organizers
+ * - Determining whether a user has permission to manage (delete) comments
+ * - Deleting comments (organizer only)
+ *
+ *
+ * Used by: EventDetailsFragment, Comment UI components
+ *
+ * User Stories:
+ * - US 01.08.01: As an entrant, I want to post a comment on an event.
+ * - US 01.08.02: As an entrant, I want to view comments on an event.
+ * - US 02.08.01: As an organizer, I want to view and delete entrant comments on my event.
+ * - US 02.08.02: As an organizer, I want to comment on my events.
+ */
+
 class EventCommentRepository(context: Context) {
 
     interface CommentsCallback {
@@ -28,9 +45,26 @@ class EventCommentRepository(context: Context) {
     private val db = FirebaseFirestore.getInstance()
     private val deviceId = DeviceIdProvider.getDeviceId(context)
 
+    /**
+     * Returns a reference to the comments subcollection for a given event.
+     *
+     * @param eventId The ID of the event
+     * @return Firestore collection reference for comments
+     */
     private fun commentsRef(eventId: String) =
         db.collection("events").document(eventId).collection("comments")
 
+    /**
+     * Listens for real-time updates to comments for a specific event.
+     *
+     * Comments are ordered by creation time in ascending order.
+     * Returns a ListenerRegistration that can be used to stop listening.
+     *
+     * @param eventId The ID of the event
+     * @param onUpdate Callback triggered when comments are updated
+     * @param onError Callback triggered if an error occurs
+     * @return ListenerRegistration for managing the listener lifecycle
+     */
     fun listenToComments(
         eventId: String,
         onUpdate: CommentsCallback,
@@ -65,6 +99,15 @@ class EventCommentRepository(context: Context) {
             }
     }
 
+    /**
+     * Checks whether the current user has permission to manage (delete) comments.
+     *
+     * Only the event organizer is allowed to delete comments.
+     *
+     * @param eventId The ID of the event
+     * @param onResult Callback returning true if user is organizer, false otherwise
+     * @param onError Callback triggered if an error occurs
+     */
     fun canManageComments(
         eventId: String,
         onResult: BooleanCallback,
@@ -80,6 +123,20 @@ class EventCommentRepository(context: Context) {
             }
     }
 
+    /**
+     * Adds a new comment to the specified event.
+     *
+     * This method:
+     * - Validates that the comment text is not empty
+     * - Retrieves event and user information
+     * - Determines the role of the commenter (Organizer or Entrant)
+     * - Stores the comment in Firestore with metadata
+     *
+     * @param eventId The ID of the event
+     * @param rawText The raw comment text entered by the user
+     * @param onSuccess Callback triggered when the comment is successfully posted
+     * @param onError Callback triggered if the operation fails
+     */
     fun addComment(
         eventId: String,
         rawText: String,
@@ -135,7 +192,16 @@ class EventCommentRepository(context: Context) {
                 onError.onError(Exception(e.message ?: "Failed to load event"))
             }
     }
-
+    /**
+     * Deletes a comment from the specified event.
+     *
+     * Only the event organizer is allowed to delete comments.
+     *
+     * @param eventId The ID of the event
+     * @param commentId The ID of the comment to delete
+     * @param onSuccess Callback triggered when deletion is successful
+     * @param onError Callback triggered if the operation fails or user lacks permission
+     */
     fun deleteComment(
         eventId: String,
         commentId: String,

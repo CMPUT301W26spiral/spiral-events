@@ -7,6 +7,24 @@ import com.example.spiral_event_lottery_app.data.CoOrganizerNotificationHelper
 import com.example.spiral_event_lottery_app.data.CoOrganizerRepository
 import com.example.spiral_event_lottery_app.model.User
 
+
+/**
+ * AssignCoOrganizerDialog handles the UI flow for assigning an entrant
+ * as a co-organizer for a specific event.
+ *
+ * This dialog prompts the organizer for confirmation before promoting a user.
+ * Upon confirmation:
+ * - The selected user is assigned as a co-organizer via CoOrganizerRepository
+ * - The user is removed from the waitlist if applicable
+ * - A notification is sent to the user informing them of their new role
+ *
+ * Used by: ManageEntrantsFragment
+ *
+ * User Stories:
+ * - US 02.09.01: As an organizer, I want to assign an entrant as a co-organizer for my event.
+ * - US 01.09.01: As an entrant, I want to receive a notification if I have been invited to be a co-organizer.
+ */
+
 class AssignCoOrganizerDialog(
     private val context: Context,
     private val eventId: String,
@@ -14,7 +32,11 @@ class AssignCoOrganizerDialog(
 ) {
 
     private val repo = CoOrganizerRepository(context)
-
+    /**
+     * Displays the confirmation dialog for assigning a co-organizer.
+     *
+     * @param user The User object representing the entrant to be promoted
+     */
     fun show(user: User) {
         AlertDialog.Builder(context)
             .setTitle("Assign Co-Organizer")
