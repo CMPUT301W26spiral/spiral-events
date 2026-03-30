@@ -69,6 +69,8 @@ class EventDetailsLeaveFragment : Fragment() {
                 .replace(R.id.fragmentContainer, EventCommentsFragment.newInstance(eventId, false))
                 .addToBackStack(null)
                 .commit()
+        }
+
         viewQRBtn.setOnClickListener {
             val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
             intent.putExtra("EVENT_ID", eventId)

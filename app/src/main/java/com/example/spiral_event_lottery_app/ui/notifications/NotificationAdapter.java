@@ -137,8 +137,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                             .commit();
                     return;
                 }
-                AppCompatActivity activity = getActivity(context);
-                if (activity == null) return;
 
                 // Special handling for ACCEPTED (Wins): Should navigate to where they can Accept/Decline
                 // Standard behavior: Go to EventDetailsLeaveFragment which contains the My Events context logic

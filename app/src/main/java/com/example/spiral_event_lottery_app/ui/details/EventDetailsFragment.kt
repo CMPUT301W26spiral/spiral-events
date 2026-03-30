@@ -1,6 +1,8 @@
 package com.example.spiral_event_lottery_app.ui.details
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.Uri
@@ -14,7 +16,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
@@ -22,16 +26,12 @@ import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.example.spiral_event_lottery_app.ui.comments.EventCommentsFragment
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.storage.FirebaseStorage
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.annotation.RequiresPermission
-import androidx.core.content.ContextCompat
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.storage.FirebaseStorage
 
 class EventDetailsFragment : Fragment() {
     companion object {
@@ -50,14 +50,13 @@ class EventDetailsFragment : Fragment() {
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { uploadPoster(it) }
     }
-    // is the Location permission launcher
+    
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
             saveLocationToFirestore(eventId, DeviceIdProvider.getDeviceId(requireContext()))
         }
-        // If denied, wesilently skip location is optional per US 02.02.03
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,8 +79,6 @@ class EventDetailsFragment : Fragment() {
         val joinBtn = view.findViewById<Button>(R.id.joinLeaveButton)
         val commentsBtn = view.findViewById<Button>(R.id.commentsButton)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
-
-        // SAFETY: Use a nullable reference for the edit button which might be missing in XML
         val editPosterBtn = view.findViewById<View?>(R.id.editImageButton)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
@@ -91,6 +88,8 @@ class EventDetailsFragment : Fragment() {
                 .replace(R.id.fragmentContainer, EventCommentsFragment.newInstance(eventId, false))
                 .addToBackStack(null)
                 .commit()
+        }
+
         viewQRBtn.setOnClickListener {
             val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
             intent.putExtra("EVENT_ID", eventId)
@@ -106,7 +105,6 @@ class EventDetailsFragment : Fragment() {
                     return@listenToEvent
                 }
 
-
                 val currentEventName = event.name
                 title.text = currentEventName
                 locationName.text = event.locationName
@@ -115,7 +113,7 @@ class EventDetailsFragment : Fragment() {
                 val limit = event.maxEntrants?.toLong() ?: 0L
                 val spots = limit - event.waitingCount
                 val openSpots = if (spots > 0) spots else 0L
-                // Calculate and display open spots ONLY if lottery is not done
+                
                 waiting.text = if (event.maxEntrants != null && !event.lotteryDone) {
                     "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
                 } else {
@@ -138,10 +136,7 @@ class EventDetailsFragment : Fragment() {
 
                 repository.isJoined(eventId, { joined ->
                     if (!isAdded) return@isJoined
-                    
-                    // Show the button only after its state is determined
                     joinBtn.visibility = View.VISIBLE
-                    
                     if (joined) {
                         joinBtn.text = "You're in the waiting list"
                         joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
@@ -165,7 +160,11 @@ class EventDetailsFragment : Fragment() {
                     repository.isJoined(eventId, { joined ->
                         if (!isAdded) return@isJoined
                         if (joined) {
-                            AlertDialog.Builder(requireContext()).setTitle("Already registered").setMessage("You're already on the waiting list for\n$currentEventName.").setPositiveButton("OK", null).show()
+                            AlertDialog.Builder(requireContext())
+                                .setTitle("Already registered")
+                                .setMessage("You're already on the waiting list for\n$currentEventName.")
+                                .setPositiveButton("OK", null)
+                                .show()
                         } else {
                             repository.isSelected(eventId, { selected ->
                                 if (!isAdded) return@isSelected
@@ -175,22 +174,6 @@ class EventDetailsFragment : Fragment() {
                                     showJoinConfirmation(currentEventName)
                                 }
                             }, {})
-                            AlertDialog.Builder(requireContext()).setTitle("Join Waitlist").setMessage("Confirm joining the waiting list for $currentEventName?").setPositiveButton("Confirm") { _, _ ->
-                                repository.joinWaitlist(
-                                    eventId,
-                                    EventRepository.SuccessCallback {
-                                        NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Requested", "Your entry for $currentEventName was received!", "REQUESTED", currentEventName, eventId)
-                                        captureAndStoreLocation(eventId, DeviceIdProvider.getDeviceId(requireContext()))
-                                        Toast.makeText(requireContext(), "Joined successfully!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    EventRepository.SuccessCallback {
-                                        Toast.makeText(requireContext(), "You are already joined.", Toast.LENGTH_SHORT).show()
-                                    },
-                                    EventRepository.ErrorCallback { e ->
-                                        Toast.makeText(requireContext(), e.message ?: "Join failed", Toast.LENGTH_LONG).show()
-                                    }
-                                )
-                            }.setNegativeButton("Cancel", null).show()
                         }
                     }, {})
                 }
@@ -258,22 +241,7 @@ class EventDetailsFragment : Fragment() {
                 if (isAdded) Toast.makeText(requireContext(), "Failed to update database: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
-    /**
-     * this requests location permission then captures the device's last known location.
-     * Stores latitude and longitude in the event's waitlist document so the organizer
-     * can view entrant locations on a map (US 02.02.02).
-     * @param eventId   The Firestore event document ID.
-     * @param deviceId  The entrant's device ID used as the waitlist document key.
-     */
-    /**
-     * Requests location permission then captures the device's last known location.
-     * Stores latitude and longitude in the event's waitlist document so the organizer
-     * can view entrant locations on a map (US 02.02.02).
-     * Location is optional and if denied the app continues normally (US 02.02.03).
-     *
-     * @param eventId  The Firestore event document ID.
-     * @param deviceId The entrant's device ID used as the waitlist document key.
-     */
+
     private fun captureAndStoreLocation(eventId: String, deviceId: String) {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
             == PackageManager.PERMISSION_GRANTED) {
@@ -283,12 +251,6 @@ class EventDetailsFragment : Fragment() {
         }
     }
 
-    /**
-     * Gets the device's last known location and writes it to the waitlist document.
-     *
-     * @param eventId  The Firestore event document ID.
-     * @param deviceId The entrant's device ID.
-     */
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     private fun saveLocationToFirestore(eventId: String, deviceId: String) {
         val fusedClient = LocationServices.getFusedLocationProviderClient(requireContext())
