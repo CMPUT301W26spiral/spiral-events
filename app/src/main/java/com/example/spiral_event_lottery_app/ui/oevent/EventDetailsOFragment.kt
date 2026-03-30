@@ -1,6 +1,7 @@
 package com.example.spiral_event_lottery_app.ui.oevent
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -23,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
+import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.example.spiral_event_lottery_app.model.User
 import com.example.spiral_event_lottery_app.ui.comments.EventCommentsFragment
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
@@ -111,7 +113,16 @@ class EventDetailsOFragment : Fragment() {
         val notifyEntrantsBtn = view.findViewById<Button>(R.id.notifyEntrantsButton)
         val viewLocationsBtn = view.findViewById<Button>(R.id.viewLocButton)
         val deleteEventBtn = view.findViewById<Button>(R.id.deleteEventButton)
+        val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
 
+        // US 02.02.02 we show map of where entrants joined from
+        viewLocationsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer,
+                    com.example.spiral_event_lottery_app.ui.admin.EntrantMapFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
         commentsBtn.setOnClickListener {
@@ -129,6 +140,14 @@ class EventDetailsOFragment : Fragment() {
             showDeleteEventDialog()
         }
 
+        viewQRBtn.setOnClickListener {
+            val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
+            intent.putExtra("EVENT_ID", eventId)
+            intent.putExtra("EVENT_NAME", title.text.toString().removeSuffix(" (Private)"))
+            startActivity(intent)
+        }
+
+        // Implement Search Functionality
         inviteSearchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -183,9 +202,10 @@ class EventDetailsOFragment : Fragment() {
                 locationName.text = event.locationName
                 locationAddress.text = event.locationName
                 time.text = event.timeText
-
-                val openSpots = event.maxEntrants?.minus(event.waitingCount) ?: 0
-                waiting.text = if (event.maxEntrants != null) {
+                
+                // Logic for open spots calculation
+                val openSpots = event.maxEntrants?.minus(event.waitingCount.toInt()) ?: 0
+                waiting.text = if (event.maxEntrants != null && !event.lotteryDone) {
                     "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
                 } else {
                     "${event.waitingCount} People on Waiting List"
@@ -242,6 +262,12 @@ class EventDetailsOFragment : Fragment() {
             .show()
     }
 
+    /**
+     * Adds a user to the event's waitlist in Firestore.
+     * Uses a transaction to ensure waitlist count accuracy.
+     * Sends a notification to the invited user.
+     * @param user The user to add to the waitlist.
+     */
     private fun inviteUserToEvent(user: User) {
         val waitlistRef = db.collection("events").document(eventId).collection("waitlist").document(user.deviceId)
 
@@ -259,12 +285,24 @@ class EventDetailsOFragment : Fragment() {
             val eventRef = db.collection("events").document(eventId)
             val eventDoc = transaction.get(eventRef)
             val currentCount = eventDoc.getLong("waiting_count") ?: 0L
+            val eventName = eventDoc.getString("name") ?: "Private Event"
 
             transaction.set(waitlistRef, waitlistData)
             transaction.update(eventRef, "waiting_count", currentCount + 1)
-            null
-        }.addOnSuccessListener {
+            eventName
+        }.addOnSuccessListener { eventName ->
             Toast.makeText(requireContext(), "${user.name} has been added to the waiting list!", Toast.LENGTH_SHORT).show()
+
+            // Send notification to the invited user
+            NotificationManager.sendNotification(
+                user.deviceId,
+                "Private Invitation",
+                "You have been invited to join the waiting list for $eventName!",
+                "ORGANIZER",
+                eventName as String,
+                eventId
+            )
+
             inviteSearchInput.text.clear()
             searchAdapter.submitList(emptyList())
             searchResultRecycler.visibility = View.GONE

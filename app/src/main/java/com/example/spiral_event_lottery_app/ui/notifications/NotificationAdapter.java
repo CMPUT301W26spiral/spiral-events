@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.spiral_event_lottery_app.R;
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import com.example.spiral_event_lottery_app.data.EventRepository;
 import com.example.spiral_event_lottery_app.model.Notification;
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment;
@@ -98,7 +99,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 break;
         }
 
-        // we Handle navigation OR Accept/Decline Dialog
+        // Handle navigation to event details or special handling for wins
         holder.goButton.setOnClickListener(v -> {
             String eventId = notification.getEventId();
             if (eventId != null) {
@@ -136,26 +137,47 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                             .commit();
                     return;
                 }
+                AppCompatActivity activity = getActivity(context);
+                if (activity == null) return;
+
+                // Special handling for ACCEPTED (Wins): Should navigate to where they can Accept/Decline
+                // Standard behavior: Go to EventDetailsLeaveFragment which contains the My Events context logic
 
                 EventRepository repository = new EventRepository(activity);
-                repository.isJoined(eventId, joined -> {
+                String myDeviceId = DeviceIdProvider.getDeviceId(context);
+
+                // Check if user is in canceled_list before allowing navigation
+                repository.getEntrantIds(eventId, "canceled_list", canceledIds -> {
                     if (activity.isFinishing() || activity.isDestroyed()) return;
 
-                    if (joined) {
+                    if (canceledIds.contains(myDeviceId)) {
+                        Toast.makeText(context, "You are not part of this event anymore.", Toast.LENGTH_LONG).show();
+                    } else {
+                        // Proceed with existing logic if not canceled
+                        repository.isJoined(eventId, joined -> {
+                            if (activity.isFinishing() || activity.isDestroyed()) return;
+
+                            activity.getSupportFragmentManager().beginTransaction()
+                                    .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
+                                    .addToBackStack("details")
+                                    .commit();
+                        }, e -> {
+                            // Fallback to standard details if check fails
+                            activity.getSupportFragmentManager().beginTransaction()
+                                    .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                                    .addToBackStack("details")
+                                    .commit();
+                        });
+                    }
+                }, e -> {
+                    // Fallback to standard navigation if canceled check fails
+                    repository.isJoined(eventId, joined -> {
+                        if (activity.isFinishing() || activity.isDestroyed()) return;
                         activity.getSupportFragmentManager().beginTransaction()
                                 .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
                                 .addToBackStack("details")
                                 .commit();
-                    } else if (notification.getType().equals("DENIED") || notification.getType().equals("CANCELLED")) {
-                        activity.getSupportFragmentManager().beginTransaction()
-                                .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
-                                .addToBackStack("details")
-                                .commit();
-                    } else {
-                        Toast.makeText(activity, "You are no longer on the waiting list for this event.", Toast.LENGTH_SHORT).show();
-                    }
-                }, e -> {
-                    Toast.makeText(activity, "Error checking event status", Toast.LENGTH_SHORT).show();
+                    }, err -> {});
                 });
             }
         });

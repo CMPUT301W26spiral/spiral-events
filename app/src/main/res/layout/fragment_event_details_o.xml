@@ -1,205 +1,176 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F2F9F2"
-    android:padding="16dp"
+    android:background="#F8FBF8"
     android:clickable="true"
     android:focusable="true">
 
-    <ScrollView
+    <!-- Top App Bar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        app:layout_constraintTop_toTopOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:padding="16dp">
 
             <ImageButton
                 android:id="@+id/backButton"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:background="@android:color/transparent"
-                android:src="@drawable/ic_back"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Back"
+                android:src="@drawable/ic_back"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:tint="#1F5E3B" />
+                app:tint="#0F3D2E" />
 
             <TextView
-                android:id="@+id/header"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Event Details"
-                android:textStyle="bold"
-                android:textSize="24sp"
-                android:textColor="#1F5E3B"
-                app:layout_constraintStart_toEndOf="@id/backButton"
-                app:layout_constraintTop_toTopOf="@id/backButton"
-                app:layout_constraintBottom_toBottomOf="@id/backButton"
-                android:layout_marginStart="8dp"/>
-
-            <androidx.cardview.widget.CardView
-                android:id="@+id/imageCard"
+                android:id="@+id/headerTitle"
                 android:layout_width="0dp"
-                android:layout_height="250dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Event Details"
+                android:textColor="#0F3D2E"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/backButton"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/organizerActionTray"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/appBarLayout">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Event Poster Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/imageCard"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                android:layout_marginTop="16dp"
-                app:layout_constraintTop_toBottomOf="@id/header"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
 
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="#D9D9D9">
+                    android:background="#EEEEEE">
 
                     <ImageView
                         android:id="@+id/eventPosterImage"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
-                        android:contentDescription="Event Poster" />
+                        tools:src="@drawable/ic_event" />
 
-                    <ImageView
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
                         android:id="@+id/editImageButton"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_gravity="bottom|end"
                         android:layout_margin="12dp"
-                        android:src="@drawable/baseline_edit_24"
-                        android:background="@drawable/bg_search"
-                        android:padding="8dp"
-                        app:tint="#1F5E3B"
-                        android:contentDescription="Edit Poster" />
+                        android:contentDescription="Edit Poster"
+                        app:fabSize="mini"
+                        app:srcCompat="@drawable/baseline_edit_24"
+                        app:tint="#FFFFFF"
+                        app:backgroundTint="#2E5A27" />
                 </FrameLayout>
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:id="@+id/detailsTitle"
-                android:layout_width="0dp"
+            <!-- Event Info Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Event Name"
-                android:textStyle="bold"
-                android:textSize="22sp"
-                android:textColor="#000000"
-                android:layout_marginTop="16dp"
-                app:layout_constraintTop_toBottomOf="@id/imageCard"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                android:layout_marginTop="20dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/detailsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="#0F3D2E"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    tools:text="Family Swimming Lessons" />
+
+                <ImageButton
+                    android:id="@+id/viewQRButtonIcon"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="View QR Code"
+                    android:src="@drawable/ic_qr"
+                    app:tint="#2E5A27" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/detailsLocation"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Location Name"
-                android:textSize="14sp"
+                android:layout_marginTop="4dp"
                 android:textColor="#666666"
-                android:layout_marginTop="4dp"
-                app:layout_constraintTop_toBottomOf="@id/detailsTitle"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
-
-            <ImageView
-                android:id="@+id/iconCalendar"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginTop="12dp"
-                android:src="@drawable/ic_calendar"
-                app:tint="#1F5E3B"
-                android:contentDescription="Calendar Icon"
-                app:layout_constraintTop_toBottomOf="@id/detailsLocation"
-                app:layout_constraintStart_toStartOf="parent"/>
-
-            <TextView
-                android:id="@+id/detailsTime"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Date/Time"
-                android:textColor="#333333"
-                android:textSize="14sp"
-                app:layout_constraintTop_toTopOf="@id/iconCalendar"
-                app:layout_constraintBottom_toBottomOf="@id/iconCalendar"
-                app:layout_constraintStart_toEndOf="@id/iconCalendar"
-                app:layout_constraintEnd_toEndOf="parent"/>
-
-            <ImageView
-                android:id="@+id/iconPlace"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginTop="8dp"
-                android:src="@drawable/ic_pin"
-                app:tint="#1F5E3B"
-                android:contentDescription="Location Pin"
-                app:layout_constraintTop_toBottomOf="@id/iconCalendar"
-                app:layout_constraintStart_toStartOf="parent"/>
-
-            <TextView
-                android:id="@+id/detailsLocationAddress"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Address"
-                android:textColor="#333333"
-                android:textSize="14sp"
-                app:layout_constraintTop_toTopOf="@id/iconPlace"
-                app:layout_constraintBottom_toBottomOf="@id/iconPlace"
-                app:layout_constraintStart_toEndOf="@id/iconPlace"
-                app:layout_constraintEnd_toEndOf="parent"/>
-
-            <ImageView
-                android:id="@+id/iconPeople"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginTop="8dp"
-                android:src="@drawable/ic_people"
-                app:tint="#1F5E3B"
-                android:contentDescription="Waitlist Icon"
-                app:layout_constraintTop_toBottomOf="@id/iconPlace"
-                app:layout_constraintStart_toStartOf="parent"/>
-
-            <TextView
-                android:id="@+id/detailsWaiting"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Waiting List Info"
-                android:textColor="#333333"
-                android:textSize="14sp"
-                app:layout_constraintTop_toTopOf="@id/iconPeople"
-                app:layout_constraintBottom_toBottomOf="@id/iconPeople"
-                app:layout_constraintStart_toEndOf="@id/iconPeople"
-                app:layout_constraintEnd_toEndOf="parent"/>
-
-            <TextView
-                android:id="@+id/descriptionLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Event Description"
                 android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="#000000"
-                android:layout_marginTop="16dp"
-                app:layout_constraintTop_toBottomOf="@id/iconPeople"
-                app:layout_constraintStart_toStartOf="parent"/>
+                tools:text="Peter Hemingway Aquatic Centre" />
 
-            <TextView
-                android:id="@+id/detailsDescription"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Description goes here..."
-                android:textColor="#333333"
-                android:textSize="14sp"
-                app:layout_constraintTop_toBottomOf="@id/descriptionLabel"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_calendar"
+                    app:tint="#2E5A27" />
+
+                <TextView
+                    android:id="@+id/detailsTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textColor="#333333"
+                    android:textSize="14sp"
+                    tools:text="Sat, Mar. 4, 2026 10:00-11:00 AM" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_people"
+                    app:tint="#2E5A27" />
 
             <Button
                 android:id="@+id/commentsButton"
@@ -232,143 +203,149 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/commentsButton" />
 
+            <!-- Private Invitation Section -->
             <LinearLayout
-                android:id="@+id/inviteRow"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/inviteHeader">
-
-                <FrameLayout
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_search">
-
-                    <Spinner
-                        android:id="@+id/inviteCategorySpinner"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
-                        android:background="@null"
-                        android:textSize="14sp"
-                        android:spinnerMode="dropdown" />
-                </FrameLayout>
-
-                <EditText
-                    android:id="@+id/inviteSearchInput"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="2"
-                    android:background="@drawable/bg_search"
-                    android:drawableEnd="@drawable/ic_search"
-                    android:drawablePadding="8dp"
-                    android:hint="Search entrants..."
-                    android:importantForAutofill="no"
-                    android:inputType="text"
-                    android:paddingHorizontal="16dp"
-                    android:textSize="14sp"
-                    app:tint="#1F5E3B" />
-            </LinearLayout>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/searchResultRecycler"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxHeight="200dp"
-                android:background="@drawable/edit_text_background"
-                android:elevation="4dp"
-                android:visibility="gone"
-                android:layout_marginTop="2dp"
-                app:layout_constraintTop_toBottomOf="@id/inviteRow"
-                app:layout_constraintStart_toStartOf="@id/inviteRow"
-                app:layout_constraintEnd_toEndOf="@id/inviteRow" />
-
-            <Button
-                android:id="@+id/drawButton"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:text="Draw!"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_marginTop="24dp"
-                android:backgroundTint="#1F5E3B"
-                android:textColor="#FFFFFF"
-                app:cornerRadius="28dp"
-                app:layout_constraintTop_toBottomOf="@+id/searchResultRecycler"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
-
-            <LinearLayout
-                android:id="@+id/organizerActionButtons"
+                android:id="@+id/inviteSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:orientation="horizontal"
-                app:layout_constraintTop_toBottomOf="@id/drawButton">
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
 
-                <Button
-                    android:id="@+id/viewEntrantsButton"
-                    android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/inviteHeader"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="View Entrants"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:backgroundTint="#1F5E3B"
-                    android:textColor="#FFFFFF"
-                    app:cornerRadius="24dp" />
+                    android:layout_marginTop="24dp"
+                    android:text="Invite Entrants"
+                    android:textColor="#0F3D2E"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-                <Button
-                    android:id="@+id/notifyEntrantsButton"
-                    android:layout_width="0dp"
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/inviteRow"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginHorizontal="4dp"
-                    android:text="Notify Entrants"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:backgroundTint="#1F5E3B"
-                    android:textColor="#FFFFFF"
-                    app:cornerRadius="24dp" />
+                    android:layout_marginTop="8dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#DDDDDD"
+                    app:strokeWidth="1dp">
 
-                <Button
-                    android:id="@+id/viewLocButton"
-                    android:layout_width="0dp"
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="4dp">
+
+                        <EditText
+                            android:id="@+id/inviteSearchInput"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:background="@android:color/transparent"
+                            android:hint="Search user..."
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:textSize="14sp" />
+
+                        <Spinner
+                            android:id="@+id/inviteCategorySpinner"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/searchResultRecycler"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="View Location"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:backgroundTint="#1F5E3B"
-                    android:textColor="#FFFFFF"
-                    app:cornerRadius="24dp" />
+                    android:layout_marginTop="4dp"
+                    android:maxHeight="200dp"
+                    android:visibility="gone" />
             </LinearLayout>
 
-            <Button
-                android:id="@+id/deleteEventButton"
+            <!-- Description -->
+            <TextView
+                android:id="@+id/descriptionLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:layout_marginBottom="32dp"
-                android:backgroundTint="#A00000"
-                app:cornerRadius="18dp"
-                android:text="Delete Event"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/organizerActionButtons" />
+                android:layout_marginTop="24dp"
+                android:text="Event Description"
+                android:textColor="#0F3D2E"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </ScrollView>
+            <TextView
+                android:id="@+id/detailsDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="#666666"
+                android:textSize="14sp"
+                tools:text="This is a sample description of the event." />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="32dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Bottom Action Tray -->
+    <LinearLayout
+        android:id="@+id/organizerActionTray"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/drawButton"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:backgroundTint="#2E5A27"
+            android:text="Perform Lottery Draw"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="26dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/viewEntrantsButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="Entrants"
+                android:textAllCaps="false"
+                android:textColor="#2E5A27"
+                app:cornerRadius="24dp"
+                app:strokeColor="#2E5A27" />
+
+            <Button
+                android:id="@+id/notifyEntrantsButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="Notify"
+                android:textAllCaps="false"
+                android:textColor="#2E5A27"
+                app:cornerRadius="24dp"
+                app:strokeColor="#2E5A27" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

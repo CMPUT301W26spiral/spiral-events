@@ -84,12 +84,38 @@ public class MainActivity extends AppCompatActivity {
         String scannedId = intent.getStringExtra("SCAN_RESULT_ID");
         if (scannedId != null) {
             // US 01.06.01 - Open event details when QR is scanned
-            Fragment detailsFragment = com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment.Companion.newInstance(scannedId);
-            
-            fm.beginTransaction()
-                    .add(R.id.fragmentContainer, detailsFragment, "details_screen")
-                    .addToBackStack("details")
-                    .commit();
+            // Check if the current user is the organizer of the event
+            String currentUserId = com.example.spiral_event_lottery_app.data.DeviceIdProvider.getDeviceId(this);
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("events")
+                    .document(scannedId)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            String organizerId = documentSnapshot.getString("organizerId");
+                            Fragment detailsFragment;
+                            
+                            if (currentUserId.equals(organizerId)) {
+                                // If current user is organizer, go to Organizer Details view
+                                detailsFragment = com.example.spiral_event_lottery_app.ui.oevent.EventDetailsOFragment.Companion.newInstance(scannedId);
+                            } else {
+                                // If standard user, go to Entrant Details view
+                                detailsFragment = com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment.Companion.newInstance(scannedId);
+                            }
+                            
+                            if (!isFinishing() && !isDestroyed()) {
+                                fm.beginTransaction()
+                                        .add(R.id.fragmentContainer, detailsFragment, "details_screen")
+                                        .addToBackStack("details")
+                                        .commit();
+                            }
+                        } else {
+                            android.widget.Toast.makeText(this, "Event not found", android.widget.Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        android.widget.Toast.makeText(this, "Error fetching event: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
+                    });
             
             // Clear the extra so it doesn't trigger again on rotation
             intent.removeExtra("SCAN_RESULT_ID");

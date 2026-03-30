@@ -8,21 +8,25 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.spiral_event_lottery_app.R
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.EventStoreO
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsLeaveFragment
 import com.example.spiral_event_lottery_app.ui.oevent.EventDetailsOFragment
+import com.google.firebase.firestore.ListenerRegistration
 
 /**
- * Fragment that displays both joined events (Entrant) and organized events (Organizer).
+ * Fragment that displays joined events, organized events, and past (declined) events.
  */
 class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
 
     private lateinit var joinedAdapter: MyEventsAdapter
     private lateinit var organizerAdapter: MyEventsAdapter
-    
+    private lateinit var pastAdapter: MyEventsAdapter
+
     private lateinit var repository: EventRepository
     private lateinit var eventStoreO: EventStoreO
+    private var myEventsListener: ListenerRegistration? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -57,28 +61,76 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
         organizerRv.layoutManager = LinearLayoutManager(requireContext())
         organizerRv.adapter = organizerAdapter
 
+        // 3. Setup Past Events RecyclerView
+        val pastRv = view.findViewById<RecyclerView>(R.id.pastEventsRecyclerView)
+        pastAdapter = MyEventsAdapter(emptyList()) { event ->
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, EventDetailsLeaveFragment.newInstance(event.id))
+                .addToBackStack(null)
+                .commit()
+        }
+        pastRv.layoutManager = LinearLayoutManager(requireContext())
+        pastRv.adapter = pastAdapter
+
         refreshData()
     }
 
-    override fun onResume() {
-        super.onResume()
-        refreshData()
+    override fun onStart() {
+        super.onStart()
+        val myDeviceId = DeviceIdProvider.getDeviceId(requireContext())
+
+        myEventsListener = repository.listenToMyEvents(
+            { allEvents ->
+                if (!isAdded) return@listenToMyEvents
+
+                if (allEvents.isEmpty()) {
+                    joinedAdapter.submitList(emptyList())
+                    pastAdapter.submitList(emptyList())
+                    view?.let { updateJoinedCount(it, 0) }
+                    return@listenToMyEvents
+                }
+
+                val currentEvents = mutableListOf<com.example.spiral_event_lottery_app.model.Event>()
+                val pastEvents = mutableListOf<com.example.spiral_event_lottery_app.model.Event>()
+                var processed = 0
+
+                for (event in allEvents) {
+                    repository.getEntrantIds(event.id, "canceled_list", { canceledIds ->
+                        if (canceledIds.contains(myDeviceId)) {
+                            pastEvents.add(event)
+                        } else {
+                            currentEvents.add(event)
+                        }
+
+                        processed++
+                        if (processed == allEvents.size && isAdded) {
+                            joinedAdapter.submitList(currentEvents.sortedBy { it.name })
+                            pastAdapter.submitList(pastEvents.sortedBy { it.name })
+                            view?.let { updateJoinedCount(it, currentEvents.size) }
+                        }
+                    }, {
+                        processed++
+                        if (processed == allEvents.size && isAdded) {
+                            joinedAdapter.submitList(currentEvents.sortedBy { it.name })
+                            pastAdapter.submitList(pastEvents.sortedBy { it.name })
+                        }
+                    })
+                }
+            },
+            { }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        myEventsListener?.remove()
+        myEventsListener = null
     }
 
     /**
      * Refreshes the lists of both joined and organized events.
-     * Must be public so MainActivity can trigger a refresh.
      */
     fun refreshData() {
-        // Fetch Joined Events (Entrant view)
-        repository.fetchMyEvents(
-            { events ->
-                joinedAdapter.submitList(events)
-                view?.let { updateJoinedCount(it, events.size) }
-            },
-            { }
-        )
-
         // Fetch Organized Events (Organizer view)
         eventStoreO.organizerEvents { events ->
             if (isAdded) {

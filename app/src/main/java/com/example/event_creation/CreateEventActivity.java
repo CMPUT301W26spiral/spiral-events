@@ -52,6 +52,17 @@ public class CreateEventActivity extends AppCompatActivity {
     private Uri selectedImageUri;
 
     private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    launchImagePicker();
+                } else {
+                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<String> pickImageLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
                 if (uri != null) {
@@ -66,6 +77,13 @@ public class CreateEventActivity extends AppCompatActivity {
             }
     );
 
+    /**
+     * Launches the image picker to allow the user to select an event poster.
+     */
+    private void launchImagePicker() {
+        pickImageLauncher.launch("image/*");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,7 +92,7 @@ public class CreateEventActivity extends AppCompatActivity {
         initializeViews();
         setupSpinners();
 
-        View.OnClickListener posterClickListener = v -> imagePickerLauncher.launch("image/*");
+        View.OnClickListener posterClickListener = v -> launchImagePicker();
         postersContainer.setOnClickListener(posterClickListener);
         llAddPosterPlaceholder.setOnClickListener(posterClickListener);
         ivEventPoster.setOnClickListener(posterClickListener);
@@ -196,10 +214,21 @@ public class CreateEventActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
+    /**
+     * Generates a current timestamp string for event creation tracking.
+     * @return Formatted timestamp string.
+     */
     private String getCurrentTimestamp() {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
     }
 
+    /**
+     * Collects form data, creates an Event object, and saves it to Firestore via EventManager.
+     * Redirects to QRCodeActivity for public events or PrivateEventSuccessActivity for private ones.
+     * 
+     * US 02.01.01 – Create new public event and generate unique promotional QR code
+     * US 02.01.02 – Create a private event that is not visible on the event listing
+     */
     private void saveEvent() {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
@@ -211,7 +240,6 @@ public class CreateEventActivity extends AppCompatActivity {
         String maxEntrantsStr = etMaxEntrants.getText().toString().trim();
         Integer maxEntrants = maxEntrantsStr.isEmpty() ? null : Integer.parseInt(maxEntrantsStr);
 
-        String eventMonthStr = spinnerEventMonth.getSelectedItem().toString();
         String eventDayStr = spinnerEventDay.getSelectedItem().toString();
         String eventYearStr = spinnerEventYear.getSelectedItem().toString();
         String eventMonthNum = String.format(Locale.getDefault(), "%02d", spinnerEventMonth.getSelectedItemPosition());
@@ -226,7 +254,7 @@ public class CreateEventActivity extends AppCompatActivity {
         String drawStartTime = spinnerDrawStartHour.getSelectedItem().toString() + ":" + spinnerDrawStartMin.getSelectedItem().toString();
         String drawEndTime = spinnerDrawEndHour.getSelectedItem().toString() + ":" + spinnerDrawEndMin.getSelectedItem().toString();
 
-        String timeText = eventMonthStr + " " + eventDayStr + ", " + eventYearStr + " " + eventStartTime + "-" + eventEndTime;
+        String timeText = eventDate + " " + eventStartTime + "-" + eventEndTime;
 
         String posterUriString = (selectedImageUri != null) ? selectedImageUri.toString() : null;
 
@@ -259,6 +287,7 @@ public class CreateEventActivity extends AppCompatActivity {
             Intent intent = new Intent(this, QRCodeActivity.class);
             intent.putExtra("EVENT_NAME", eventName);
             intent.putExtra("EVENT_ID", newEvent.getId());
+            intent.putExtra("FROM_CREATION", true);
             startActivity(intent);
         } else {
             Intent intent = new Intent(this, PrivateEventSuccessActivity.class);
@@ -269,6 +298,10 @@ public class CreateEventActivity extends AppCompatActivity {
         finish();
     }
 
+    /**
+     * Validates all input fields in the event creation form.
+     * @return true if all required fields are filled and valid, false otherwise.
+     */
     private boolean validateForm() {
         boolean isValid = true;
         isValid &= checkEmpty(etEventName);
@@ -304,6 +337,10 @@ public class CreateEventActivity extends AppCompatActivity {
         return true;
     }
 
+    /**
+     * Checks if the selected draw time occurs before the event start time.
+     * @return true if draw is before event, false otherwise.
+     */
     private boolean isDrawBeforeEvent() {
         try {
             Calendar eventCal = Calendar.getInstance();
@@ -334,6 +371,11 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Checks if an EditText is empty and applies error styling if so.
+     * @param et The EditText to check.
+     * @return true if not empty, false if empty.
+     */
     private boolean checkEmpty(EditText et) {
         if (et.getText().toString().trim().isEmpty()) {
             et.setBackgroundResource(R.drawable.edit_text_error_background);
@@ -344,6 +386,11 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Checks if a Spinner has a selection other than the placeholder.
+     * @param spinner The Spinner to check.
+     * @return true if selected, false if placeholder is still active.
+     */
     private boolean checkSpinnerSelected(Spinner spinner) {
         if (spinner.getSelectedItemPosition() == 0) {
             spinner.setBackgroundResource(R.drawable.edit_text_error_background);

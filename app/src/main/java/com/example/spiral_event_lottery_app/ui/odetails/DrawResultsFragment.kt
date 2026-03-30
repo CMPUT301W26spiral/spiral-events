@@ -2,6 +2,7 @@ package com.example.spiral_event_lottery_app.ui.odetails
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -47,6 +48,13 @@ class DrawResultsFragment : Fragment(R.layout.fragment_draw_results) {
 
         adapter = SelectedUsersAdapter(listOf())
         recyclerView.adapter = adapter
+
+        val returnBtn = view.findViewById<Button>(R.id.selectedNotif)
+        returnBtn.setOnClickListener {
+            // Pop twice: back from Results to DoDraw, then back from DoDraw to EventDetailsO
+            parentFragmentManager.popBackStack()
+            parentFragmentManager.popBackStack()
+        }
 
         // 1. Fetch selected users from the event's 'selected_list' subcollection
         db.collection("events")

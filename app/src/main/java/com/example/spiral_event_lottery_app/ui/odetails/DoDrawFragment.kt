@@ -114,6 +114,11 @@ class DoDrawFragment : Fragment() {
     /**
      * Executes the lottery logic by fetching the waitlist, selecting winners, and updating Firestore.
      *
+     * US 01.04.01 – Receive notification when chosen from waiting list
+     * US 01.04.02 – Receive notification when not chosen from lottery
+     * US 02.05.01 – Send notification to chosen entrants
+     * US 02.07.01 – Send notification to all waiting list entrants
+     *
      * @param eventId The ID of the event for which the draw is performed.
      * @param eventName The name of the event for notification content.
      * @param entrantLimit The maximum number of winners to select. If null, everyone on the waitlist is selected.
