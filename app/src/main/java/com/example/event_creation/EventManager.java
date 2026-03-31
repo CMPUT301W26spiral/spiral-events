@@ -3,6 +3,8 @@ package com.example.event_creation;
 import android.net.Uri;
 import android.util.Log;
 
+import com.example.spiral_event_lottery_app.data.TagRepository;
+import com.example.spiral_event_lottery_app.model.Tag;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
@@ -15,7 +17,7 @@ import java.util.UUID;
 
 /**
  * Singleton class to manage a list of events.
- * Now integrated with Firebase Firestore and Storage.
+ * Integrated with Firebase Firestore, Storage, and TagRepository for AI categorization.
  */
 public class EventManager {
     private static final String TAG = "EventManager";
@@ -23,11 +25,13 @@ public class EventManager {
     private final List<Event> eventList;
     private final FirebaseFirestore db;
     private final FirebaseStorage storage;
+    private final TagRepository tagRepository;
 
     private EventManager() {
         eventList = new ArrayList<>();
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
+        tagRepository = new TagRepository();
     }
 
     public static synchronized EventManager getInstance() {
@@ -39,21 +43,46 @@ public class EventManager {
 
     /**
      * Adds an event to local list and syncs it to Firebase.
-     * Sets the event ID before saving.
+     * Also processes tags to trigger AI categorization.
      * @param event The event to add.
      */
     public void addEvent(Event event) {
-        // Pre-generate the ID so we can use it immediately for QR codes
         DocumentReference docRef = db.collection("events").document();
         event.setId(docRef.getId());
         
         eventList.add(event);
+
+        // TRIGGER: Process tags so Gemini can categorize them
+        processEventTags(event.getInterests());
         
-        // If there's a local poster URI, upload it first, then save to Firestore
         if (event.getPosterUriString() != null) {
             uploadPosterAndSave(event, docRef);
         } else {
             saveToFirestore(event, docRef);
+        }
+    }
+
+    /**
+     * Splits the interests string into individual tags and saves them to Firestore.
+     * This is what triggers the Cloud Function 'categorizeNewTag'.
+     */
+    private void processEventTags(String interests) {
+        Log.d(TAG, "DEBUG: processEventTags called with: " + interests);
+        if (interests == null || interests.isEmpty()) {
+            Log.w(TAG, "DEBUG: Interests string was empty!");
+            return;
+        }
+
+        String[] tags = interests.split(",");
+        for (String t : tags) {
+            String cleanTagName = t.trim();
+            if (!cleanTagName.isEmpty()) {
+                // We use TagRepository to save the tag. 
+                // Using a 'pending' status so the Cloud Function knows it needs work.
+                Tag tag = new Tag(cleanTagName, cleanTagName, new ArrayList<>(), new ArrayList<>(), "pending");
+                tagRepository.saveTagAsync(tag);
+                Log.d(TAG, "Sent tag to repository for processing: " + cleanTagName);
+            }
         }
     }
 
@@ -63,13 +92,11 @@ public class EventManager {
 
         storageRef.putFile(file)
                 .addOnSuccessListener(taskSnapshot -> storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    // Replace local URI with permanent download URL
                     event.setPosterUriString(uri.toString());
                     saveToFirestore(event, docRef);
                 }))
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Failed to upload image", e);
-                    // Save anyway without the image if upload fails
                     saveToFirestore(event, docRef);
                 });
     }

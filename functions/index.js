@@ -23,8 +23,9 @@ exports.categorizeNewTag = onDocumentCreated(
         if (tagData.status === "categorized") return null;
 
         // Initialize Gemini using the secret from process.env
+        // UPDATED: Using the flagship Flash model gemini-3-flash-preview
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
         try {
             const metaDoc = await admin.firestore().collection("metadata").doc("categories").get();
