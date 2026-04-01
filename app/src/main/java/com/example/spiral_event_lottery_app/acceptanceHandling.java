@@ -36,7 +36,7 @@ public class acceptanceHandling {
                 .collection("selected_list").document(device_id);
         
         Map<String, Object> data = new HashMap<>();
-        data.put("status", "Accepted");
+        data.put("status", "accepted");
         data.put("device_id", device_id);
         data.put("accepted_at", com.google.firebase.Timestamp.now());
         
@@ -67,7 +67,7 @@ public class acceptanceHandling {
                 .collection("selected_list").document(device_id);
         
         Map<String, Object> data = new HashMap<>();
-        data.put("Status", "Declined");
+        data.put("status", "declined");
         data.put("device_id", device_id);
         data.put("declined_at", com.google.firebase.Timestamp.now());
         
