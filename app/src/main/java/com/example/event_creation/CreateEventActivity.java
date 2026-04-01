@@ -45,7 +45,7 @@ import java.util.UUID;
 
 /**
  * Activity for organizers to create and configure new lottery events.
- * Handles input validation, event creation, and navigation based on access type.
+ * Handles input validation, multi-image upload, event creation, and navigation based on access type.
  */
 public class CreateEventActivity extends AppCompatActivity {
 
@@ -77,6 +77,9 @@ public class CreateEventActivity extends AppCompatActivity {
             }
     );
 
+    /**
+     * Alerts the user if they attempt to upload more than the allowed number of images.
+     */
     private void showMaxImagesError() {
         new AlertDialog.Builder(this)
                 .setTitle("Too Many Posters")
@@ -85,6 +88,9 @@ public class CreateEventActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * Updates the UI to show either the selected images in a ViewPager2 or the default placeholder.
+     */
     private void updatePosterPreview() {
         if (selectedImageUris.isEmpty()) {
             llAddPosterPlaceholder.setVisibility(View.VISIBLE);
@@ -94,14 +100,14 @@ public class CreateEventActivity extends AppCompatActivity {
             llAddPosterPlaceholder.setVisibility(View.GONE);
             posterViewPager.setVisibility(View.VISIBLE);
             posterIndicator.setVisibility(selectedImageUris.size() > 1 ? View.VISIBLE : View.GONE);
-            
+
             List<String> uriStrings = new ArrayList<>();
             for (Uri uri : selectedImageUris) uriStrings.add(uri.toString());
-            
+
             PosterAdapter adapter = new PosterAdapter(uriStrings);
             posterViewPager.setAdapter(adapter);
-            
-            // Re-attach TabLayoutMediator
+
+            // Re-attach TabLayoutMediator to display carousel dots
             new TabLayoutMediator(posterIndicator, posterViewPager, (tab, position) -> {}).attach();
         }
     }
@@ -118,13 +124,8 @@ public class CreateEventActivity extends AppCompatActivity {
         View.OnClickListener posterClickListener = v -> pickImagesLauncher.launch("image/*");
         findViewById(R.id.posters_container).setOnClickListener(posterClickListener);
         llAddPosterPlaceholder.setOnClickListener(posterClickListener);
-        
-        // Ensure ViewPager2 doesn't block the click when it's visible, 
-        // but we can't just disable clicks on it or it might block swiping.
-        // Instead, we can add a listener to its child views in the adapter or use a transparent overlay.
-        // For simplicity, we'll set a click listener on the ViewPager itself if possible, 
-        // though ViewPager2 often consumes these.
-        // Actually, setting clickable=false on ViewPager2 allows clicks to pass to posters_container.
+
+        // Ensure ViewPager2 doesn't block clicks to the container underneath
         posterViewPager.setClickable(false);
         posterViewPager.setFocusable(false);
 
@@ -135,7 +136,12 @@ public class CreateEventActivity extends AppCompatActivity {
         });
 
         Toolbar toolbar = findViewById(R.id.toolbar);
-        toolbar.setNavigationOnClickListener(v -> finish());
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> finish());
+        } else {
+            // Fallback if toolbar is defined as a simple clickable view
+            findViewById(R.id.toolbar).setOnClickListener(v -> finish());
+        }
     }
 
     private void initializeViews() {
@@ -281,10 +287,18 @@ public class CreateEventActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
+    /**
+     * Generates a current timestamp string for event creation tracking.
+     * @return Formatted timestamp string.
+     */
     private String getCurrentTimestamp() {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
     }
 
+    /**
+     * Handles uploading selected images to Firebase Storage.
+     * Once all images are uploaded, it delegates to saveEvent().
+     */
     private void uploadPostersAndSaveEvent() {
         if (selectedImageUris.isEmpty()) {
             saveEvent(new ArrayList<>());
@@ -297,6 +311,8 @@ public class CreateEventActivity extends AppCompatActivity {
 
         FirebaseStorage storage = FirebaseStorage.getInstance();
 
+        // Optional: show a loading dialog here while uploading
+
         for (Uri uri : selectedImageUris) {
             StorageReference ref = storage.getReference().child("event_posters/" + UUID.randomUUID().toString() + ".jpg");
             ref.putFile(uri).continueWithTask(task -> ref.getDownloadUrl()).addOnSuccessListener(downloadUri -> {
@@ -308,12 +324,20 @@ public class CreateEventActivity extends AppCompatActivity {
             }).addOnFailureListener(e -> {
                 uploadedCount[0]++;
                 if (uploadedCount[0] == totalToUpload) {
-                    saveEvent(uploadedUrls);
+                    saveEvent(uploadedUrls); // Save anyway with whatever succeeded
                 }
             });
         }
     }
 
+    /**
+     * Collects form data, creates an Event object, and saves it to Firestore via EventManager.
+     * Redirects to QRCodeActivity for public events or PrivateEventSuccessActivity for private ones.
+     *
+     * US 02.01.01 – Create new public event and generate unique promotional QR code
+     * US 02.01.02 – Create a private event that is not visible on the event listing
+     * * @param posterUrls The list of uploaded image URLs.
+     */
     private void saveEvent(List<String> posterUrls) {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
@@ -342,6 +366,7 @@ public class CreateEventActivity extends AppCompatActivity {
         String timeText = eventDate + " " + eventStartTime + "-" + eventEndTime;
 
         String organizerId = DeviceIdProvider.getDeviceId(this);
+
         Event newEvent = new Event(
                 "", // id
                 eventName,
@@ -357,8 +382,8 @@ public class CreateEventActivity extends AppCompatActivity {
                 drawDate,
                 drawStartTime,
                 drawEndTime,
-                posterUrls.isEmpty() ? null : posterUrls.get(0),
-                posterUrls,
+                posterUrls.isEmpty() ? null : posterUrls.get(0), // primary poster
+                posterUrls, // multi-posters list
                 getCurrentTimestamp(), // eventCreated
                 timeText, // timeText
                 0L, // waitingCount
@@ -382,6 +407,10 @@ public class CreateEventActivity extends AppCompatActivity {
         finish();
     }
 
+    /**
+     * Validates all input fields in the event creation form.
+     * @return true if all required fields are filled and valid, false otherwise.
+     */
     private boolean validateForm() {
         boolean isValid = true;
         isValid &= checkEmpty(etEventName);
@@ -417,6 +446,10 @@ public class CreateEventActivity extends AppCompatActivity {
         return true;
     }
 
+    /**
+     * Checks if the selected draw time occurs before the event start time.
+     * @return true if draw is before event, false otherwise.
+     */
     private boolean isDrawBeforeEvent() {
         try {
             Calendar eventCal = Calendar.getInstance();
@@ -447,6 +480,11 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Checks if an EditText is empty and applies error styling if so.
+     * @param et The EditText to check.
+     * @return true if not empty, false if empty.
+     */
     private boolean checkEmpty(EditText et) {
         if (et.getText().toString().trim().isEmpty()) {
             et.setBackgroundResource(R.drawable.edit_text_error_background);
@@ -457,6 +495,11 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Checks if a Spinner has a selection other than the placeholder.
+     * @param spinner The Spinner to check.
+     * @return true if selected, false if placeholder is still active.
+     */
     private boolean checkSpinnerSelected(Spinner spinner) {
         if (spinner.getSelectedItemPosition() == 0) {
             spinner.setBackgroundResource(R.drawable.edit_text_error_background);

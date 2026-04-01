@@ -1,9 +1,15 @@
 package com.example.spiral_event_lottery_app.ui.organizer_view
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -11,13 +17,17 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.spiral_event_lottery_app.R
+import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.example.spiral_event_lottery_app.model.User
+import com.example.spiral_event_lottery_app.ui.coorganizer.AssignCoOrganizerDialog
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.core.content.ContextCompat
 
 /**
  * ManageEntrantsFragment displays the list of entrants for a specific event.
- * Handles mass notifications and private invitations.
+ * Handles custom mass notifications and private invitations.
  */
 class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
 
@@ -33,10 +43,10 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     private lateinit var waitingCountText: TextView
     private lateinit var btnNotifyAll: Button
     private lateinit var btnInvitePrivate: Button
-    private lateinit var btnDrawReplacement: Button
     private lateinit var btnExportCsv: Button
 
     private var currentTab = "waiting"
+    private var eventName = "Event"
 
     companion object {
         fun newInstance(eventId: String): ManageEntrantsFragment {
@@ -51,10 +61,10 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
 
         eventId = arguments?.getString("event_id") ?: ""
 
-        // Bind new buttons
+        // Bind buttons
         btnInvitePrivate = view.findViewById(R.id.btnInvitePrivate)
         btnNotifyAll = view.findViewById(R.id.btnNotifyAll)
-        
+
         btnInvited = view.findViewById(R.id.btnInvited)
         btnWaiting = view.findViewById(R.id.btnWaiting)
         btnCancelled = view.findViewById(R.id.btnCancelled)
@@ -62,7 +72,6 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         waitingRecycler = view.findViewById(R.id.waitingRecycler)
         cancelledRecycler = view.findViewById(R.id.cancelledRecycler)
         waitingCountText = view.findViewById(R.id.waitingCountText)
-        btnDrawReplacement = view.findViewById(R.id.btnDrawReplacement)
         btnExportCsv = view.findViewById(R.id.btnExportCsv)
 
         invitedRecycler.layoutManager = LinearLayoutManager(requireContext())
@@ -77,9 +86,10 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         btnWaiting.setOnClickListener { showTab("waiting") }
         btnCancelled.setOnClickListener { showTab("cancelled") }
 
+        // Logic for custom mass notification
         // US 02.07.01, 02.07.02, 02.07.03 logic
         btnNotifyAll.setOnClickListener {
-            notifyAllInCurrentTab()
+            showCustomNotificationDialog()
         }
 
         // US 01.05.06 logic
@@ -87,8 +97,16 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
             showInviteDialog()
         }
 
-        btnDrawReplacement.setOnClickListener { }
         btnExportCsv.setOnClickListener { }
+
+        loadEventName()
+        // Hide invite button if event is public
+        db.collection("events").document(eventId).get().addOnSuccessListener { doc ->
+            if (isAdded) {
+                val isPublic = doc.getBoolean("isPublic") ?: true
+                btnInvitePrivate.visibility = if (isPublic) View.GONE else View.VISIBLE
+            }
+        }
 
         showTab("waiting")
         loadWaitingEntrants()
@@ -96,21 +114,51 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         loadCancelledEntrants()
     }
 
+    private fun loadEventName() {
+        db.collection("events").document(eventId).get()
+            .addOnSuccessListener { doc ->
+                eventName = doc.getString("name") ?: "Event"
+            }
+    }
+
     /**
-     * Sends a notification to every entrant in the currently visible list.
-     * Handles US 02.07.01 (Waiting), 02.07.02 (Selected), and 02.07.03 (Cancelled).
+     * Shows a dialog allowing the organizer to compose a custom message for entrants.
      */
-    private fun notifyAllInCurrentTab() {
+    private fun showCustomNotificationDialog() {
+        val input = EditText(requireContext())
+        input.hint = "Enter update message..."
+        input.setPadding(48, 32, 48, 32)
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Send Notification to $currentTab list")
+            .setMessage("Type the message you want to send to everyone in the current list.")
+            .setView(input)
+            .setPositiveButton("Send") { _, _ ->
+                val customMessage = input.text.toString().trim()
+                if (customMessage.isNotEmpty()) {
+                    notifyAllWithCustomMessage(customMessage)
+                } else {
+                    Toast.makeText(requireContext(), "Message cannot be empty", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    /**
+     * Sends the custom message to all entrants in the currently visible list.
+     */
+    private fun notifyAllWithCustomMessage(message: String) {
         val collectionPath = when (currentTab) {
             "invited" -> "selected_list"
             "waiting" -> "waitlist"
-            "cancelled" -> "cancelled_list"
+            "cancelled" -> "canceled_list"
             else -> "waitlist"
         }
 
         db.collection("events").document(eventId).get().addOnSuccessListener { eventDoc ->
-            val eventName = eventDoc.getString("name") ?: "Event"
-            
+            val currentEventName = eventDoc.getString("name") ?: "Event"
+
             db.collection("events").document(eventId).collection(collectionPath).get()
                 .addOnSuccessListener { snapshot ->
                     if (snapshot.isEmpty) {
@@ -122,48 +170,141 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                         NotificationManager.sendNotification(
                             doc.id,
                             "Organizer Update",
-                            "New update for $eventName: Check your status!",
+                            message,
                             "ORGANIZER",
-                            eventName,
+                            currentEventName,
                             eventId
                         )
                     }
-                    Toast.makeText(requireContext(), "Notifications sent to all entrants in $currentTab list.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Message sent successfully!", Toast.LENGTH_SHORT).show()
                 }
         }
     }
 
     /**
-     * Opens a dialog to invite a specific entrant to a private event.
+     * Opens a dialog to search for and invite a specific entrant to a private event.
      * Implements US 01.05.06.
      */
     private fun showInviteDialog() {
-        val input = EditText(requireContext())
-        input.hint = "Enter Device ID"
-        
-        AlertDialog.Builder(requireContext())
+        val dialogView = layoutInflater.inflate(R.layout.dialog_invite_user, null)
+        val categorySpinner = dialogView.findViewById<Spinner>(R.id.inviteCategorySpinner)
+        val searchInput = dialogView.findViewById<EditText>(R.id.inviteSearchInput)
+        val searchResultRecycler = dialogView.findViewById<RecyclerView>(R.id.searchResultRecycler)
+
+        // Setup Spinner
+        val categories = listOf("Name", "Email", "Phone")
+        categorySpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categories)
+
+        // Setup Search Results
+        val searchAdapter = UserSearchAdapter { user ->
+            confirmInviteUser(user)
+        }
+        searchResultRecycler.layoutManager = LinearLayoutManager(requireContext())
+        searchResultRecycler.adapter = searchAdapter
+
+        val dialog = AlertDialog.Builder(requireContext())
             .setTitle("Private Event Invitation")
-            .setMessage("Enter the Device ID of the person you want to invite.")
-            .setView(input)
-            .setPositiveButton("Send Invite") { _, _ ->
-                val deviceId = input.text.toString().trim()
-                if (deviceId.isNotEmpty()) {
-                    db.collection("events").document(eventId).get().addOnSuccessListener { doc ->
-                        val eventName = doc.getString("name") ?: "Private Event"
-                        NotificationManager.sendNotification(
-                            deviceId,
-                            "Private Invitation",
-                            "You have been invited to join the waiting list for $eventName!",
-                            "ORGANIZER",
-                            eventName,
-                            eventId
-                        )
-                        Toast.makeText(requireContext(), "Invite sent!", Toast.LENGTH_SHORT).show()
-                    }
+            .setView(dialogView)
+            .setNegativeButton("Close", null)
+            .show()
+
+        searchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s.toString().trim()
+                if (query.length >= 1) {
+                    performUserSearch(query, categorySpinner.selectedItem.toString().lowercase(), searchAdapter)
+                } else {
+                    searchAdapter.submitList(emptyList())
                 }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+    }
+
+    private fun performUserSearch(query: String, category: String, adapter: UserSearchAdapter) {
+        val field = when(category) {
+            "name" -> "name"
+            "email" -> "email"
+            "phone" -> "phoneNumber"
+            else -> "name"
+        }
+
+        val currentDeviceId = DeviceIdProvider.getDeviceId(requireContext())
+
+        db.collection("users")
+            .whereGreaterThanOrEqualTo(field, query)
+            .whereLessThanOrEqualTo(field, query + "\uf8ff")
+            .limit(10)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
+                    .filter { it.deviceId != currentDeviceId }
+                adapter.submitList(users)
+            }
+    }
+
+    private fun confirmInviteUser(user: User) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Confirm Invitation")
+            .setMessage("Add ${user.name} to the waiting list for this event?")
+            .setPositiveButton("Invite") { _, _ ->
+                inviteUserToWaitlist(user)
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun inviteUserToWaitlist(user: User) {
+        val waitlistRef = db.collection("events").document(eventId).collection("waitlist").document(user.deviceId)
+
+        db.runTransaction { transaction ->
+            if (transaction.get(waitlistRef).exists()) throw Exception("ALREADY_IN_WAITLIST")
+
+            val eventRef = db.collection("events").document(eventId)
+            val eventDoc = transaction.get(eventRef)
+            val currentCount = eventDoc.getLong("waiting_count") ?: 0L
+
+            transaction.set(waitlistRef, mapOf("device_id" to user.deviceId, "joined_at" to Timestamp.now()))
+            transaction.update(eventRef, "waiting_count", currentCount + 1)
+            eventDoc.getString("name") ?: "Private Event"
+        }.addOnSuccessListener { eventName ->
+            NotificationManager.sendNotification(user.deviceId, "Private Invitation", "You have been invited to join the waiting list for $eventName!", "ORGANIZER", eventName, eventId)
+            Toast.makeText(requireContext(), "Invitation sent successfully!", Toast.LENGTH_SHORT).show()
+            loadWaitingEntrants() // Refresh UI
+        }.addOnFailureListener { e ->
+            val msg = if (e.message == "ALREADY_IN_WAITLIST") "User is already on the waitlist." else "Failed to invite user: ${e.message}"
+            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private inner class UserSearchAdapter(private val onItemClick: (User) -> Unit) :
+        RecyclerView.Adapter<UserSearchAdapter.VH>() {
+        private var users = listOf<User>()
+
+        fun submitList(newList: List<User>) {
+            users = newList
+            notifyDataSetChanged()
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val v = LayoutInflater.from(parent.context).inflate(R.layout.item_user_search_result, parent, false)
+            return VH(v)
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val user = users[position]
+            holder.userName.text = user.name
+            holder.userDetail.text = user.email ?: user.phoneNumber
+            holder.itemView.setOnClickListener { onItemClick(user) }
+        }
+
+        override fun getItemCount() = users.size
+
+        inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val userName: TextView = itemView.findViewById(R.id.userName)
+            val userDetail: TextView = itemView.findViewById(R.id.userDetail)
+        }
     }
 
     private fun showTab(tab: String) {
@@ -198,7 +339,15 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.id }
                 waitingCountText.text = "${deviceIds.size} People on Waiting List"
-                resolveNames(deviceIds) { names -> waitingRecycler.adapter = EntrantAdapter(names) }
+                resolveUsers(deviceIds) { users ->
+                    waitingRecycler.adapter = EntrantAdapter(
+                        users,
+                        onRemove = null,
+                        onAssignCoOrganizer = { user ->
+                            AssignCoOrganizerDialog(requireContext(), eventId, eventName).show(user)
+                        }
+                    )
+                }
             }
     }
 
@@ -206,35 +355,54 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         db.collection("events").document(eventId).collection("selected_list").get()
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.id }
-                resolveNames(deviceIds) { names -> invitedRecycler.adapter = EntrantAdapter(names) }
+                resolveUsers(deviceIds) { users ->
+                    invitedRecycler.adapter = EntrantAdapter(users)
+                }
             }
     }
 
     private fun loadCancelledEntrants() {
-        db.collection("events").document(eventId).collection("cancelled_list").get()
+        // Changed "cancelled_list" to "canceled_list" to match EventRepository
+        db.collection("events").document(eventId).collection("canceled_list").get()
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.id }
-                resolveNames(deviceIds) { names -> cancelledRecycler.adapter = EntrantAdapter(names) }
+                resolveUsers(deviceIds) { users ->
+                    cancelledRecycler.adapter = EntrantAdapter(users)
+                }
             }
     }
 
-    private fun resolveNames(deviceIds: List<String>, onComplete: (List<String>) -> Unit) {
+    private fun resolveUsers(deviceIds: List<String>, onComplete: (List<User>) -> Unit) {
         if (deviceIds.isEmpty()) {
             onComplete(emptyList())
             return
         }
-        val names = MutableList(deviceIds.size) { deviceIds[it] }
+
+        val users = MutableList(deviceIds.size) { index ->
+            User(deviceId = deviceIds[index], name = deviceIds[index])
+        }
+
         var resolved = 0
         for ((index, deviceId) in deviceIds.withIndex()) {
             db.collection("users").document(deviceId).get()
                 .addOnSuccessListener { userDoc ->
-                    if (userDoc.exists()) names[index] = userDoc.getString("name") ?: deviceId
+                    if (userDoc.exists()) {
+                        users[index] = User(
+                            deviceId = deviceId,
+                            name = userDoc.getString("name") ?: deviceId,
+                            email = userDoc.getString("email") ?: "",
+                            phoneNumber = userDoc.getString("phoneNumber") ?: "",
+                            photoUrl = userDoc.getString("photoUrl"),
+                            isAdmin = userDoc.getBoolean("isAdmin") ?: false,
+                            eventList = mutableListOf()
+                        )
+                    }
                     resolved++
-                    if (resolved == deviceIds.size) onComplete(names)
+                    if (resolved == deviceIds.size) onComplete(users)
                 }
                 .addOnFailureListener {
                     resolved++
-                    if (resolved == deviceIds.size) onComplete(names)
+                    if (resolved == deviceIds.size) onComplete(users)
                 }
         }
     }

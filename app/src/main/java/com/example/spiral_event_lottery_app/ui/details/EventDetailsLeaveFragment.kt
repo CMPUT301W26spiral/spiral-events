@@ -35,9 +35,6 @@ class EventDetailsLeaveFragment : Fragment() {
     private lateinit var repository: EventRepository
     private var eventListener: ListenerRegistration? = null
 
-    private lateinit var posterViewPager: ViewPager2
-    private lateinit var posterIndicator: TabLayout
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         eventId = requireArguments().getString(ARG_EVENT_ID)!!
@@ -53,10 +50,8 @@ class EventDetailsLeaveFragment : Fragment() {
         val location = view.findViewById<TextView>(R.id.detailsLocation)
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
-        
-        posterViewPager = view.findViewById(R.id.eventPosterViewPager)
-        posterIndicator = view.findViewById(R.id.posterIndicator)
-
+        val posterViewPager = view.findViewById<ViewPager2>(R.id.eventPosterViewPager)
+        val posterIndicator = view.findViewById<TabLayout>(R.id.posterIndicator)
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
 
@@ -71,17 +66,16 @@ class EventDetailsLeaveFragment : Fragment() {
         }
 
         eventListener = repository.listenToEvent(eventId, { event ->
-            if (event == null) return@listenToEvent
+            if (event == null || !isAdded) return@listenToEvent
             title.text = event.name
             location.text = event.locationName
             time.text = event.timeText
             waiting.text = "${event.waitingCount} People on Waiting List"
 
-            // Load the event posters
-            val posters = event.posterUriStrings.ifEmpty { 
+            val posters = event.posterUriStrings.ifEmpty {
                 if (event.posterUriString != null) listOf(event.posterUriString!!) else emptyList()
             }
-            
+
             if (posters.isNotEmpty()) {
                 posterViewPager.adapter = PosterAdapter(posters)
                 TabLayoutMediator(posterIndicator, posterViewPager) { _, _ -> }.attach()

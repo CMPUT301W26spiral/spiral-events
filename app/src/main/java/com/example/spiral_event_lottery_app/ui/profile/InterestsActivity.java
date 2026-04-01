@@ -219,6 +219,10 @@ public class InterestsActivity extends AppCompatActivity {
     private void onSaveComplete() {
         if (isFirstTime) {
             startActivity(new Intent(this, MainActivity.class));
+       } else {
+            // Re-trigger interest load in HomeFragment by sending a broadcast or just letting MainActivity handle it
+            // Sending a simple result might be enough if started with startActivityForResult, 
+            // but since we want it to update globally, we'll let MainActivity's refreshHomeFragment handle it
         }
         finish();
     }
