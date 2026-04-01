@@ -10,16 +10,23 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.example.spiral_event_lottery_app.data.TagRepository
 import com.example.spiral_event_lottery_app.ui.events.PosterAdapter
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.launch
 
 class EventDetailsLeaveFragment : Fragment() {
     companion object {
@@ -33,7 +40,12 @@ class EventDetailsLeaveFragment : Fragment() {
 
     private lateinit var eventId: String
     private lateinit var repository: EventRepository
+    private val tagRepository = TagRepository()
     private var eventListener: ListenerRegistration? = null
+    private var userListener: ListenerRegistration? = null
+    
+    private var userInterested: List<String> = emptyList()
+    private var currentEventInterests: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +66,8 @@ class EventDetailsLeaveFragment : Fragment() {
         val posterIndicator = view.findViewById<TabLayout>(R.id.posterIndicator)
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
+        val commentsBtn = view.findViewById<Button>(R.id.commentsButton)
+        val interestsChipGroup = view.findViewById<ChipGroup>(R.id.detailsInterestsChipGroup)
 
         actionBtn.text = "Leave Waiting List"
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
@@ -65,12 +79,24 @@ class EventDetailsLeaveFragment : Fragment() {
             startActivity(intent)
         }
 
+        commentsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.comments.EventCommentsFragment.newInstance(eventId, false))
+                .addToBackStack(null)
+                .commit()
+        }
+
+        startUserListening(interestsChipGroup)
+        
         eventListener = repository.listenToEvent(eventId, { event ->
             if (event == null || !isAdded) return@listenToEvent
             title.text = event.name
             location.text = event.locationName
             time.text = event.timeText
             waiting.text = "${event.waitingCount} People on Waiting List"
+
+            currentEventInterests = event.interests
+            populateInterests(interestsChipGroup, currentEventInterests)
 
             val posters = event.posterUriStrings.ifEmpty {
                 if (event.posterUriString != null) listOf(event.posterUriString!!) else emptyList()
@@ -102,8 +128,47 @@ class EventDetailsLeaveFragment : Fragment() {
         }, {})
     }
 
+    private fun startUserListening(chipGroup: ChipGroup) {
+        val uid = DeviceIdProvider.getDeviceId(requireContext())
+        userListener = FirebaseFirestore.getInstance().collection("users").document(uid)
+            .addSnapshotListener { doc, _ ->
+                if (isAdded && doc != null && doc.exists()) {
+                    userInterested = doc.get("interested") as? List<String> ?: emptyList()
+                    populateInterests(chipGroup, currentEventInterests)
+                }
+            }
+    }
+
+    private fun populateInterests(chipGroup: ChipGroup, interests: String) {
+        val tags = interests.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        chipGroup.removeAllViews()
+        if (interests.isEmpty()) return
+        
+        for (tag in tags) {
+            val chip = Chip(requireContext())
+            chip.text = tag
+            chip.isCheckable = true
+            chip.isClickable = false
+            
+            chip.chipBackgroundColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_state_list)
+            chip.chipStrokeColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_stroke_state_list)
+            chip.chipStrokeWidth = resources.getDimension(R.dimen.chip_stroke_width_custom)
+            
+            lifecycleScope.launch {
+                val tagInfo = tagRepository.getTag(tag)
+                val isDirectInterested = userInterested.contains(tag)
+                val isParentInterested = tagInfo?.parents?.any { userInterested.contains(it) } ?: false
+                if (isAdded) {
+                    chip.isChecked = isDirectInterested || isParentInterested
+                }
+            }
+            chipGroup.addView(chip)
+        }
+    }
+
     override fun onStop() {
         super.onStop()
         eventListener?.remove()
+        userListener?.remove()
     }
 }
