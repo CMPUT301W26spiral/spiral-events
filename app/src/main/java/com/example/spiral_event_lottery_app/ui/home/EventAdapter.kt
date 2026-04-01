@@ -24,7 +24,7 @@ import java.util.Locale
 
 /**
  * Recycler view adapter used to display the list of events that entrants can view and join.
- * Updated to handle multiple posters and smart recommendation with parent tag support.
+ * Updated to handle multiple posters and smart recommendation with bidirectional parent tag support.
  */
 class EventAdapter(
     private var allEvents: List<Event>,
@@ -57,11 +57,18 @@ class EventAdapter(
     private fun fetchTagsAndRefresh() {
         val allTagIds = allEvents.flatMap { it.interests.split(",").map { s -> s.trim() } }
             .filter { it.isNotEmpty() }
-            .distinct()
+            .toMutableList()
+        
+        currentUser?.let { user ->
+            allTagIds.addAll(user.interested)
+            allTagIds.addAll(user.notInterested)
+        }
+        
+        val distinctTagIds = allTagIds.distinct()
         
         adapterScope.launch {
             withContext(Dispatchers.IO) {
-                tagRepository.fetchAndCacheTags(allTagIds)
+                tagRepository.fetchAndCacheTags(distinctTagIds)
             }
             applyFilters()
         }
@@ -129,7 +136,7 @@ class EventAdapter(
 
     /**
      * Calculates a points-based relevance score for an event based on user interests.
-     * Considers both direct tag matches and parent category matches.
+     * Considers both direct tag matches and parent category matches in both directions.
      */
     private fun calculateRelevanceScore(event: Event): Int {
         val user = currentUser ?: return 0
@@ -151,20 +158,28 @@ class EventAdapter(
                 score += 50
             }
 
-            // 3. Parent Category Matches (Seamless integration)
+            // 3. Event Tag's Parents: Does the user like the general category this tag belongs to?
+            // e.g. Event is "Concert", User likes "Music"
             for (parent in tagInfo.parents) {
-                // If user hates the parent category, penalize
                 if (user.notInterested.contains(parent)) {
                     score -= 30
                 }
-                // If user likes the parent category, reward
                 if (user.interested.contains(parent)) {
                     score += 25
                 }
             }
+
+            // 4. User's Interests' Parents: Is the event tagged with a category the user is interested in?
+            // e.g. User likes "Band", Event is tagged "Music"
+            for (userInterest in user.interested) {
+                val userInterestTag = tagRepository.getTagImmediate(userInterest)
+                if (userInterestTag.parents.contains(tagName)) {
+                    score += 20 // The event tag is a parent of something the user specifically likes
+                }
+            }
         }
         
-        // Boost events created by the user slightly (though usually they are the organizer anyway)
+        // Boost events created by the user slightly
         if (event.organizerId == deviceId) {
             score += 10
         }
