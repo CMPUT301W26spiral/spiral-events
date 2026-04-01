@@ -156,7 +156,7 @@ class DoDrawFragment : Fragment() {
                 val waitlistDocRef = waitlistRef.document(userId)
 
                 // stores the time in milliseconds when the "Go!" button was pressed
-                batch.set(docRef, mapOf("selectedAt" to System.currentTimeMillis(), "status" to "invited"))
+                batch.set(docRef, mapOf("selectedAt" to System.currentTimeMillis(), "Status" to "Pending", "device_id" to userId))
                 batch.delete(waitlistDocRef) // Remove from waitlist when moved to selected_list
             }
             

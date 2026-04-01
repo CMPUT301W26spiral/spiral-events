@@ -2,12 +2,14 @@
 <!--
     item_entrant.xml
     Layout for a single entrant row in the Manage Entrants RecyclerView.
-    Displays the entrant's name/device ID and an optional remove button.
+    Displays the entrant's name/device ID, a status badge, and an optional remove button.
 
     Used by: EntrantAdapter
     User Stories:
     - US 02.02.01: View list of entrants on waiting list
     - US 02.06.01: View list of chosen entrants
+    - US 02.06.02: View cancelled entrants
+    - US 02.06.03: View final list of enrolled entrants
     - US 02.06.04: Cancel entrants (via remove button)
 -->
 <LinearLayout
@@ -18,14 +20,12 @@
     android:gravity="center_vertical"
     android:padding="12dp">
 
-    <!-- Circular avatar placeholder for the entrant -->
     <View
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:background="@drawable/bg_chip_unselected"
         android:layout_marginEnd="12dp" />
 
-    <!-- Entrant name or device ID -->
     <TextView
         android:id="@+id/entrantName"
         android:layout_width="0dp"
@@ -34,12 +34,25 @@
         android:textSize="16sp"
         android:textColor="#000000" />
 
-    <!-- Remove button - only shown on Invited tab for organizer to cancel entrants -->
+    <!-- Status badge: Pending (orange), Accepted (green), Declined/Cancelled (red) -->
+    <TextView
+        android:id="@+id/statusBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="4dp"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/bg_chip_selected"
+        android:visibility="gone" />
+
     <ImageButton
         android:id="@+id/removeButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_back"
+        android:src="@drawable/baseline_close_24"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Remove entrant"
         android:visibility="gone" />
