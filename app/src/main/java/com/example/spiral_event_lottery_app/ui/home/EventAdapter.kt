@@ -4,11 +4,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
-import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.TagRepository
 import com.example.spiral_event_lottery_app.model.Event
@@ -16,13 +14,17 @@ import com.example.spiral_event_lottery_app.model.User
 import com.example.spiral_event_lottery_app.ui.events.PosterAdapter
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
  * Recycler view adapter used to display the list of events that entrants can view and join.
- * Updated to handle multiple posters and smart recommendation.
+ * Updated to handle multiple posters and smart recommendation with parent tag support.
  */
 class EventAdapter(
     private var allEvents: List<Event>,
@@ -40,15 +42,29 @@ class EventAdapter(
     private var currentStatusFilter: FilterStatus = FilterStatus.ALL
     private var currentUser: User? = null
     private val tagRepository = TagRepository()
+    private val adapterScope = CoroutineScope(Dispatchers.Main)
 
     fun submitList(newList: List<Event>) {
         allEvents = newList
-        applyFilters()
+        fetchTagsAndRefresh()
     }
 
     fun setCurrentUser(user: User?) {
         this.currentUser = user
-        applyFilters()
+        fetchTagsAndRefresh()
+    }
+
+    private fun fetchTagsAndRefresh() {
+        val allTagIds = allEvents.flatMap { it.interests.split(",").map { s -> s.trim() } }
+            .filter { it.isNotEmpty() }
+            .distinct()
+        
+        adapterScope.launch {
+            withContext(Dispatchers.IO) {
+                tagRepository.fetchAndCacheTags(allTagIds)
+            }
+            applyFilters()
+        }
     }
 
     fun filter(query: String) {
@@ -102,38 +118,57 @@ class EventAdapter(
         }
 
         filteredEvents = if (currentUser != null) {
-            baseFiltered.sortedByDescending { calculateRelevanceScore(it) }
+            baseFiltered.sortedWith(compareByDescending<Event> { calculateRelevanceScore(it) }
+                .thenByDescending { it.eventCreated })
         } else {
-            baseFiltered
+            baseFiltered.sortedByDescending { it.eventCreated }
         }
 
         notifyDataSetChanged()
     }
 
+    /**
+     * Calculates a points-based relevance score for an event based on user interests.
+     * Considers both direct tag matches and parent category matches.
+     */
     private fun calculateRelevanceScore(event: Event): Int {
         val user = currentUser ?: return 0
         var score = 0
         
         val eventTags = event.interests.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         
-        for (tag in eventTags) {
-            if (user.notInterested.contains(tag)) {
-                score -= 20
+        for (tagName in eventTags) {
+            val tagInfo = tagRepository.getTagImmediate(tagName)
+            
+            // 1. Direct Negative Match (Highest penalty)
+            if (user.notInterested.contains(tagName)) {
+                score -= 100
                 continue
             }
 
-            if (user.interested.contains(tag)) {
-                score += 10
-            } else {
-                val tagInfo = tagRepository.getTagImmediate(tag)
-                for (parent in tagInfo.parents) {
-                    if (user.interested.contains(parent)) {
-                        score += 5
-                        break
-                    }
+            // 2. Direct Positive Match
+            if (user.interested.contains(tagName)) {
+                score += 50
+            }
+
+            // 3. Parent Category Matches (Seamless integration)
+            for (parent in tagInfo.parents) {
+                // If user hates the parent category, penalize
+                if (user.notInterested.contains(parent)) {
+                    score -= 30
+                }
+                // If user likes the parent category, reward
+                if (user.interested.contains(parent)) {
+                    score += 25
                 }
             }
         }
+        
+        // Boost events created by the user slightly (though usually they are the organizer anyway)
+        if (event.organizerId == deviceId) {
+            score += 10
+        }
+
         return score
     }
 

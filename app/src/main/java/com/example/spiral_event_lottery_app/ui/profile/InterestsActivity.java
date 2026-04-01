@@ -31,9 +31,10 @@ public class InterestsActivity extends AppCompatActivity {
     }
 
     private final String[] INTEREST_NAMES = {
-            "Sports", "Aquatics", "Music", "Performance", "Arts",
-            "Wellness", "Education", "Tech", "Outdoors", "Social",
-            "Career", "Family", "Culinary", "Science", "Hobbies"
+            "Sports", "Aquatics", "Music", "Performance", "Arts", "Wellness",
+            "Education", "Tech", "Outdoors", "Social", "Career", "Family",
+            "Culinary", "Gaming", "Travel", "Finance", "Community", "Health",
+            "Pets", "Science", "Hobbies"
     };
     private final Set<String> DEFAULT_INTERESTS = new HashSet<>(Arrays.asList(INTEREST_NAMES));
 

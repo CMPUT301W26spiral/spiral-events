@@ -31,9 +31,10 @@ exports.categorizeNewTag = onDocumentCreated(
             const metaDoc = await admin.firestore().collection("metadata").doc("categories").get();
 
             let categories = [
-                "Sports", "Music", "Tech", "Arts", "Wellness", "Education",
-                "Family", "Social", "Outdoors", "Culinary", "Career", "Gaming",
-                "Travel", "Finance", "Community", "Health", "Pets", "Science"
+                "Sports", "Aquatics", "Music", "Performance", "Arts", "Wellness",
+                "Education", "Tech", "Outdoors", "Social", "Career", "Family",
+                "Culinary", "Gaming", "Travel", "Finance", "Community", "Health",
+                "Pets", "Science", "Hobbies"
             ];
 
             if (metaDoc.exists && metaDoc.data().list) {
