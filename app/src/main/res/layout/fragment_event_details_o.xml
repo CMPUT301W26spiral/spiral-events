@@ -115,7 +115,7 @@
                     android:textColor="#0F3D2E"
                     android:textSize="24sp"
                     android:textStyle="bold"
-                    tools:text="Family Swimming Lessons" />
+                    tools:text="Event Title" />
 
                 <ImageButton
                     android:id="@+id/viewQRButtonIcon"
@@ -134,7 +134,17 @@
                 android:layout_marginTop="4dp"
                 android:textColor="#666666"
                 android:textSize="16sp"
-                tools:text="Peter Hemingway Aquatic Centre" />
+                tools:text="Location Name" />
+
+            <!-- Missing ID from Fragment -->
+            <TextView
+                android:id="@+id/detailsLocationAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#666666"
+                android:textSize="14sp"
+                android:visibility="gone"
+                tools:text="Location Address" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -179,8 +189,23 @@
                     android:layout_marginStart="8dp"
                     android:textColor="#333333"
                     android:textSize="14sp"
-                    tools:text="71 People on Waiting List" />
+                    tools:text="0 People on Waiting List" />
             </LinearLayout>
+
+            <Button
+                android:id="@+id/commentsButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#FFFFFF"
+                android:text="View Comments"
+                android:textAllCaps="false"
+                android:textColor="#1F5E3B"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="28dp"
+                app:strokeColor="#1F5E3B"
+                app:strokeWidth="2dp" />
 
             <!-- Private Invitation Section -->
             <LinearLayout
@@ -333,6 +358,7 @@
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
+                android:layout_marginEnd="4dp"
                 android:text="Map"
                 android:textAllCaps="false"
                 android:textColor="#2E5A27"
@@ -344,11 +370,10 @@
             android:id="@+id/deleteEventButton"
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Delete Event"
-            android:textAllCaps="false"
-            android:textColor="#B71C1C" />
+            android:textColor="#B00020" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

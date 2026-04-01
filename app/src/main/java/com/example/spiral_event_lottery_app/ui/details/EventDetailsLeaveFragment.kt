@@ -18,6 +18,7 @@ import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.acceptanceHandling
 import com.example.spiral_event_lottery_app.data.NotificationManager
+import com.example.spiral_event_lottery_app.ui.comments.EventCommentsFragment
 import com.google.firebase.firestore.ListenerRegistration
 
 /**
@@ -56,11 +57,19 @@ class EventDetailsLeaveFragment : Fragment() {
         val posterImage = view.findViewById<ImageView>(R.id.eventPosterImage)
 
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
+        val commentsBtn = view.findViewById<Button>(R.id.commentsButton)
         val acceptBtn = view.findViewById<Button>(R.id.acceptInvitationButton)
         val joinedText = view.findViewById<TextView>(R.id.successfullyJoinedText)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
 
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
+
+        commentsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, EventCommentsFragment.newInstance(eventId, false))
+                .addToBackStack(null)
+                .commit()
+        }
 
         viewQRBtn.setOnClickListener {
             val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)

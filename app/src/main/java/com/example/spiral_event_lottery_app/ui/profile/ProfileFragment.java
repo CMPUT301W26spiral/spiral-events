@@ -43,6 +43,7 @@ import java.util.Map;
  * and profile deletion logic.
  */
 public class ProfileFragment extends Fragment {
+    private Button adminDashboardButton;
 
     private FirebaseFirestore db;
     private FirebaseStorage storage;
@@ -129,6 +130,7 @@ public class ProfileFragment extends Fragment {
         saveNotificationsEdit = view.findViewById(R.id.saveNotificationsEdit);
         deleteProfileButton = view.findViewById(R.id.deleteProfileButton);
         logoutButton = view.findViewById(R.id.logoutButton);
+        adminDashboardButton = view.findViewById(R.id.adminDashboardButton);
     }
 
     /**
@@ -158,6 +160,24 @@ public class ProfileFragment extends Fragment {
         saveNotificationsEdit.setOnClickListener(v -> saveNotificationsToFirebase());
         deleteProfileButton.setOnClickListener(v -> showDeleteDialog());
         logoutButton.setOnClickListener(v -> performLogout());
+        // US 03.09.01 this Admin button only shown if isAdmin=true in Firestore
+        adminDashboardButton.setVisibility(View.GONE);
+        db.collection("users").document(uid).get().addOnSuccessListener(doc -> {
+            if (doc.exists()) {
+                Boolean isAdmin = doc.getBoolean("isAdmin");
+                if (Boolean.TRUE.equals(isAdmin)) {
+                    adminDashboardButton.setVisibility(View.VISIBLE);
+                    adminDashboardButton.setOnClickListener(v ->
+                            requireActivity().getSupportFragmentManager().beginTransaction()
+                                    .replace(R.id.fragmentContainer,
+                                            com.example.spiral_event_lottery_app.ui.admin.AdminFragment.newInstance(),
+                                            "admin")
+                                    .addToBackStack("admin")
+                                    .commit()
+                    );
+                }
+            }
+        });
     }
 
     /**

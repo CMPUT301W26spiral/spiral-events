@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F6F1F8">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Admin Panel"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:padding="16dp"
+        android:textColor="#1B1B1B"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:weightSum="3">
+
+        <Button android:id="@+id/btn_admin_events"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Events" android:textSize="11sp"
+            android:layout_margin="4dp"/>
+
+        <Button android:id="@+id/btn_admin_profiles"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Profiles" android:textSize="11sp"
+            android:layout_margin="4dp"/>
+
+        <Button android:id="@+id/btn_admin_images"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Images" android:textSize="11sp"
+            android:layout_margin="4dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:weightSum="2">
+
+        <Button android:id="@+id/btn_admin_notif_logs"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Notif Logs" android:textSize="11sp"
+            android:layout_margin="4dp"/>
+
+        <Button android:id="@+id/btn_admin_comments"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Comments" android:textSize="11sp"
+            android:layout_margin="4dp"/>
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/admin_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"/>
+</LinearLayout>
