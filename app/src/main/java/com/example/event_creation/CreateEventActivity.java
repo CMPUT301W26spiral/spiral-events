@@ -1,6 +1,9 @@
 package com.example.event_creation;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -33,7 +36,10 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,7 +51,7 @@ import java.util.UUID;
 
 /**
  * Activity for organizers to create and configure new lottery events.
- * Handles input validation, multi-image upload, event creation, and navigation based on access type.
+ * Optimized for better performance with image compression and parallel uploads.
  */
 public class CreateEventActivity extends AppCompatActivity {
 
@@ -57,6 +63,7 @@ public class CreateEventActivity extends AppCompatActivity {
     private Spinner spinnerDrawStartHour, spinnerDrawStartMin, spinnerDrawEndHour, spinnerDrawEndMin;
     private Spinner spinnerGeolocation, spinnerAccess;
     private Button btnCreate;
+    private ProgressDialog progressDialog;
 
     private ViewPager2 posterViewPager;
     private TabLayout posterIndicator;
@@ -77,9 +84,6 @@ public class CreateEventActivity extends AppCompatActivity {
             }
     );
 
-    /**
-     * Alerts the user if they attempt to upload more than the allowed number of images.
-     */
     private void showMaxImagesError() {
         new AlertDialog.Builder(this)
                 .setTitle("Too Many Posters")
@@ -88,9 +92,6 @@ public class CreateEventActivity extends AppCompatActivity {
                 .show();
     }
 
-    /**
-     * Updates the UI to show either the selected images in a ViewPager2 or the default placeholder.
-     */
     private void updatePosterPreview() {
         if (selectedImageUris.isEmpty()) {
             llAddPosterPlaceholder.setVisibility(View.VISIBLE);
@@ -107,7 +108,6 @@ public class CreateEventActivity extends AppCompatActivity {
             PosterAdapter adapter = new PosterAdapter(uriStrings);
             posterViewPager.setAdapter(adapter);
 
-            // Re-attach TabLayoutMediator to display carousel dots
             new TabLayoutMediator(posterIndicator, posterViewPager, (tab, position) -> {}).attach();
         }
     }
@@ -125,7 +125,6 @@ public class CreateEventActivity extends AppCompatActivity {
         findViewById(R.id.posters_container).setOnClickListener(posterClickListener);
         llAddPosterPlaceholder.setOnClickListener(posterClickListener);
 
-        // Ensure ViewPager2 doesn't block clicks to the container underneath
         posterViewPager.setClickable(false);
         posterViewPager.setFocusable(false);
 
@@ -139,7 +138,6 @@ public class CreateEventActivity extends AppCompatActivity {
         if (toolbar != null) {
             toolbar.setNavigationOnClickListener(v -> finish());
         } else {
-            // Fallback if toolbar is defined as a simple clickable view
             findViewById(R.id.toolbar).setOnClickListener(v -> finish());
         }
     }
@@ -177,6 +175,10 @@ public class CreateEventActivity extends AppCompatActivity {
         spinnerDrawEndMin = findViewById(R.id.spinner_draw_end_min);
 
         btnCreate = findViewById(R.id.btn_create);
+        
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Creating event and uploading posters...");
+        progressDialog.setCancelable(false);
     }
 
     private void setupInterestsTagSystem() {
@@ -287,19 +289,16 @@ public class CreateEventActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
-    /**
-     * Generates a current timestamp string for event creation tracking.
-     * @return Formatted timestamp string.
-     */
     private String getCurrentTimestamp() {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
     }
 
     /**
-     * Handles uploading selected images to Firebase Storage.
-     * Once all images are uploaded, it delegates to saveEvent().
+     * Optimized upload with image compression.
      */
     private void uploadPostersAndSaveEvent() {
+        progressDialog.show();
+        
         if (selectedImageUris.isEmpty()) {
             saveEvent(new ArrayList<>());
             return;
@@ -307,37 +306,74 @@ public class CreateEventActivity extends AppCompatActivity {
 
         List<String> uploadedUrls = new ArrayList<>();
         int totalToUpload = selectedImageUris.size();
-        final int[] uploadedCount = {0};
+        final int[] finishedCount = {0};
 
         FirebaseStorage storage = FirebaseStorage.getInstance();
 
-        // Optional: show a loading dialog here while uploading
-
         for (Uri uri : selectedImageUris) {
-            StorageReference ref = storage.getReference().child("event_posters/" + UUID.randomUUID().toString() + ".jpg");
-            ref.putFile(uri).continueWithTask(task -> ref.getDownloadUrl()).addOnSuccessListener(downloadUri -> {
-                uploadedUrls.add(downloadUri.toString());
-                uploadedCount[0]++;
-                if (uploadedCount[0] == totalToUpload) {
-                    saveEvent(uploadedUrls);
+            new Thread(() -> {
+                try {
+                    // Compress image before upload
+                    byte[] data = compressImage(uri);
+                    
+                    StorageReference ref = storage.getReference().child("event_posters/" + UUID.randomUUID().toString() + ".jpg");
+                    UploadTask uploadTask = ref.putBytes(data);
+                    
+                    uploadTask.continueWithTask(task -> ref.getDownloadUrl()).addOnSuccessListener(downloadUri -> {
+                        synchronized (uploadedUrls) {
+                            uploadedUrls.add(downloadUri.toString());
+                            finishedCount[0]++;
+                            if (finishedCount[0] == totalToUpload) {
+                                runOnUiThread(() -> {
+                                    progressDialog.dismiss();
+                                    saveEvent(uploadedUrls);
+                                });
+                            }
+                        }
+                    }).addOnFailureListener(e -> {
+                        synchronized (uploadedUrls) {
+                            finishedCount[0]++;
+                            if (finishedCount[0] == totalToUpload) {
+                                runOnUiThread(() -> {
+                                    progressDialog.dismiss();
+                                    saveEvent(uploadedUrls);
+                                });
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    synchronized (uploadedUrls) {
+                        finishedCount[0]++;
+                        if (finishedCount[0] == totalToUpload) {
+                            runOnUiThread(() -> {
+                                progressDialog.dismiss();
+                                saveEvent(uploadedUrls);
+                            });
+                        }
+                    }
                 }
-            }).addOnFailureListener(e -> {
-                uploadedCount[0]++;
-                if (uploadedCount[0] == totalToUpload) {
-                    saveEvent(uploadedUrls); // Save anyway with whatever succeeded
-                }
-            });
+            }).start();
         }
     }
 
-    /**
-     * Collects form data, creates an Event object, and saves it to Firestore via EventManager.
-     * Redirects to QRCodeActivity for public events or PrivateEventSuccessActivity for private ones.
-     *
-     * US 02.01.01 – Create new public event and generate unique promotional QR code
-     * US 02.01.02 – Create a private event that is not visible on the event listing
-     * * @param posterUrls The list of uploaded image URLs.
-     */
+    private byte[] compressImage(Uri uri) throws Exception {
+        InputStream input = getContentResolver().openInputStream(uri);
+        Bitmap bitmap = BitmapFactory.decodeStream(input);
+        
+        // Scale down if too large (e.g., max 1024px)
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        float maxDimension = 1024f;
+        if (width > maxDimension || height > maxDimension) {
+            float scale = Math.min(maxDimension / width, maxDimension / height);
+            bitmap = Bitmap.createScaledBitmap(bitmap, Math.round(width * scale), Math.round(height * scale), true);
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos); // 70% quality
+        return baos.toByteArray();
+    }
+
     private void saveEvent(List<String> posterUrls) {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
@@ -407,10 +443,6 @@ public class CreateEventActivity extends AppCompatActivity {
         finish();
     }
 
-    /**
-     * Validates all input fields in the event creation form.
-     * @return true if all required fields are filled and valid, false otherwise.
-     */
     private boolean validateForm() {
         boolean isValid = true;
         isValid &= checkEmpty(etEventName);
@@ -446,10 +478,6 @@ public class CreateEventActivity extends AppCompatActivity {
         return true;
     }
 
-    /**
-     * Checks if the selected draw time occurs before the event start time.
-     * @return true if draw is before event, false otherwise.
-     */
     private boolean isDrawBeforeEvent() {
         try {
             Calendar eventCal = Calendar.getInstance();
@@ -480,11 +508,6 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Checks if an EditText is empty and applies error styling if so.
-     * @param et The EditText to check.
-     * @return true if not empty, false if empty.
-     */
     private boolean checkEmpty(EditText et) {
         if (et.getText().toString().trim().isEmpty()) {
             et.setBackgroundResource(R.drawable.edit_text_error_background);
@@ -495,11 +518,6 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Checks if a Spinner has a selection other than the placeholder.
-     * @param spinner The Spinner to check.
-     * @return true if selected, false if placeholder is still active.
-     */
     private boolean checkSpinnerSelected(Spinner spinner) {
         if (spinner.getSelectedItemPosition() == 0) {
             spinner.setBackgroundResource(R.drawable.edit_text_error_background);

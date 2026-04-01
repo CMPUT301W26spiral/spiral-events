@@ -7,5 +7,6 @@
     <color name="input_background">#FFFFFF</color>
     <color name="hint_text">#888888</color>
     <color name="interest_green_bg">#C8E6C9</color>
+    <color name="interest_green_stroke">#4CAF50</color>
     <color name="interest_red_bg">#FFCDD2</color>
 </resources>

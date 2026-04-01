@@ -237,21 +237,6 @@
                 android:layout_marginTop="8dp"
                 app:chipSpacing="8dp" />
 
-            <Button
-                android:id="@+id/commentsButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="24dp"
-                android:backgroundTint="#FFFFFF"
-                android:text="View Comments"
-                android:textAllCaps="false"
-                android:textColor="#1F5E3B"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="28dp"
-                app:strokeColor="#1F5E3B"
-                app:strokeWidth="2dp" />
-
             <LinearLayout
                 android:id="@+id/inviteSection"
                 android:layout_width="match_parent"
@@ -339,6 +324,21 @@
                 android:textColor="#666666"
                 android:textSize="14sp"
                 tools:text="This is a sample description of the event." />
+
+            <Button
+                android:id="@+id/commentsButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="#FFFFFF"
+                android:text="View Comments"
+                android:textAllCaps="false"
+                android:textColor="#1F5E3B"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="28dp"
+                app:strokeColor="#1F5E3B"
+                app:strokeWidth="2dp" />
 
             <View
                 android:layout_width="match_parent"

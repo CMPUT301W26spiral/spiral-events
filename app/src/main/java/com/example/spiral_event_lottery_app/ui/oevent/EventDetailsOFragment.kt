@@ -19,6 +19,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -36,7 +37,6 @@ import com.google.android.material.chip.ChipGroup
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
@@ -284,12 +284,16 @@ class EventDetailsOFragment : Fragment() {
         chipGroup.removeAllViews()
         if (interests.isEmpty()) return
         
-        val uid = DeviceIdProvider.getDeviceId(requireContext())
-
         for (tag in tags) {
             val chip = Chip(requireContext())
             chip.text = tag
             chip.isCheckable = true
+            chip.isClickable = false // User cannot toggle from here
+            
+            // Set styles to match green theme when checked
+            chip.chipBackgroundColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_state_list)
+            chip.chipStrokeColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_stroke_state_list)
+            chip.chipStrokeWidth = resources.getDimension(R.dimen.chip_stroke_width_custom)
             
             // If the interest or any of its parents are in the user's list, it shows as selected
             lifecycleScope.launch {
@@ -302,20 +306,6 @@ class EventDetailsOFragment : Fragment() {
                 }
             }
             
-            // Handle clicking: selecting an interest adds it to the user profile
-            chip.setOnClickListener {
-                val isNowChecked = chip.isChecked
-                if (isNowChecked) {
-                    db.collection("users").document(uid).update(
-                        "interested", FieldValue.arrayUnion(tag),
-                        "notInterested", FieldValue.arrayRemove(tag)
-                    )
-                } else {
-                    db.collection("users").document(uid).update(
-                        "interested", FieldValue.arrayRemove(tag)
-                    )
-                }
-            }
             chipGroup.addView(chip)
         }
     }

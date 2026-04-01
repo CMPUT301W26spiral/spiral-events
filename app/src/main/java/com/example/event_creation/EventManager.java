@@ -55,7 +55,9 @@ public class EventManager {
         // TRIGGER: Process tags so Gemini can categorize them
         processEventTags(event.getInterests());
         
-        if (event.getPosterUriString() != null) {
+        // OPTIMIZATION: Check if poster is already a remote URL to avoid redundant upload
+        String posterUri = event.getPosterUriString();
+        if (posterUri != null && !posterUri.startsWith("http")) {
             uploadPosterAndSave(event, docRef);
         } else {
             saveToFirestore(event, docRef);

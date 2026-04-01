@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
@@ -27,7 +28,6 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
@@ -35,8 +35,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Fragment that displays the details of a specific event.
- * Now supports editing the event poster for organizers and selecting interests.
- * Interests selected here are synced with the user's profile and InterestsActivity.
+ * Now supports editing the event poster for organizers.
+ * Interests display highlights if they match user preferences but cannot be toggled here.
  */
 class EventDetailsFragment : Fragment() {
     companion object {
@@ -232,12 +232,16 @@ class EventDetailsFragment : Fragment() {
         chipGroup.removeAllViews()
         if (interests.isEmpty()) return
         
-        val uid = DeviceIdProvider.getDeviceId(requireContext())
-
         for (tag in tags) {
             val chip = Chip(requireContext())
             chip.text = tag
             chip.isCheckable = true
+            chip.isClickable = false // User cannot toggle from here
+            
+            // Set styles to match green theme when checked
+            chip.chipBackgroundColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_state_list)
+            chip.chipStrokeColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_stroke_state_list)
+            chip.chipStrokeWidth = resources.getDimension(R.dimen.chip_stroke_width_custom)
             
             // If the interest or any of its parents are in the user's list, it shows as selected
             lifecycleScope.launch {
@@ -250,20 +254,6 @@ class EventDetailsFragment : Fragment() {
                 }
             }
             
-            // Handle clicking: selecting an interest adds it to the user profile
-            chip.setOnClickListener {
-                val isNowChecked = chip.isChecked
-                if (isNowChecked) {
-                    FirebaseFirestore.getInstance().collection("users").document(uid).update(
-                        "interested", FieldValue.arrayUnion(tag),
-                        "notInterested", FieldValue.arrayRemove(tag)
-                    )
-                } else {
-                    FirebaseFirestore.getInstance().collection("users").document(uid).update(
-                        "interested", FieldValue.arrayRemove(tag)
-                    )
-                }
-            }
             chipGroup.addView(chip)
         }
     }
