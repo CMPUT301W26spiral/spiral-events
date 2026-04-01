@@ -24,6 +24,7 @@
     <string name="qr_code_description">Save the QR code or share it with others.</string>
     <string name="save_qr_code">Save QR Code</string>
     <string name="confirm">Confirm</string>
+    <string name="hint_type_interest">Type interest...</string>
 
     <!-- Profile Strings -->
     <string name="unnamed_user">Unnamed User</string>
@@ -38,4 +39,9 @@
     <string name="notification_settings_updated">Notification settings updated</string>
     <string name="profile_deleted">Profile deleted</string>
     <string name="admin_dashboard">Admin Dashboard</string>
+
+    <!-- Interests Strings -->
+    <string name="finish_and_enter">Finish and Enter</string>
+    <string name="save_and_close">Save and Close</string>
+    <string name="interests_saved">Interests saved successfully</string>
 </resources>

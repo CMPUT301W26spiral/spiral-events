@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -8,13 +9,14 @@
     android:clickable="true"
     android:focusable="true">
 
-    <!-- Top App Bar -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/white"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -34,7 +36,7 @@
                 app:tint="#0F3D2E" />
 
             <TextView
-                android:id="@+id/headerTitle"
+                android:id="@+id/header"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
@@ -53,6 +55,7 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:fillViewport="true"
         app:layout_constraintBottom_toTopOf="@+id/organizerActionTray"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -64,11 +67,10 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Event Poster Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/imageCard"
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
+                android:layout_height="250dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 app:strokeWidth="0dp">
@@ -76,14 +78,25 @@
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="#EEEEEE">
+                    android:background="#D9D9D9">
 
-                    <ImageView
-                        android:id="@+id/eventPosterImage"
+                    <androidx.viewpager2.widget.ViewPager2
+                        android:id="@+id/eventPosterViewPager"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        tools:src="@drawable/ic_event" />
+                        android:layout_height="match_parent" />
+
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/posterIndicator"
+                        android:layout_width="match_parent"
+                        android:layout_height="12dp"
+                        android:layout_gravity="bottom"
+                        android:layout_marginBottom="16dp"
+                        android:background="@android:color/transparent"
+                        app:tabBackground="@drawable/dot_selector"
+                        app:tabGravity="center"
+                        app:tabIndicatorHeight="0dp"
+                        app:tabMaxWidth="12dp"
+                        app:tabRippleColor="@null" />
 
                     <com.google.android.material.floatingactionbutton.FloatingActionButton
                         android:id="@+id/editImageButton"
@@ -99,7 +112,6 @@
                 </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Event Info Section -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -115,7 +127,7 @@
                     android:textColor="#0F3D2E"
                     android:textSize="24sp"
                     android:textStyle="bold"
-                    tools:text="Event Title" />
+                    tools:text="Event Name" />
 
                 <ImageButton
                     android:id="@+id/viewQRButtonIcon"
@@ -136,16 +148,6 @@
                 android:textSize="16sp"
                 tools:text="Location Name" />
 
-            <!-- Missing ID from Fragment -->
-            <TextView
-                android:id="@+id/detailsLocationAddress"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#666666"
-                android:textSize="14sp"
-                android:visibility="gone"
-                tools:text="Location Address" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -154,6 +156,7 @@
                 android:orientation="horizontal">
 
                 <ImageView
+                    android:id="@+id/iconCalendar"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:src="@drawable/ic_calendar"
@@ -177,6 +180,31 @@
                 android:orientation="horizontal">
 
                 <ImageView
+                    android:id="@+id/iconPlace"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_pin"
+                    app:tint="#2E5A27" />
+
+                <TextView
+                    android:id="@+id/detailsLocationAddress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textColor="#333333"
+                    android:textSize="14sp"
+                    tools:text="123 Address Street" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/iconPeople"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:src="@drawable/ic_people"
@@ -189,25 +217,26 @@
                     android:layout_marginStart="8dp"
                     android:textColor="#333333"
                     android:textSize="14sp"
-                    tools:text="0 People on Waiting List" />
+                    tools:text="71 People on Waiting List" />
             </LinearLayout>
 
-            <Button
-                android:id="@+id/commentsButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="#FFFFFF"
-                android:text="View Comments"
-                android:textAllCaps="false"
-                android:textColor="#1F5E3B"
+            <TextView
+                android:id="@+id/interestsLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Related Interests"
+                android:textColor="#0F3D2E"
                 android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="28dp"
-                app:strokeColor="#1F5E3B"
-                app:strokeWidth="2dp" />
+                android:textStyle="bold" />
 
-            <!-- Private Invitation Section -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/detailsInterestsChipGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:chipSpacing="8dp" />
+
             <LinearLayout
                 android:id="@+id/inviteSection"
                 android:layout_width="match_parent"
@@ -221,22 +250,22 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
-                    android:text="Invite Entrants"
+                    android:text="Invite entrants to waitlist"
                     android:textColor="#0F3D2E"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/inviteRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="12dp"
                     app:cardCornerRadius="8dp"
                     app:cardElevation="0dp"
                     app:strokeColor="#DDDDDD"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
+                        android:id="@+id/inviteRow"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
@@ -249,15 +278,20 @@
                             android:layout_height="48dp"
                             android:layout_weight="1"
                             android:background="@android:color/transparent"
-                            android:hint="Search user..."
+                            android:drawableEnd="@drawable/ic_search"
+                            android:drawablePadding="8dp"
+                            android:hint="Search entrants..."
+                            android:inputType="text"
                             android:paddingStart="12dp"
                             android:paddingEnd="12dp"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            app:tint="#1F5E3B" />
 
                         <Spinner
                             android:id="@+id/inviteCategorySpinner"
                             android:layout_width="wrap_content"
-                            android:layout_height="48dp" />
+                            android:layout_height="48dp"
+                            android:spinnerMode="dropdown" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -266,11 +300,12 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
+                    android:background="@drawable/edit_text_background"
+                    android:elevation="4dp"
                     android:maxHeight="200dp"
                     android:visibility="gone" />
             </LinearLayout>
 
-            <!-- Description -->
             <TextView
                 android:id="@+id/descriptionLabel"
                 android:layout_width="wrap_content"
@@ -290,6 +325,21 @@
                 android:textSize="14sp"
                 tools:text="This is a sample description of the event." />
 
+            <Button
+                android:id="@+id/commentsButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="#FFFFFF"
+                android:text="View Comments"
+                android:textAllCaps="false"
+                android:textColor="#1F5E3B"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="28dp"
+                app:strokeColor="#1F5E3B"
+                app:strokeWidth="2dp" />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="32dp" />
@@ -297,7 +347,6 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Bottom Action Tray -->
     <LinearLayout
         android:id="@+id/organizerActionTray"
         android:layout_width="match_parent"
@@ -306,7 +355,9 @@
         android:elevation="12dp"
         android:orientation="vertical"
         android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <Button
             android:id="@+id/drawButton"
@@ -321,6 +372,7 @@
             app:cornerRadius="26dp" />
 
         <LinearLayout
+            android:id="@+id/organizerActionButtons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -331,8 +383,8 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
-                android:layout_weight="1"
                 android:layout_marginEnd="4dp"
+                android:layout_weight="1"
                 android:text="Entrants"
                 android:textAllCaps="false"
                 android:textColor="#2E5A27"
@@ -344,8 +396,8 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
-                android:layout_weight="1"
                 android:layout_marginEnd="4dp"
+                android:layout_weight="1"
                 android:text="Notify"
                 android:textAllCaps="false"
                 android:textColor="#2E5A27"
@@ -357,8 +409,8 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
-                android:layout_weight="1"
                 android:layout_marginEnd="4dp"
+                android:layout_weight="1"
                 android:text="Map"
                 android:textAllCaps="false"
                 android:textColor="#2E5A27"
@@ -373,6 +425,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Delete Event"
+            android:textStyle="bold"
             android:textColor="#B00020" />
     </LinearLayout>
 

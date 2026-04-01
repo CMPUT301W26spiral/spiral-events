@@ -20,6 +20,7 @@ import com.example.spiral_event_lottery_app.MainActivity;
 import com.example.spiral_event_lottery_app.R;
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import com.example.spiral_event_lottery_app.model.User;
+import com.example.spiral_event_lottery_app.ui.profile.InterestsActivity;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -165,7 +166,10 @@ public class RegisterActivity extends AppCompatActivity {
 
         db.collection("users").document(uid).set(user)
                 .addOnSuccessListener(unused -> {
-                    startActivity(new Intent(this, MainActivity.class));
+                    // Start Interests selection before going to MainActivity
+                    Intent intent = new Intent(this, InterestsActivity.class);
+                    intent.putExtra("IS_FIRST_TIME", true);
+                    startActivity(intent);
                     finish();
                 })
                 .addOnFailureListener(e -> {

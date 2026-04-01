@@ -6,7 +6,7 @@ import java.io.Serializable
 /**
  * Represents an event that entrants can view and join.
  *
- * Updated to support creation, management, and identification of organizers.
+ * Updated to support multiple posters.
  */
 data class Event @JvmOverloads constructor(
     var id: String = "",
@@ -29,7 +29,8 @@ data class Event @JvmOverloads constructor(
     var drawDate: String = "",
     var drawStartTime: String = "",
     var drawEndTime: String = "",
-    var posterUriString: String? = null,
+    var posterUriString: String? = null, // Kept for backward compatibility if needed, but primary is posterUriStrings
+    var posterUriStrings: List<String> = emptyList(),
     var eventCreated: String = "",
 
     var timeText: String = "",
