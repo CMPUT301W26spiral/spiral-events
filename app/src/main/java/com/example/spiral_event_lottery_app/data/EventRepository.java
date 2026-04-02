@@ -25,17 +25,28 @@ import java.util.Map;
  */
 public class EventRepository {
 
+    /** Callback for multiple events */
     public interface EventsCallback { void onUpdate(List<Event> events); }
+    /** Callback for a single event */
     public interface EventCallback { void onUpdate(Event event); }
+    /** Callback for boolean results */
     public interface BooleanCallback { void onResult(boolean value); }
+    /** Callback for string status results */
     public interface StatusCallback { void onStatus(String status); }
+    /** Callback for error handling */
     public interface ErrorCallback { void onError(Exception e); }
+    /** Callback for generic success */
     public interface SuccessCallback { void onSuccess(); }
+    /** Callback for list of user IDs */
     public interface UserIdsCallback { void onUpdate(List<String> userIds); }
 
     private final FirebaseFirestore db;
     private final String deviceId;
 
+    /**
+     * Constructs a new EventRepository.
+     * @param context Application context used to retrieve device ID.
+     */
     public EventRepository(Context context) {
         db = FirebaseFirestore.getInstance();
         deviceId = DeviceIdProvider.getDeviceId(context);
@@ -44,6 +55,10 @@ public class EventRepository {
     /**
      * Listens for all events where the current user is registered.
      * Includes waitlist, selected_list, and canceled_list.
+     *
+     * @param onUpdate Callback invoked when the joined events list is updated.
+     * @param onError Callback invoked if an error occurs.
+     * @return A ListenerRegistration to manage the lifecycle of the listener.
      */
     public ListenerRegistration listenToMyEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
         return db.collection("events").addSnapshotListener((snapshot, error) -> {
@@ -92,6 +107,10 @@ public class EventRepository {
         });
     }
 
+    /**
+     * Internal helper to synchronize the completion of multiple asynchronous Firestore lookups.
+     * Sorts results alphabetically before returning.
+     */
     private synchronized void checkFinished(int[] counter, int total, List<Event> results, EventsCallback callback) {
         counter[0]++;
         if (counter[0] >= total) {
@@ -103,6 +122,9 @@ public class EventRepository {
     /**
      * Automatically picks a RANDOM person from the waitlist and invites them.
      * If the waitlist is empty, no one is drawn.
+     *
+     * @param eventId The ID of the event for redraw.
+     * @param eventName The name of the event for notification content.
      */
     public void triggerAutomaticRedraw(String eventId, String eventName) {
         db.collection("events").document(eventId).collection("waitlist").get()
@@ -150,6 +172,7 @@ public class EventRepository {
                 });
     }
 
+    /** Helper to create a two-key map. */
     private Map<String, Object> createMap(String k1, Object v1, String k2, Object v2) {
         Map<String, Object> map = new HashMap<>();
         map.put(k1, v1);
@@ -157,6 +180,10 @@ public class EventRepository {
         return map;
     }
 
+    /**
+     * Converts a raw Firestore data map into a structured Event model.
+     * Handles type safety and default values.
+     */
     private Event toEvent(String documentId, Map<String, Object> data) {
         String name = data.get("name") instanceof String ? (String) data.get("name") : "";
         String location = data.get("locationName") instanceof String ? (String) data.get("locationName") : "";
@@ -173,6 +200,12 @@ public class EventRepository {
         return new Event(documentId, name, location, isPublic, "", description != null ? description : "", "", maxEntrants, "", "", "", "", "", "", posterUrl, "", timeText, waitingCount, organizerId, lotteryDone);
     }
 
+    /**
+     * Listens for all public events available for the Home screen.
+     * @param onUpdate Callback for updated event list.
+     * @param onError Callback for errors.
+     * @return ListenerRegistration object.
+     */
     public ListenerRegistration listenToOpenEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
         // Only fetch events where isPublic is true for the Home screen
         return db.collection("events")
@@ -196,6 +229,13 @@ public class EventRepository {
                 });
     }
 
+    /**
+     * Listens for real-time updates to a specific event.
+     * @param eventId The event ID.
+     * @param onUpdate Callback for the updated Event.
+     * @param onError Callback for errors.
+     * @return ListenerRegistration object.
+     */
     public ListenerRegistration listenToEvent(String eventId, final EventCallback onUpdate, final ErrorCallback onError) {
         return db.collection("events").document(eventId).addSnapshotListener((snapshot, error) -> {
             if (error != null) { onError.onError(error); return; }
@@ -204,23 +244,42 @@ public class EventRepository {
         });
     }
 
+    /**
+     * Checks if the current user is in the waitlist for a specific event.
+     */
     public void isJoined(String eventId, final BooleanCallback onResult, final ErrorCallback onError) {
         db.collection("events").document(eventId).collection("waitlist").document(deviceId).get()
                 .addOnSuccessListener(doc -> onResult.onResult(doc.exists()))
                 .addOnFailureListener(onError::onError);
     }
 
+    /**
+     * Retrieves the selection status (e.g., "invited", "accepted") for the current user.
+     */
     public void getWinnerStatus(String eventId, final StatusCallback callback) {
         db.collection("events").document(eventId).collection("selected_list").document(deviceId).get()
                 .addOnSuccessListener(doc -> callback.onStatus(doc.exists() ? doc.getString("status") : null));
     }
 
+    /**
+     * Checks if the current user is in the selected_list for an event.
+     */
     public void isSelected(String eventId, final BooleanCallback onResult, final ErrorCallback onError) {
         db.collection("events").document(eventId).collection("selected_list").document(deviceId).get()
                 .addOnSuccessListener(doc -> onResult.onResult(doc.exists()))
                 .addOnFailureListener(onError::onError);
     }
 
+    /**
+     * Joins the waitlist for an event.
+     * Prevents joining if already in the waitlist or already selected.
+     * Standardizes count updates via Firestore transactions.
+     *
+     * @param eventId The event ID.
+     * @param onSuccess Callback for success.
+     * @param onAlreadyJoined Callback if user is already joined.
+     * @param onError Callback for errors.
+     */
     public void joinWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onAlreadyJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
         DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
@@ -258,6 +317,9 @@ public class EventRepository {
                 });
     }
 
+    /**
+     * Leaves the waitlist for an event.
+     */
     public void leaveWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onNotJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
         DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);

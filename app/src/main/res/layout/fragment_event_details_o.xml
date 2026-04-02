@@ -311,6 +311,7 @@
                 android:text="Entrants"
                 android:textAllCaps="false"
                 android:textColor="#2E5A27"
+                android:textStyle="bold"
                 app:cornerRadius="24dp"
                 app:strokeColor="#2E5A27" />
 
@@ -324,6 +325,7 @@
                 android:text="Notify"
                 android:textAllCaps="false"
                 android:textColor="#2E5A27"
+                android:textStyle="bold"
                 app:cornerRadius="24dp"
                 app:strokeColor="#2E5A27" />
 
@@ -336,6 +338,7 @@
                 android:text="Map"
                 android:textAllCaps="false"
                 android:textColor="#2E5A27"
+                android:textStyle="bold"
                 app:cornerRadius="24dp"
                 app:strokeColor="#2E5A27" />
         </LinearLayout>
@@ -348,6 +351,7 @@
             android:layout_marginTop="8dp"
             android:text="Delete Event"
             android:textAllCaps="false"
+            android:textStyle="bold"
             android:textColor="#B71C1C" />
     </LinearLayout>
 
