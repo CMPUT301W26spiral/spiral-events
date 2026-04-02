@@ -177,7 +177,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
      */
     private fun loadInvitedEntrants() {
         db.collection("events").document(eventId).collection("selected_list")
-            .whereIn("status", listOf("pending", "accepted"))
+            .whereIn("status", listOf("pending", "accepted", "invited"))
             .get()
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.id }
@@ -360,7 +360,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                     }
             } else {
                 val statusFilters = when (currentTab) {
-                    "invited"   -> listOf("pending", "accepted")
+                    "invited"   -> listOf("pending", "accepted", "invited")
                     "cancelled" -> listOf("declined", "cancelled")
                     else        -> listOf("pending", "accepted")
                 }
