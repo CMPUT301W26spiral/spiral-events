@@ -72,6 +72,9 @@ dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("com.google.zxing:core:3.4.1")
 
+    // Flexbox
+    implementation("com.google.android.flexbox:flexbox:3.0.0")
+
     // Image Loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
     //this is for camera from google

@@ -39,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
         fm.addOnBackStackChangedListener(() -> {
             if (activeTab instanceof MyEventsFragment) {
                 ((MyEventsFragment) activeTab).refreshData();
+            } else if (activeTab == homeFragment) {
+                refreshHomeFragment();
             }
         });
 
@@ -70,6 +72,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
         handleIntent(getIntent());
+    }
+
+    /**
+     * Public method to trigger a refresh of the HomeFragment's data.
+     * Used when returning from activities that might change user interests.
+     */
+    public void refreshHomeFragment() {
+        if (homeFragment.isAdded()) {
+            homeFragment.loadCurrentUser();
+        }
     }
 
     @Override
@@ -150,6 +162,8 @@ public class MainActivity extends AppCompatActivity {
         // Refresh the list whenever we switch to the Events tab
         if (targetTab instanceof MyEventsFragment) {
             ((MyEventsFragment) targetTab).refreshData();
+        } else if (targetTab instanceof HomeFragment) {
+            refreshHomeFragment();
         }
     }
 }

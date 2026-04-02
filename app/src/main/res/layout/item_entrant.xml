@@ -34,6 +34,16 @@
         android:textSize="16sp"
         android:textColor="#000000" />
 
+    <Button
+        android:id="@+id/makeCoOrganizerButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:text="Co-Organizer"
+        android:textAllCaps="false"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
     <!-- Remove button - only shown on Invited tab for organizer to cancel entrants -->
     <ImageButton
         android:id="@+id/removeButton"

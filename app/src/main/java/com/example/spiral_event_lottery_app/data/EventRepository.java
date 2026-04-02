@@ -20,45 +20,160 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * EventRepository handles real-time data for entrants.
- * Fixes stale data issues by avoiding collectionGroups for primary joined event logic.
+ * EventRepository is the main data access class for the entrant side event functionality.
+ * Handles real-time data for entrants and fixes stale data issues by avoiding
+ * collectionGroups for primary joined event logic.
  */
 public class EventRepository {
 
-    /** Callback for multiple events */
     public interface EventsCallback { void onUpdate(List<Event> events); }
-    /** Callback for a single event */
     public interface EventCallback { void onUpdate(Event event); }
-    /** Callback for boolean results */
     public interface BooleanCallback { void onResult(boolean value); }
-    /** Callback for string status results */
     public interface StatusCallback { void onStatus(String status); }
-    /** Callback for error handling */
     public interface ErrorCallback { void onError(Exception e); }
-    /** Callback for generic success */
     public interface SuccessCallback { void onSuccess(); }
-    /** Callback for list of user IDs */
     public interface UserIdsCallback { void onUpdate(List<String> userIds); }
 
     private final FirebaseFirestore db;
     private final String deviceId;
 
-    /**
-     * Constructs a new EventRepository.
-     * @param context Application context used to retrieve device ID.
-     */
     public EventRepository(Context context) {
         db = FirebaseFirestore.getInstance();
         deviceId = DeviceIdProvider.getDeviceId(context);
     }
 
+    private String formatTimeText(Map<String, Object> data) {
+        String eventDate = data.get("eventDate") instanceof String ? (String) data.get("eventDate") : "";
+        String startTime = data.get("eventStartTime") instanceof String ? (String) data.get("eventStartTime") : "";
+        String endTime = data.get("eventEndTime") instanceof String ? (String) data.get("eventEndTime") : "";
+
+        if (eventDate.isEmpty()) return "No Date";
+        return eventDate + " " + startTime + " - " + endTime;
+    }
+
+    private Event toEvent(String documentId, Map<String, Object> data) {
+        String name = data.get("name") instanceof String ? (String) data.get("name") : "";
+
+        String location = data.get("location") instanceof String ? (String) data.get("location") : "";
+        if (location.isEmpty()) {
+            location = data.get("locationName") instanceof String ? (String) data.get("locationName") : "";
+        }
+
+        String timeText = formatTimeText(data);
+        if (timeText.equals("No Date")) {
+            Timestamp start = data.get("event_start_time") instanceof Timestamp ? (Timestamp) data.get("event_start_time") : null;
+            Timestamp end = data.get("event_end_time") instanceof Timestamp ? (Timestamp) data.get("event_end_time") : null;
+            if (start != null && end != null) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, MMM d, yyyy", Locale.CANADA);
+                SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.CANADA);
+                timeText = dateFormat.format(start.toDate()) + " " + timeFormat.format(start.toDate()) + "-" + timeFormat.format(end.toDate());
+            } else if (data.containsKey("timeText")) {
+                timeText = data.get("timeText") instanceof String ? (String) data.get("timeText") : "";
+            }
+        }
+
+        long waitingCount = 0L;
+        // Standardized to waiting_count in Firestore
+        Object waitingObj = data.get("waiting_count");
+        if (waitingObj instanceof Number) {
+            waitingCount = ((Number) waitingObj).longValue();
+        }
+
+        String posterUrl = data.get("posterUriString") instanceof String ? (String) data.get("posterUriString") : null;
+        if (posterUrl == null) {
+            posterUrl = data.get("posterUrl") instanceof String ? (String) data.get("posterUrl") : null;
+        }
+
+        @SuppressWarnings("unchecked")
+        List<String> posterUriStrings = (List<String>) data.get("posterUriStrings");
+        if (posterUriStrings == null) {
+            posterUriStrings = new ArrayList<>();
+        }
+
+        String description = data.get("description") instanceof String ? (String) data.get("description") : "";
+        String interests = data.get("interests") instanceof String ? (String) data.get("interests") : "";
+        String geolocation = data.get("geolocation") instanceof String ? (String) data.get("geolocation") : "";
+
+        Integer maxEntrants = null;
+        if (data.get("maxEntrants") instanceof Number) {
+            maxEntrants = ((Number) data.get("maxEntrants")).intValue();
+        }
+
+        String eventDate = data.get("eventDate") instanceof String ? (String) data.get("eventDate") : "";
+        String eventStartTime = data.get("eventStartTime") instanceof String ? (String) data.get("eventStartTime") : "";
+        String eventEndTime = data.get("eventEndTime") instanceof String ? (String) data.get("eventEndTime") : "";
+        String drawDate = data.get("drawDate") instanceof String ? (String) data.get("drawDate") : "";
+        String drawStartTime = data.get("drawStartTime") instanceof String ? (String) data.get("drawStartTime") : "";
+        String drawEndTime = data.get("drawEndTime") instanceof String ? (String) data.get("drawEndTime") : "";
+        String eventCreated = data.get("eventCreated") instanceof String ? (String) data.get("eventCreated") : "";
+        String organizerId = data.get("organizerId") instanceof String ? (String) data.get("organizerId") : "";
+
+        boolean isPublic = true;
+        if (data.get("isPublic") instanceof Boolean) {
+            isPublic = (Boolean) data.get("isPublic");
+        } else if (data.get("public") instanceof Boolean) {
+            isPublic = (Boolean) data.get("public");
+        }
+
+        boolean lotteryDone = false;
+        if (data.get("lottery_done") instanceof Boolean) {
+            lotteryDone = (Boolean) data.get("lottery_done");
+        }
+
+        Event event = new Event(
+                documentId, name, location, isPublic, interests, description, geolocation, maxEntrants,
+                eventDate, eventStartTime, eventEndTime, drawDate, drawStartTime, drawEndTime,
+                posterUrl, posterUriStrings, eventCreated, timeText, waitingCount, organizerId
+        );
+
+        // Apply the lotteryDone property specific to the second file's logic
+        event.setLotteryDone(lotteryDone);
+
+        return event;
+    }
+
+    public void fetchMyEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
+        db.collection("events")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot == null || snapshot.getDocuments().isEmpty()) {
+                        onUpdate.onUpdate(new ArrayList<>());
+                        return;
+                    }
+                    List<DocumentSnapshot> allEventDocs = snapshot.getDocuments();
+                    List<Event> results = new ArrayList<>();
+                    final int[] remaining = {allEventDocs.size()};
+                    final boolean[] failed = {false};
+                    for (DocumentSnapshot doc : allEventDocs) {
+                        DocumentReference eventRef = db.collection("events").document(doc.getId());
+                        DocumentReference waitlistDocRef = eventRef.collection("waitlist").document(deviceId);
+                        waitlistDocRef.get()
+                                .addOnSuccessListener(waitlistDoc -> {
+                                    if (waitlistDoc.exists()) {
+                                        Map<String, Object> map = doc.getData();
+                                        if (map == null) map = new HashMap<>();
+                                        results.add(toEvent(doc.getId(), map));
+                                    }
+                                    remaining[0]--;
+                                    if (remaining[0] == 0 && !failed[0]) {
+                                        Collections.sort(results, Comparator.comparing(e -> e.getName()));
+                                        onUpdate.onUpdate(results);
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (!failed[0]) {
+                                        failed[0] = true;
+                                        onError.onError(e);
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(onError::onError);
+    }
+
     /**
      * Listens for all events where the current user is registered.
      * Includes waitlist, selected_list, and canceled_list.
-     *
-     * @param onUpdate Callback invoked when the joined events list is updated.
-     * @param onError Callback invoked if an error occurs.
-     * @return A ListenerRegistration to manage the lifecycle of the listener.
      */
     public ListenerRegistration listenToMyEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
         return db.collection("events").addSnapshotListener((snapshot, error) -> {
@@ -76,41 +191,37 @@ public class EventRepository {
 
             for (DocumentSnapshot eventDoc : allEventDocs) {
                 String eventId = eventDoc.getId();
-                
+
                 // Check waitlist
                 db.collection("events").document(eventId).collection("waitlist").document(deviceId).get()
-                    .addOnSuccessListener(waitlistDoc -> {
-                        if (waitlistDoc.exists()) {
-                            joinedResults.add(toEvent(eventId, eventDoc.getData()));
-                            checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
-                        } else {
-                            // If not in waitlist, check selected_list
-                            db.collection("events").document(eventId).collection("selected_list").document(deviceId).get()
-                                .addOnSuccessListener(selectedDoc -> {
-                                    if (selectedDoc.exists()) {
-                                        joinedResults.add(toEvent(eventId, eventDoc.getData()));
-                                        checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
-                                    } else {
-                                        // NEW: Check canceled_list
-                                        db.collection("events").document(eventId).collection("canceled_list").document(deviceId).get()
-                                            .addOnSuccessListener(canceledDoc -> {
-                                                if (canceledDoc.exists()) {
-                                                    joinedResults.add(toEvent(eventId, eventDoc.getData()));
-                                                }
+                        .addOnSuccessListener(waitlistDoc -> {
+                            if (waitlistDoc.exists()) {
+                                joinedResults.add(toEvent(eventId, eventDoc.getData()));
+                                checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
+                            } else {
+                                // If not in waitlist, check selected_list
+                                db.collection("events").document(eventId).collection("selected_list").document(deviceId).get()
+                                        .addOnSuccessListener(selectedDoc -> {
+                                            if (selectedDoc.exists()) {
+                                                joinedResults.add(toEvent(eventId, eventDoc.getData()));
                                                 checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
-                                            });
-                                    }
-                                });
-                        }
-                    });
+                                            } else {
+                                                // Check canceled_list
+                                                db.collection("events").document(eventId).collection("canceled_list").document(deviceId).get()
+                                                        .addOnSuccessListener(canceledDoc -> {
+                                                            if (canceledDoc.exists()) {
+                                                                joinedResults.add(toEvent(eventId, eventDoc.getData()));
+                                                            }
+                                                            checkFinished(processed, allEventDocs.size(), joinedResults, onUpdate);
+                                                        });
+                                            }
+                                        });
+                            }
+                        });
             }
         });
     }
 
-    /**
-     * Internal helper to synchronize the completion of multiple asynchronous Firestore lookups.
-     * Sorts results alphabetically before returning.
-     */
     private synchronized void checkFinished(int[] counter, int total, List<Event> results, EventsCallback callback) {
         counter[0]++;
         if (counter[0] >= total) {
@@ -122,9 +233,6 @@ public class EventRepository {
     /**
      * Automatically picks a RANDOM person from the waitlist and invites them.
      * If the waitlist is empty, no one is drawn.
-     *
-     * @param eventId The ID of the event for redraw.
-     * @param eventName The name of the event for notification content.
      */
     public void triggerAutomaticRedraw(String eventId, String eventName) {
         db.collection("events").document(eventId).collection("waitlist").get()
@@ -160,6 +268,7 @@ public class EventRepository {
                                 });
 
                                 // Notify the new lucky winner
+                                // Ensure NotificationManager is accessible or imported in this package context
                                 NotificationManager.sendNotification(
                                         winnerId,
                                         "You're Invited!",
@@ -172,40 +281,6 @@ public class EventRepository {
                 });
     }
 
-    /** Helper to create a two-key map. */
-    private Map<String, Object> createMap(String k1, Object v1, String k2, Object v2) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(k1, v1);
-        map.put(k2, v2);
-        return map;
-    }
-
-    /**
-     * Converts a raw Firestore data map into a structured Event model.
-     * Handles type safety and default values.
-     */
-    private Event toEvent(String documentId, Map<String, Object> data) {
-        String name = data.get("name") instanceof String ? (String) data.get("name") : "";
-        String location = data.get("locationName") instanceof String ? (String) data.get("locationName") : "";
-        long waitingCount = data.get("waiting_count") instanceof Number ? ((Number) data.get("waiting_count")).longValue() : 0L;
-        String posterUrl = (String) data.get("posterUriString");
-        String organizerId = (String) data.get("organizerId");
-        String timeText = data.get("timeText") instanceof String ? (String) data.get("timeText") : "";
-
-        Boolean isPublic = data.get("isPublic") instanceof Boolean ? (Boolean) data.get("isPublic") : true;
-        String description = (String) data.get("description");
-        Integer maxEntrants = data.get("maxEntrants") instanceof Number ? ((Number) data.get("maxEntrants")).intValue() : null;
-        Boolean lotteryDone = data.get("lottery_done") instanceof Boolean ? (Boolean) data.get("lottery_done") : false;
-
-        return new Event(documentId, name, location, isPublic, "", description != null ? description : "", "", maxEntrants, "", "", "", "", "", "", posterUrl, "", timeText, waitingCount, organizerId, lotteryDone);
-    }
-
-    /**
-     * Listens for all public events available for the Home screen.
-     * @param onUpdate Callback for updated event list.
-     * @param onError Callback for errors.
-     * @return ListenerRegistration object.
-     */
     public ListenerRegistration listenToOpenEvents(final EventsCallback onUpdate, final ErrorCallback onError) {
         // Only fetch events where isPublic is true for the Home screen
         return db.collection("events")
@@ -229,57 +304,49 @@ public class EventRepository {
                 });
     }
 
-    /**
-     * Listens for real-time updates to a specific event.
-     * @param eventId The event ID.
-     * @param onUpdate Callback for the updated Event.
-     * @param onError Callback for errors.
-     * @return ListenerRegistration object.
-     */
     public ListenerRegistration listenToEvent(String eventId, final EventCallback onUpdate, final ErrorCallback onError) {
-        return db.collection("events").document(eventId).addSnapshotListener((snapshot, error) -> {
-            if (error != null) { onError.onError(error); return; }
-            if (snapshot != null && snapshot.exists()) onUpdate.onUpdate(toEvent(snapshot.getId(), snapshot.getData()));
-            else onUpdate.onUpdate(null);
-        });
+        return db.collection("events")
+                .document(eventId)
+                .addSnapshotListener((snapshot, error) -> {
+                    if (error != null) {
+                        onError.onError(error);
+                        return;
+                    }
+                    if (snapshot == null || !snapshot.exists()) {
+                        onUpdate.onUpdate(null);
+                        return;
+                    }
+                    Map<String, Object> map = snapshot.getData();
+                    if (map == null) map = new HashMap<>();
+                    onUpdate.onUpdate(toEvent(snapshot.getId(), map));
+                });
     }
 
-    /**
-     * Checks if the current user is in the waitlist for a specific event.
-     */
     public void isJoined(String eventId, final BooleanCallback onResult, final ErrorCallback onError) {
-        db.collection("events").document(eventId).collection("waitlist").document(deviceId).get()
+        db.collection("events")
+                .document(eventId)
+                .collection("waitlist")
+                .document(deviceId)
+                .get()
                 .addOnSuccessListener(doc -> onResult.onResult(doc.exists()))
                 .addOnFailureListener(onError::onError);
     }
 
-    /**
-     * Retrieves the selection status (e.g., "invited", "accepted") for the current user.
-     */
     public void getWinnerStatus(String eventId, final StatusCallback callback) {
         db.collection("events").document(eventId).collection("selected_list").document(deviceId).get()
                 .addOnSuccessListener(doc -> callback.onStatus(doc.exists() ? doc.getString("status") : null));
     }
 
-    /**
-     * Checks if the current user is in the selected_list for an event.
-     */
     public void isSelected(String eventId, final BooleanCallback onResult, final ErrorCallback onError) {
-        db.collection("events").document(eventId).collection("selected_list").document(deviceId).get()
+        db.collection("events")
+                .document(eventId)
+                .collection("selected_list")
+                .document(deviceId)
+                .get()
                 .addOnSuccessListener(doc -> onResult.onResult(doc.exists()))
                 .addOnFailureListener(onError::onError);
     }
 
-    /**
-     * Joins the waitlist for an event.
-     * Prevents joining if already in the waitlist or already selected.
-     * Standardizes count updates via Firestore transactions.
-     *
-     * @param eventId The event ID.
-     * @param onSuccess Callback for success.
-     * @param onAlreadyJoined Callback if user is already joined.
-     * @param onError Callback for errors.
-     */
     public void joinWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onAlreadyJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
         DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
@@ -294,6 +361,15 @@ public class EventRepository {
                     DocumentSnapshot selectedDoc = transaction.get(selectedRef);
                     if (selectedDoc.exists()) {
                         throw new IllegalStateException("ALREADY_SELECTED");
+                    }
+
+                    DocumentReference coOrgRef = eventRef
+                            .collection("co_organizers")
+                            .document(deviceId);
+
+                    DocumentSnapshot coOrgDoc = transaction.get(coOrgRef);
+                    if (coOrgDoc.exists()) {
+                        throw new IllegalStateException("CO_ORGANIZER");
                     }
 
                     DocumentSnapshot eventDoc = transaction.get(eventRef);
@@ -311,15 +387,14 @@ public class EventRepository {
                         onAlreadyJoined.onSuccess();
                     } else if ("ALREADY_SELECTED".equals(e.getMessage())) {
                         onError.onError(new Exception("You have already been selected for this event."));
+                    } else if ("CO_ORGANIZER".equals(e.getMessage())) {
+                        onError.onError(new Exception("You are a co-organizer and cannot join this event."));
                     } else {
                         onError.onError(e);
                     }
                 });
     }
 
-    /**
-     * Leaves the waitlist for an event.
-     */
     public void leaveWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onNotJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
         DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
@@ -383,13 +458,13 @@ public class EventRepository {
      */
     public void getEntrantIds(String eventId, String collectionName, final UserIdsCallback onUpdate, final ErrorCallback onError) {
         db.collection("events").document(eventId).collection(collectionName).get()
-            .addOnSuccessListener(snapshot -> {
-                List<String> ids = new ArrayList<>();
-                for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                    ids.add(doc.getId());
-                }
-                onUpdate.onUpdate(ids);
-            })
-            .addOnFailureListener(onError::onError);
+                .addOnSuccessListener(snapshot -> {
+                    List<String> ids = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        ids.add(doc.getId());
+                    }
+                    onUpdate.onUpdate(ids);
+                })
+                .addOnFailureListener(onError::onError);
     }
 }

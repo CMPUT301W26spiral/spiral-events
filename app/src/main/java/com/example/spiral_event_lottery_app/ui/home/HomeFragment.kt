@@ -18,7 +18,9 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.ui.details.EventDetailsFragment
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
+import com.example.spiral_event_lottery_app.model.User
 import com.example.spiral_event_lottery_app.ui.oevent.EventDetailsOFragment
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -28,6 +30,7 @@ import java.util.Locale
 /**
  * HomeFragment displays a list of all open events.
  * It identifies if the current user is the organizer of an event to show different options.
+ * Now supports smart sorting based on user interests.
  */
 class HomeFragment : Fragment(R.layout.fragment_home) {
 
@@ -44,6 +47,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private var startDate: Date? = null
     private var endDate: Date? = null
+    
+    private val db = FirebaseFirestore.getInstance()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -57,14 +62,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         chipOpen = view.findViewById(R.id.chipOpen)
         chipFull = view.findViewById(R.id.chipFull)
         
-        // Retrieve the current device ID to check against organizerId
         val deviceId = DeviceIdProvider.getDeviceId(requireContext())
 
         adapter = EventAdapter(
             allEvents = emptyList(),
             deviceId = deviceId,
             onDetailsClicked = { event ->
-                // Navigate to Organizer Details if the user owns the event
                 parentFragmentManager.beginTransaction()
                     .add(R.id.fragmentContainer,
                         EventDetailsOFragment.newInstance(event.id),
@@ -73,7 +76,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     .commit()
             },
             onSignUpClicked = { event ->
-                // Navigate to Entrant Details for signing up
                 parentFragmentManager.beginTransaction()
                     .add(R.id.fragmentContainer,
                         EventDetailsFragment.newInstance(event.id),
@@ -100,12 +102,27 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         setupChips()
 
-        // 1. Find the Scan Button using the ID from your XML
         val scanBtn = view.findViewById<android.widget.Button>(R.id.scanButton)
-        // 2. Set the click listener to open your camera
         scanBtn.setOnClickListener {
             val intent = android.content.Intent(requireContext(), com.example.spiral_event_lottery_app.QR_scanner::class.java)
             startActivity(intent)
+        }
+        
+        loadCurrentUser()
+    }
+    
+    /**
+     * Loads the current user's profile to apply interest-based sorting.
+     * Public so it can be triggered by MainActivity when interests change.
+     */
+    fun loadCurrentUser() {
+        if (!isAdded) return
+        val uid = DeviceIdProvider.getDeviceId(requireContext())
+        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
+            if (doc.exists() && isAdded) {
+                val user = doc.toObject(User::class.java)
+                adapter.setCurrentUser(user)
+            }
         }
     }
 
@@ -124,7 +141,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private fun updateChipSelection(status: EventAdapter.FilterStatus) {
         adapter.setStatusFilter(status)
         
-        // Update UI visuals
         chipAll.setBackgroundResource(if (status == EventAdapter.FilterStatus.ALL) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
         chipAll.setTextColor(if (status == EventAdapter.FilterStatus.ALL) 0xFFFFFFFF.toInt() else 0xFF1F1F1F.toInt())
         
@@ -145,11 +161,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-        // Temporary variables to hold selections until Apply is clicked
         var tempStart = startDate
         var tempEnd = endDate
 
-        // Update button text if values already exist
         tempStart?.let { btnStartDate.text = dateFormat.format(it) }
         tempEnd?.let { btnEndDate.text = dateFormat.format(it) }
 
@@ -204,11 +218,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     override fun onStart() {
         super.onStart()
-        // Listen for real-time updates to the events collection
         listenerRegistration = repository.listenToOpenEvents(
             { events -> 
                 adapter.submitList(events)
-                // Re-apply filter if there's text in the search bar
                 val currentSearch = searchEditText.text.toString()
                 if (currentSearch.isNotEmpty()) {
                     adapter.filter(currentSearch)
