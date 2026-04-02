@@ -1,15 +1,19 @@
 package com.example.event_creation;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -17,13 +21,25 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.appcompat.widget.Toolbar;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.spiral_event_lottery_app.R;
 import com.example.spiral_event_lottery_app.model.Event;
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
+import com.example.spiral_event_lottery_app.ui.events.PosterAdapter;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,57 +47,69 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Activity for organizers to create and configure new lottery events.
- * Handles input validation, event creation, and navigation based on access type.
+ * Optimized for better performance with image compression and parallel uploads.
  */
 public class CreateEventActivity extends AppCompatActivity {
 
     private EditText etEventName, etLocation, etInterests, etDescription, etMaxEntrants;
+    private ChipGroup cgInterests;
     private Spinner spinnerEventDay, spinnerEventMonth, spinnerEventYear;
     private Spinner spinnerEventStartHour, spinnerEventStartMin, spinnerEventEndHour, spinnerEventEndMin;
     private Spinner spinnerDrawDay, spinnerDrawMonth, spinnerDrawYear;
     private Spinner spinnerDrawStartHour, spinnerDrawStartMin, spinnerDrawEndHour, spinnerDrawEndMin;
     private Spinner spinnerGeolocation, spinnerAccess;
     private Button btnCreate;
+    private ProgressDialog progressDialog;
 
-    private ConstraintLayout postersContainer;
-    private ImageView ivEventPoster;
+    private ViewPager2 posterViewPager;
+    private TabLayout posterIndicator;
     private LinearLayout llAddPosterPlaceholder;
-    private Uri selectedImageUri;
+    private List<Uri> selectedImageUris = new ArrayList<>();
 
-    private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.RequestPermission(),
-            isGranted -> {
-                if (isGranted) {
-                    launchImagePicker();
-                } else {
-                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
+    private final ActivityResultLauncher<String> pickImagesLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetMultipleContents(),
+            uris -> {
+                if (uris != null && !uris.isEmpty()) {
+                    if (uris.size() > 3) {
+                        showMaxImagesError();
+                    } else {
+                        selectedImageUris = new ArrayList<>(uris);
+                        updatePosterPreview();
+                    }
                 }
             }
     );
 
-    private final ActivityResultLauncher<String> pickImageLauncher = registerForActivityResult(
-            new ActivityResultContracts.GetContent(),
-            uri -> {
-                if (uri != null) {
-                    selectedImageUri = uri;
-                    ivEventPoster.setImageURI(uri);
-                    llAddPosterPlaceholder.setVisibility(View.GONE);
-                    try {
-                        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
-                        getContentResolver().takePersistableUriPermission(uri, takeFlags);
-                    } catch (Exception e) {}
-                }
-            }
-    );
+    private void showMaxImagesError() {
+        new AlertDialog.Builder(this)
+                .setTitle("Too Many Posters")
+                .setMessage("You can only select up to 3 images for the event posters.")
+                .setPositiveButton("OK", null)
+                .show();
+    }
 
-    /**
-     * Launches the image picker to allow the user to select an event poster.
-     */
-    private void launchImagePicker() {
-        pickImageLauncher.launch("image/*");
+    private void updatePosterPreview() {
+        if (selectedImageUris.isEmpty()) {
+            llAddPosterPlaceholder.setVisibility(View.VISIBLE);
+            posterViewPager.setVisibility(View.GONE);
+            posterIndicator.setVisibility(View.GONE);
+        } else {
+            llAddPosterPlaceholder.setVisibility(View.GONE);
+            posterViewPager.setVisibility(View.VISIBLE);
+            posterIndicator.setVisibility(selectedImageUris.size() > 1 ? View.VISIBLE : View.GONE);
+
+            List<String> uriStrings = new ArrayList<>();
+            for (Uri uri : selectedImageUris) uriStrings.add(uri.toString());
+
+            PosterAdapter adapter = new PosterAdapter(uriStrings);
+            posterViewPager.setAdapter(adapter);
+
+            new TabLayoutMediator(posterIndicator, posterViewPager, (tab, position) -> {}).attach();
+        }
     }
 
     @Override
@@ -91,29 +119,38 @@ public class CreateEventActivity extends AppCompatActivity {
 
         initializeViews();
         setupSpinners();
+        setupInterestsTagSystem();
 
-        View.OnClickListener posterClickListener = v -> launchImagePicker();
-        postersContainer.setOnClickListener(posterClickListener);
+        View.OnClickListener posterClickListener = v -> pickImagesLauncher.launch("image/*");
+        findViewById(R.id.posters_container).setOnClickListener(posterClickListener);
         llAddPosterPlaceholder.setOnClickListener(posterClickListener);
-        ivEventPoster.setOnClickListener(posterClickListener);
+
+        posterViewPager.setClickable(false);
+        posterViewPager.setFocusable(false);
 
         btnCreate.setOnClickListener(v -> {
             if (validateForm()) {
-                saveEvent();
+                uploadPostersAndSaveEvent();
             }
         });
 
-        findViewById(R.id.toolbar).setOnClickListener(v -> finish());
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> finish());
+        } else {
+            findViewById(R.id.toolbar).setOnClickListener(v -> finish());
+        }
     }
 
     private void initializeViews() {
-        postersContainer = findViewById(R.id.posters_container);
-        ivEventPoster = findViewById(R.id.iv_event_poster);
+        posterViewPager = findViewById(R.id.iv_event_poster_pager);
+        posterIndicator = findViewById(R.id.posterIndicator);
         llAddPosterPlaceholder = findViewById(R.id.ll_add_poster_placeholder);
 
         etEventName = findViewById(R.id.et_event_name);
         etLocation = findViewById(R.id.et_location);
         spinnerAccess = findViewById(R.id.spinner_access);
+        cgInterests = findViewById(R.id.cg_interests);
         etInterests = findViewById(R.id.et_interests);
         etDescription = findViewById(R.id.et_description);
         spinnerGeolocation = findViewById(R.id.spinner_geolocation);
@@ -138,6 +175,44 @@ public class CreateEventActivity extends AppCompatActivity {
         spinnerDrawEndMin = findViewById(R.id.spinner_draw_end_min);
 
         btnCreate = findViewById(R.id.btn_create);
+        
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Creating event and uploading posters...");
+        progressDialog.setCancelable(false);
+    }
+
+    private void setupInterestsTagSystem() {
+        etInterests.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
+                String interest = etInterests.getText().toString().trim();
+                if (!interest.isEmpty()) {
+                    addInterestTag(interest);
+                    etInterests.setText("");
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void addInterestTag(String interest) {
+        Chip chip = new Chip(this);
+        chip.setText(interest);
+        chip.setCloseIconVisible(true);
+        chip.setOnCloseIconClickListener(v -> cgInterests.removeView(chip));
+        cgInterests.addView(chip);
+    }
+
+    private String getInterestsFromChips() {
+        StringBuilder interests = new StringBuilder();
+        for (int i = 0; i < cgInterests.getChildCount(); i++) {
+            Chip chip = (Chip) cgInterests.getChildAt(i);
+            if (interests.length() > 0) {
+                interests.append(", ");
+            }
+            interests.append(chip.getText().toString());
+        }
+        return interests.toString();
     }
 
     private void setupSpinners() {
@@ -214,26 +289,96 @@ public class CreateEventActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
-    /**
-     * Generates a current timestamp string for event creation tracking.
-     * @return Formatted timestamp string.
-     */
     private String getCurrentTimestamp() {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
     }
 
     /**
-     * Collects form data, creates an Event object, and saves it to Firestore via EventManager.
-     * Redirects to QRCodeActivity for public events or PrivateEventSuccessActivity for private ones.
-     * 
-     * US 02.01.01 – Create new public event and generate unique promotional QR code
-     * US 02.01.02 – Create a private event that is not visible on the event listing
+     * Optimized upload with image compression.
      */
-    private void saveEvent() {
+    private void uploadPostersAndSaveEvent() {
+        progressDialog.show();
+        
+        if (selectedImageUris.isEmpty()) {
+            saveEvent(new ArrayList<>());
+            return;
+        }
+
+        List<String> uploadedUrls = new ArrayList<>();
+        int totalToUpload = selectedImageUris.size();
+        final int[] finishedCount = {0};
+
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+
+        for (Uri uri : selectedImageUris) {
+            new Thread(() -> {
+                try {
+                    // Compress image before upload
+                    byte[] data = compressImage(uri);
+                    
+                    StorageReference ref = storage.getReference().child("event_posters/" + UUID.randomUUID().toString() + ".jpg");
+                    UploadTask uploadTask = ref.putBytes(data);
+                    
+                    uploadTask.continueWithTask(task -> ref.getDownloadUrl()).addOnSuccessListener(downloadUri -> {
+                        synchronized (uploadedUrls) {
+                            uploadedUrls.add(downloadUri.toString());
+                            finishedCount[0]++;
+                            if (finishedCount[0] == totalToUpload) {
+                                runOnUiThread(() -> {
+                                    progressDialog.dismiss();
+                                    saveEvent(uploadedUrls);
+                                });
+                            }
+                        }
+                    }).addOnFailureListener(e -> {
+                        synchronized (uploadedUrls) {
+                            finishedCount[0]++;
+                            if (finishedCount[0] == totalToUpload) {
+                                runOnUiThread(() -> {
+                                    progressDialog.dismiss();
+                                    saveEvent(uploadedUrls);
+                                });
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    synchronized (uploadedUrls) {
+                        finishedCount[0]++;
+                        if (finishedCount[0] == totalToUpload) {
+                            runOnUiThread(() -> {
+                                progressDialog.dismiss();
+                                saveEvent(uploadedUrls);
+                            });
+                        }
+                    }
+                }
+            }).start();
+        }
+    }
+
+    private byte[] compressImage(Uri uri) throws Exception {
+        InputStream input = getContentResolver().openInputStream(uri);
+        Bitmap bitmap = BitmapFactory.decodeStream(input);
+        
+        // Scale down if too large (e.g., max 1024px)
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        float maxDimension = 1024f;
+        if (width > maxDimension || height > maxDimension) {
+            float scale = Math.min(maxDimension / width, maxDimension / height);
+            bitmap = Bitmap.createScaledBitmap(bitmap, Math.round(width * scale), Math.round(height * scale), true);
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos); // 70% quality
+        return baos.toByteArray();
+    }
+
+    private void saveEvent(List<String> posterUrls) {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
         boolean isPublic = spinnerAccess.getSelectedItem().toString().equalsIgnoreCase("Public");
-        String interests = etInterests.getText().toString().trim();
+        String interests = getInterestsFromChips();
         String description = etDescription.getText().toString().trim();
         String geolocation = spinnerGeolocation.getSelectedItem().toString();
 
@@ -256,9 +401,8 @@ public class CreateEventActivity extends AppCompatActivity {
 
         String timeText = eventDate + " " + eventStartTime + "-" + eventEndTime;
 
-        String posterUriString = (selectedImageUri != null) ? selectedImageUri.toString() : null;
-
         String organizerId = DeviceIdProvider.getDeviceId(this);
+
         Event newEvent = new Event(
                 "", // id
                 eventName,
@@ -274,7 +418,8 @@ public class CreateEventActivity extends AppCompatActivity {
                 drawDate,
                 drawStartTime,
                 drawEndTime,
-                posterUriString,
+                posterUrls.isEmpty() ? null : posterUrls.get(0), // primary poster
+                posterUrls, // multi-posters list
                 getCurrentTimestamp(), // eventCreated
                 timeText, // timeText
                 0L, // waitingCount
@@ -298,10 +443,6 @@ public class CreateEventActivity extends AppCompatActivity {
         finish();
     }
 
-    /**
-     * Validates all input fields in the event creation form.
-     * @return true if all required fields are filled and valid, false otherwise.
-     */
     private boolean validateForm() {
         boolean isValid = true;
         isValid &= checkEmpty(etEventName);
@@ -337,10 +478,6 @@ public class CreateEventActivity extends AppCompatActivity {
         return true;
     }
 
-    /**
-     * Checks if the selected draw time occurs before the event start time.
-     * @return true if draw is before event, false otherwise.
-     */
     private boolean isDrawBeforeEvent() {
         try {
             Calendar eventCal = Calendar.getInstance();
@@ -371,11 +508,6 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Checks if an EditText is empty and applies error styling if so.
-     * @param et The EditText to check.
-     * @return true if not empty, false if empty.
-     */
     private boolean checkEmpty(EditText et) {
         if (et.getText().toString().trim().isEmpty()) {
             et.setBackgroundResource(R.drawable.edit_text_error_background);
@@ -386,11 +518,6 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Checks if a Spinner has a selection other than the placeholder.
-     * @param spinner The Spinner to check.
-     * @return true if selected, false if placeholder is still active.
-     */
     private boolean checkSpinnerSelected(Spinner spinner) {
         if (spinner.getSelectedItemPosition() == 0) {
             spinner.setBackgroundResource(R.drawable.edit_text_error_background);

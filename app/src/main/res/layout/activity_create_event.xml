@@ -36,48 +36,69 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/posters_container"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/posters_card"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:background="#D9D9D9"
-                android:clickable="true"
-                android:focusable="true"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
                 app:layout_constraintDimensionRatio="H,16:9"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
-                <ImageView
-                    android:id="@+id/iv_event_poster"
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/posters_container"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:scaleType="centerCrop" />
+                    android:background="#D9D9D9"
+                    android:clickable="true"
+                    android:focusable="true">
 
-                <LinearLayout
-                    android:id="@+id/ll_add_poster_placeholder"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
+                    <androidx.viewpager2.widget.ViewPager2
+                        android:id="@+id/iv_event_poster_pager"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
 
-                    <ImageView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_add_circle"
-                        app:tint="@color/hint_text" />
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/posterIndicator"
+                        android:layout_width="match_parent"
+                        android:layout_height="12dp"
+                        android:layout_gravity="bottom"
+                        android:background="@android:color/transparent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:tabBackground="@drawable/dot_selector"
+                        app:tabGravity="center"
+                        app:tabIndicatorHeight="0dp"
+                        app:tabMaxWidth="12dp"
+                        app:tabRippleColor="@null" />
 
-                    <TextView
+                    <LinearLayout
+                        android:id="@+id/ll_add_poster_placeholder"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/add_posters"
-                        android:textColor="@color/hint_text" />
-                </LinearLayout>
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_add_circle"
+                            app:tint="@color/hint_text" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/add_posters"
+                            android:textColor="@color/hint_text" />
+                    </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/tv_label_event_name"
@@ -87,7 +108,7 @@
                 android:text="@string/event_name"
                 android:textColor="@color/black"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/posters_container" />
+                app:layout_constraintTop_toBottomOf="@id/posters_card" />
 
             <EditText
                 android:id="@+id/et_event_name"
@@ -155,17 +176,30 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/spinner_access" />
 
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/cg_interests"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                app:chipSpacing="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_label_interests" />
+
             <EditText
                 android:id="@+id/et_interests"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:background="@drawable/edit_text_background"
+                android:hint="@string/hint_type_interest"
+                android:imeOptions="actionDone"
+                android:inputType="text"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="12dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_label_interests" />
+                app:layout_constraintTop_toBottomOf="@id/cg_interests" />
 
             <TextView
                 android:id="@+id/tv_label_day_of_event"
