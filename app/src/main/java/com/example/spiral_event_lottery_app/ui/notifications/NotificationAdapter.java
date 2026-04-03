@@ -69,21 +69,21 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         // UI Styling based on notification category
         switch (notification.getType()) {
             case "ACCEPTED":
-                holder.title.setTextColor(Color.parseColor("#2E5A27"));
+                holder.title.setTextColor(Color.parseColor("#2E5A27")); // Green
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Accept/Decline");
+                holder.goButton.setText("View Details"); // Leads to My Events logic
                 break;
             case "DENIED":
-                holder.title.setTextColor(Color.parseColor("#B71C1C"));
+                holder.title.setTextColor(Color.parseColor("#B71C1C")); // Red
                 holder.goButton.setVisibility(View.GONE);
                 break;
             case "REQUESTED":
-                holder.title.setTextColor(Color.parseColor("#FF8F00"));
+                holder.title.setTextColor(Color.parseColor("#FF8F00")); // Amber
                 holder.goButton.setVisibility(View.VISIBLE);
                 holder.goButton.setText("Go");
                 break;
             case "ORGANIZER":
-                holder.title.setTextColor(Color.parseColor("#6A1B9A"));
+                holder.title.setTextColor(Color.parseColor("#6A1B9A")); // Purple
                 holder.goButton.setVisibility(View.VISIBLE);
                 holder.goButton.setText("Go");
                 break;
@@ -94,7 +94,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 break;
             default:
                 holder.title.setTextColor(Color.BLACK);
-                holder.goButton.setVisibility(View.VISIBLE);
                 holder.goButton.setText("Go");
                 break;
         }
@@ -104,39 +103,8 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             String eventId = notification.getEventId();
             if (eventId != null) {
                 Context context = v.getContext();
-
-                if ("ACCEPTED".equals(notification.getType())) {
-                    new androidx.appcompat.app.AlertDialog.Builder(context)
-                            .setTitle("Congratulations!")
-                            .setMessage("You have been chosen for this event! Do you want to accept or decline the invitation?")
-                            .setPositiveButton("Accept", (dialog, which) -> {
-                                com.example.spiral_event_lottery_app.acceptanceHandling handler =
-                                        new com.example.spiral_event_lottery_app.acceptanceHandling();
-                                handler.invitation_accepted(context, eventId, notification.getRecipientId());
-                                holder.goButton.setText("Accepted");
-                                holder.goButton.setEnabled(false);
-                            })
-                            .setNegativeButton("Decline", (dialog, which) -> {
-                                com.example.spiral_event_lottery_app.acceptanceHandling handler =
-                                        new com.example.spiral_event_lottery_app.acceptanceHandling();
-                                handler.invitation_declined(context, eventId, notification.getRecipientId());
-                                holder.goButton.setText("Declined");
-                                holder.goButton.setEnabled(false);
-                            })
-                            .show();
-                    return;
-                }
-
                 AppCompatActivity activity = getActivity(context);
                 if (activity == null) return;
-
-                if ("CO_ORGANIZER_INVITE".equals(notification.getType())) {
-                    activity.getSupportFragmentManager().beginTransaction()
-                            .add(R.id.fragmentContainer, EventDetailsOFragment.Companion.newInstance(eventId), "details_screen")
-                            .addToBackStack("details")
-                            .commit();
-                    return;
-                }
 
                 // Special handling for ACCEPTED (Wins): Should navigate to where they can Accept/Decline
                 // Standard behavior: Go to EventDetailsLeaveFragment which contains the My Events context logic
@@ -150,7 +118,16 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
                     if (canceledIds.contains(myDeviceId)) {
                         Toast.makeText(context, "You are not part of this event anymore.", Toast.LENGTH_LONG).show();
-                    } else {
+                        return;
+                    }
+
+                    if ("CO_ORGANIZER_INVITE".equals(notification.getType())) {
+                        activity.getSupportFragmentManager().beginTransaction()
+                                .add(R.id.fragmentContainer, EventDetailsOFragment.Companion.newInstance(eventId), "details_screen")
+                                .addToBackStack("details")
+                                .commit();
+                    }
+                    else {
                         // Proceed with existing logic if not canceled
                         repository.isJoined(eventId, joined -> {
                             if (activity.isFinishing() || activity.isDestroyed()) return;
@@ -178,6 +155,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     }, err -> {});
                 });
             }
+
         });
     }
 

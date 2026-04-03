@@ -66,6 +66,7 @@ class EventDetailsLeaveFragment : Fragment() {
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
         val title = view.findViewById<TextView>(R.id.detailsTitle)
         val location = view.findViewById<TextView>(R.id.detailsLocation)
+        val address = view.findViewById<TextView>(R.id.detailsLocationAddress)
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
         val posterViewPager = view.findViewById<ViewPager2>(R.id.eventPosterViewPager)
@@ -100,6 +101,7 @@ class EventDetailsLeaveFragment : Fragment() {
             if (event == null || !isAdded) return@listenToEvent
             title.text = event.name
             location.text = event.locationName
+            address.text = event.locationName
             time.text = event.timeText
             waiting.text = "${event.waitingCount} People on Waiting List"
 

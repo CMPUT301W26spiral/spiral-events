@@ -53,7 +53,7 @@ class EventDetailsFragment : Fragment() {
     private val tagRepository = TagRepository()
     private var eventListener: ListenerRegistration? = null
     private var userListener: ListenerRegistration? = null
-    
+
     private var userInterested: List<String> = emptyList()
     private var userNotInterested: List<String> = emptyList()
 
@@ -156,9 +156,15 @@ class EventDetailsFragment : Fragment() {
 
                 val limit = event.maxEntrants?.toLong() ?: 0L
                 val spots = limit - event.waitingCount
-                val openSpots = if (spots > 0) spots else 0L
 
-                waiting.text = "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+                // Calculate and display open spots ONLY if lottery is not done
+                val openSpots = event.maxEntrants?.minus(event.waitingCount.toInt()) ?: 0
+                waiting.text = if (event.maxEntrants != null && !event.lotteryDone) {
+                    "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+                } else {
+                    "${event.waitingCount} People on Waiting List"
+                }
+
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
                 currentEventInterests = event.interests
@@ -185,22 +191,16 @@ class EventDetailsFragment : Fragment() {
 
                 repository.isJoined(eventId, { joined ->
                     if (!isAdded) return@isJoined
+                    
+                    // Show the button only after its state is determined
+                    joinBtn.visibility = View.VISIBLE
+                    
                     if (joined) {
                         joinBtn.text = "You're in the waiting list"
                         joinBtn.backgroundTintList = ColorStateList.valueOf(Color.RED)
                     } else {
-                        repository.isSelected(eventId, { selected ->
-                            if (!isAdded) return@isSelected
-                            if (selected) {
-                                joinBtn.text = "You are selected/invited"
-                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.GRAY)
-                                joinBtn.isEnabled = false
-                            } else {
-                                joinBtn.text = "Join Waiting List"
-                                joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
-                                joinBtn.isEnabled = true
-                            }
-                        }, {})
+                        joinBtn.text = "Join Waiting List"
+                        joinBtn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E5A27"))
                     }
                 }, {})
 
@@ -228,32 +228,32 @@ class EventDetailsFragment : Fragment() {
 
     private fun populateInterests(chipGroup: ChipGroup, interests: String) {
         val tags = interests.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-        
+
         chipGroup.removeAllViews()
         if (interests.isEmpty()) return
-        
+
         for (tag in tags) {
             val chip = Chip(requireContext())
             chip.text = tag
             chip.isCheckable = true
             chip.isClickable = false // User cannot toggle from here
-            
+
             // Set styles to match green theme when checked
             chip.chipBackgroundColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_state_list)
             chip.chipStrokeColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_stroke_state_list)
             chip.chipStrokeWidth = resources.getDimension(R.dimen.chip_stroke_width_custom)
-            
+
             // If the interest or any of its parents are in the user's list, it shows as selected
             lifecycleScope.launch {
                 val tagInfo = tagRepository.getTag(tag)
                 val isDirectInterested = userInterested.contains(tag)
                 val isParentInterested = tagInfo?.parents?.any { userInterested.contains(it) } ?: false
-                
+
                 if (isAdded) {
                     chip.isChecked = isDirectInterested || isParentInterested
                 }
             }
-            
+
             chipGroup.addView(chip)
         }
     }

@@ -451,6 +451,8 @@ public class EventRepository {
         }).addOnFailureListener(onError::onError);
     }
 
+
+
     /**
      * Fetches the list of device IDs from a specific sub-collection of an event.
      * @param eventId The event ID.

@@ -12,6 +12,7 @@
     android:clickable="true"
     android:focusable="true">
 
+    <!-- Header -->
     <ImageButton
         android:id="@+id/backButton"
         android:layout_width="40dp"
