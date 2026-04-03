@@ -1,4 +1,4 @@
-package com.example.event_creation;
+package com.example.spiral_event_lottery_app.ui.event_creation;
 
 import android.content.Intent;
 import android.os.Bundle;

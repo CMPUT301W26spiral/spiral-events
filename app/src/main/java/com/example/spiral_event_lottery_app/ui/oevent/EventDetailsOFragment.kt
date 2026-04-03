@@ -14,7 +14,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -31,6 +30,7 @@ import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.TagRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.example.spiral_event_lottery_app.model.User
+import com.example.spiral_event_lottery_app.ui.event_creation.QRCodeActivity
 import com.example.spiral_event_lottery_app.ui.events.PosterAdapter
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
 import com.example.spiral_event_lottery_app.ui.admin.EntrantMapFragment
@@ -161,7 +161,7 @@ class EventDetailsOFragment : Fragment() {
         }
 
         viewQRBtn.setOnClickListener {
-            val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
+            val intent = Intent(requireContext(), QRCodeActivity::class.java)
             intent.putExtra("EVENT_ID", eventId)
             intent.putExtra("EVENT_NAME", title.text.toString().removeSuffix(" (Private)"))
             startActivity(intent)
