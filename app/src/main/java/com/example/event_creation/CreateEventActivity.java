@@ -84,6 +84,9 @@ public class CreateEventActivity extends AppCompatActivity {
             }
     );
 
+    /**
+     * Shows an error dialog when the user tries to select more than 3 poster images.
+     */
     private void showMaxImagesError() {
         new AlertDialog.Builder(this)
                 .setTitle("Too Many Posters")
@@ -92,6 +95,9 @@ public class CreateEventActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * Updates the UI preview for the selected event posters.
+     */
     private void updatePosterPreview() {
         if (selectedImageUris.isEmpty()) {
             llAddPosterPlaceholder.setVisibility(View.VISIBLE);
@@ -142,6 +148,9 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Finds and initializes the UI components from the layout.
+     */
     private void initializeViews() {
         posterViewPager = findViewById(R.id.iv_event_poster_pager);
         posterIndicator = findViewById(R.id.posterIndicator);
@@ -181,6 +190,9 @@ public class CreateEventActivity extends AppCompatActivity {
         progressDialog.setCancelable(false);
     }
 
+    /**
+     * Configures the tag system for adding interests to the event.
+     */
     private void setupInterestsTagSystem() {
         etInterests.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
@@ -195,6 +207,10 @@ public class CreateEventActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Adds a new interest tag as a Chip to the ChipGroup.
+     * @param interest The name of the interest tag.
+     */
     private void addInterestTag(String interest) {
         Chip chip = new Chip(this);
         chip.setText(interest);
@@ -203,6 +219,10 @@ public class CreateEventActivity extends AppCompatActivity {
         cgInterests.addView(chip);
     }
 
+    /**
+     * Retrieves all interest tags from the ChipGroup and returns them as a comma-separated string.
+     * @return A comma-separated string of interest tags.
+     */
     private String getInterestsFromChips() {
         StringBuilder interests = new StringBuilder();
         for (int i = 0; i < cgInterests.getChildCount(); i++) {
@@ -215,6 +235,9 @@ public class CreateEventActivity extends AppCompatActivity {
         return interests.toString();
     }
 
+    /**
+     * Sets up the data and adapters for all input spinners.
+     */
     private void setupSpinners() {
         populateSpinner(spinnerEventDay, 1, 31, 1, "DD");
         populateSpinner(spinnerDrawDay, 1, 31, 1, "DD");
@@ -246,6 +269,14 @@ public class CreateEventActivity extends AppCompatActivity {
         setupCustomAdapter(spinnerAccess, accessOptions);
     }
 
+    /**
+     * Populates a spinner with a range of numbers.
+     * @param spinner The spinner to populate.
+     * @param min The starting number.
+     * @param max The ending number.
+     * @param step The increment between numbers.
+     * @param placeholder The initial text shown in the spinner.
+     */
     private void populateSpinner(Spinner spinner, int min, int max, int step, String placeholder) {
         List<String> items = new ArrayList<>();
         items.add(placeholder);
@@ -255,6 +286,11 @@ public class CreateEventActivity extends AppCompatActivity {
         setupCustomAdapter(spinner, items);
     }
 
+    /**
+     * Sets a custom adapter to a spinner to handle styling and placeholders.
+     * @param spinner The target spinner.
+     * @param items The list of strings to display.
+     */
     private void setupCustomAdapter(Spinner spinner, List<String> items) {
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, items) {
             @Override
@@ -289,6 +325,10 @@ public class CreateEventActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
+    /**
+     * Returns the current date and time formatted as a string.
+     * @return Formatted timestamp string.
+     */
     private String getCurrentTimestamp() {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
     }
@@ -356,6 +396,12 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Compresses an image given its URI to reduce upload size.
+     * @param uri The URI of the image to compress.
+     * @return The compressed image as a byte array.
+     * @throws Exception If compression fails.
+     */
     private byte[] compressImage(Uri uri) throws Exception {
         InputStream input = getContentResolver().openInputStream(uri);
         Bitmap bitmap = BitmapFactory.decodeStream(input);
@@ -374,6 +420,10 @@ public class CreateEventActivity extends AppCompatActivity {
         return baos.toByteArray();
     }
 
+    /**
+     * Gathers all form data and saves the new event to Firestore.
+     * @param posterUrls List of URLs for the uploaded posters.
+     */
     private void saveEvent(List<String> posterUrls) {
         String eventName = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
@@ -443,6 +493,10 @@ public class CreateEventActivity extends AppCompatActivity {
         finish();
     }
 
+    /**
+     * Validates all input fields in the event creation form.
+     * @return True if the form is valid, false otherwise.
+     */
     private boolean validateForm() {
         boolean isValid = true;
         isValid &= checkEmpty(etEventName);
@@ -478,6 +532,10 @@ public class CreateEventActivity extends AppCompatActivity {
         return true;
     }
 
+    /**
+     * Verifies if the lottery draw date is scheduled before the event start date.
+     * @return True if the draw is before the event, false otherwise.
+     */
     private boolean isDrawBeforeEvent() {
         try {
             Calendar eventCal = Calendar.getInstance();
@@ -508,6 +566,11 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Checks if an EditText is empty and updates its background if it is.
+     * @param et The EditText to check.
+     * @return True if not empty, false otherwise.
+     */
     private boolean checkEmpty(EditText et) {
         if (et.getText().toString().trim().isEmpty()) {
             et.setBackgroundResource(R.drawable.edit_text_error_background);
@@ -518,6 +581,11 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Checks if a spinner has a valid selection (not the placeholder).
+     * @param spinner The spinner to check.
+     * @return True if selected, false otherwise.
+     */
     private boolean checkSpinnerSelected(Spinner spinner) {
         if (spinner.getSelectedItemPosition() == 0) {
             spinner.setBackgroundResource(R.drawable.edit_text_error_background);

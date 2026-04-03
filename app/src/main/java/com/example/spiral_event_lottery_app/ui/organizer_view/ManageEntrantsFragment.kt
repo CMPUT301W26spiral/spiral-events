@@ -157,10 +157,14 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         db.collection("events").document(eventId).collection("waitlist").get()
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.id }
+                val statusMap = snapshot.documents.associate { doc ->
+                    doc.id to (doc.getString("status") ?: "joined")
+                }
                 waitingCountText.text = "${deviceIds.size} People on Waiting List"
                 resolveUsers(deviceIds) { users ->
                     waitingRecycler.adapter = EntrantAdapter(
                         users,
+                        statusMap = statusMap,
                         onRemove = null,
                         onAssignCoOrganizer = { user ->
                             AssignCoOrganizerDialog(requireContext(), eventId, eventName).show(user)
@@ -501,14 +505,18 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
             val currentCount = eventDoc.getLong("waiting_count") ?: 0L
             transaction.set(
                 waitlistRef,
-                mapOf("device_id" to user.deviceId, "joined_at" to Timestamp.now())
+                mapOf(
+                    "device_id" to user.deviceId,
+                    "joined_at" to Timestamp.now(),
+                    "status" to "pending" // Private invitation starts as pending
+                )
             )
             transaction.update(eventRef, "waiting_count", currentCount + 1)
             eventDoc.getString("name") ?: "Private Event"
         }.addOnSuccessListener { name ->
             NotificationManager.sendNotification(
                 user.deviceId, "Private Invitation",
-                "You have been invited to join the waiting list for $name!",
+                "You have been invited to join the waiting list for $name! Please accept or decline the invitation.",
                 "ORGANIZER", name, eventId
             )
             Toast.makeText(requireContext(), "Invitation sent successfully!", Toast.LENGTH_SHORT).show()

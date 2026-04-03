@@ -121,31 +121,51 @@ class EventDetailsLeaveFragment : Fragment() {
                 posterIndicator.visibility = View.GONE
             }
 
+            val myId = DeviceIdProvider.getDeviceId(requireContext())
+
             // Real-time check for entrant status
             repository.getWinnerStatus(eventId) { status ->
                 if (!isAdded) return@getWinnerStatus
 
-                // Normalizing status case sensitivity if needed ("Accepted" vs "accepted")
                 if ("accepted".equals(status, ignoreCase = true)) {
-                    // Already accepted: Show success message, hide all action buttons
                     joinedText.visibility = View.VISIBLE
                     joinedText.text = "You have accepted the invitation! \uD83C\uDF89"
                     joinedText.setTextColor(resources.getColor(R.color.primary_green, null))
                     acceptBtn.visibility = View.GONE
                     actionBtn.visibility = View.GONE
                 } else if ("declined".equals(status, ignoreCase = true)) {
-                    // Show declined status
                     joinedText.visibility = View.VISIBLE
                     joinedText.text = "You declined this invitation"
                     joinedText.setTextColor(android.graphics.Color.RED)
                     acceptBtn.visibility = View.GONE
                     actionBtn.visibility = View.GONE
+                } else if (status != null) {
+                    // This means they are in selected_list but haven't accepted/declined yet
+                    acceptBtn.visibility = View.VISIBLE
+                    actionBtn.visibility = View.VISIBLE
+                    actionBtn.text = "Decline Invitation"
+
+                    acceptBtn.setOnClickListener {
+                        val handler = acceptanceHandling()
+                        handler.invitation_accepted(requireContext(), eventId, myId)
+                    }
+
+                    actionBtn.setOnClickListener {
+                        AlertDialog.Builder(requireContext())
+                            .setTitle("Decline Invitation")
+                            .setMessage("Are you sure you want to decline? You will not be able to join again.")
+                            .setPositiveButton("Decline") { _, _ ->
+                                repository.declineInvitation(eventId, {
+                                    // Status update will trigger UI refresh
+                                }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                    }
                 } else {
-                    // Check if the user is in the canceled_list (declined via redraw logic)
+                    // Check if they are in the canceled_list
                     repository.getEntrantIds(eventId, "canceled_list", { canceledIds ->
                         if (!isAdded) return@getEntrantIds
-                        val myId = DeviceIdProvider.getDeviceId(requireContext())
-
                         if (canceledIds.contains(myId)) {
                             joinedText.visibility = View.VISIBLE
                             joinedText.text = "You declined this invitation"
@@ -153,35 +173,37 @@ class EventDetailsLeaveFragment : Fragment() {
                             acceptBtn.visibility = View.GONE
                             actionBtn.visibility = View.GONE
                         } else {
-                            joinedText.visibility = View.GONE
-
-                            repository.isSelected(eventId, { isWinner ->
-                                if (!isAdded) return@isSelected
-
-                                if (isWinner) {
+                            // Check waitlist status (could be pending for private event)
+                            repository.getWaitlistStatus(eventId) { waitlistStatus ->
+                                if (!isAdded) return@getWaitlistStatus
+                                
+                                if ("pending".equals(waitlistStatus, ignoreCase = true)) {
+                                    joinedText.visibility = View.GONE
                                     acceptBtn.visibility = View.VISIBLE
                                     actionBtn.visibility = View.VISIBLE
-                                    actionBtn.text = "Decline Invitation"
-
+                                    actionBtn.text = "Decline Private Invitation"
+                                    
                                     acceptBtn.setOnClickListener {
-                                        val handler = acceptanceHandling()
-                                        handler.invitation_accepted(requireContext(), eventId, myId)
-                                        // The status check in this listener will automatically update the UI
+                                        repository.acceptPrivateInvitation(eventId, {
+                                            Toast.makeText(requireContext(), "Invitation accepted!", Toast.LENGTH_SHORT).show()
+                                        }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
                                     }
-
+                                    
                                     actionBtn.setOnClickListener {
                                         AlertDialog.Builder(requireContext())
                                             .setTitle("Decline Invitation")
-                                            .setMessage("Are you sure you want to decline? You will not be able to join again.")
+                                            .setMessage("Are you sure you want to decline this private invitation?")
                                             .setPositiveButton("Decline") { _, _ ->
-                                                repository.declineInvitation(eventId, {
-                                                    // Redraw handled in repository.declineInvitation onSuccess
+                                                repository.declinePrivateInvitation(eventId, {
+                                                    parentFragmentManager.popBackStack()
                                                 }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
                                             }
                                             .setNegativeButton("Cancel", null)
                                             .show()
                                     }
                                 } else {
+                                    // Normal waitlist behavior
+                                    joinedText.visibility = View.GONE
                                     acceptBtn.visibility = View.GONE
                                     actionBtn.visibility = View.VISIBLE
                                     actionBtn.text = "Leave Waiting List"
@@ -198,7 +220,7 @@ class EventDetailsLeaveFragment : Fragment() {
                                             .show()
                                     }
                                 }
-                            }, {})
+                            }
                         }
                     }, {})
                 }

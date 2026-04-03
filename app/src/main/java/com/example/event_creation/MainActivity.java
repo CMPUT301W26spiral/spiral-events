@@ -10,6 +10,9 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.spiral_event_lottery_app.R;
 
+/**
+ * The main entry point for the event creation module.
+ */
 public class MainActivity extends AppCompatActivity {
 
     @Override

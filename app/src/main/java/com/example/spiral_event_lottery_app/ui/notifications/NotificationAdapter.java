@@ -78,14 +78,19 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 holder.goButton.setVisibility(View.GONE);
                 break;
             case "REQUESTED":
+            case "INVITATION": // Lottery Win
                 holder.title.setTextColor(Color.parseColor("#FF8F00")); // Amber
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Go");
+                holder.goButton.setText("View Invite");
                 break;
             case "ORGANIZER":
                 holder.title.setTextColor(Color.parseColor("#6A1B9A")); // Purple
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Go");
+                if ("Private Invitation".equals(notification.getTitle())) {
+                    holder.goButton.setText("View Invite");
+                } else {
+                    holder.goButton.setText("Go");
+                }
                 break;
             case "CO_ORGANIZER_INVITE":
                 holder.title.setTextColor(Color.parseColor("#1565C0"));
@@ -106,9 +111,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 AppCompatActivity activity = getActivity(context);
                 if (activity == null) return;
 
-                // Special handling for ACCEPTED (Wins): Should navigate to where they can Accept/Decline
-                // Standard behavior: Go to EventDetailsLeaveFragment which contains the My Events context logic
-
                 EventRepository repository = new EventRepository(activity);
                 String myDeviceId = DeviceIdProvider.getDeviceId(context);
 
@@ -127,32 +129,53 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                                 .addToBackStack("details")
                                 .commit();
                     }
-                    else {
-                        // Proceed with existing logic if not canceled
-                        repository.isJoined(eventId, joined -> {
-                            if (activity.isFinishing() || activity.isDestroyed()) return;
-
-                            activity.getSupportFragmentManager().beginTransaction()
-                                    .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
-                                    .addToBackStack("details")
-                                    .commit();
-                        }, e -> {
-                            // Fallback to standard details if check fails
-                            activity.getSupportFragmentManager().beginTransaction()
-                                    .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
-                                    .addToBackStack("details")
-                                    .commit();
-                        });
-                    }
-                }, e -> {
-                    // Fallback to standard navigation if canceled check fails
-                    repository.isJoined(eventId, joined -> {
-                        if (activity.isFinishing() || activity.isDestroyed()) return;
+                    else if ("INVITATION".equals(notification.getType()) || 
+                             "ACCEPTED".equals(notification.getType()) || 
+                             ("ORGANIZER".equals(notification.getType()) && "Private Invitation".equals(notification.getTitle()))) {
+                        // These always go to the "Leave/Accept" fragment
                         activity.getSupportFragmentManager().beginTransaction()
                                 .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
                                 .addToBackStack("details")
                                 .commit();
-                    }, err -> {});
+                    }
+                    else {
+                        // Fallback: check if joined/selected or go to general details
+                        repository.isSelected(eventId, isSelected -> {
+                            if (isSelected) {
+                                activity.getSupportFragmentManager().beginTransaction()
+                                        .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
+                                        .addToBackStack("details")
+                                        .commit();
+                            } else {
+                                repository.isJoined(eventId, isJoined -> {
+                                    if (activity.isFinishing() || activity.isDestroyed()) return;
+                                    
+                                    if (isJoined) {
+                                        activity.getSupportFragmentManager().beginTransaction()
+                                                .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
+                                                .addToBackStack("details")
+                                                .commit();
+                                    } else {
+                                        activity.getSupportFragmentManager().beginTransaction()
+                                                .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                                                .addToBackStack("details")
+                                                .commit();
+                                    }
+                                }, e -> {
+                                    activity.getSupportFragmentManager().beginTransaction()
+                                            .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                                            .addToBackStack("details")
+                                            .commit();
+                                });
+                            }
+                        }, e -> {});
+                    }
+                }, e -> {
+                    // Fallback if canceled check fails
+                    activity.getSupportFragmentManager().beginTransaction()
+                            .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                            .addToBackStack("details")
+                            .commit();
                 });
             }
 
