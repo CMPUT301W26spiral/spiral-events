@@ -69,23 +69,28 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         // UI Styling based on notification category
         switch (notification.getType()) {
             case "ACCEPTED":
-                holder.title.setTextColor(Color.parseColor("#2E5A27"));
+                holder.title.setTextColor(Color.parseColor("#2E5A27")); // Green
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Accept/Decline");
+                holder.goButton.setText("View Details"); // Leads to My Events logic
                 break;
             case "DENIED":
-                holder.title.setTextColor(Color.parseColor("#B71C1C"));
+                holder.title.setTextColor(Color.parseColor("#B71C1C")); // Red
                 holder.goButton.setVisibility(View.GONE);
                 break;
             case "REQUESTED":
-                holder.title.setTextColor(Color.parseColor("#FF8F00"));
+            case "INVITATION": // Lottery Win
+                holder.title.setTextColor(Color.parseColor("#FF8F00")); // Amber
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Go");
+                holder.goButton.setText("View Invite");
                 break;
             case "ORGANIZER":
-                holder.title.setTextColor(Color.parseColor("#6A1B9A"));
+                holder.title.setTextColor(Color.parseColor("#6A1B9A")); // Purple
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Go");
+                if ("Private Invitation".equals(notification.getTitle())) {
+                    holder.goButton.setText("View Invite");
+                } else {
+                    holder.goButton.setText("Go");
+                }
                 break;
             case "CO_ORGANIZER_INVITE":
                 holder.title.setTextColor(Color.parseColor("#1565C0"));
@@ -94,7 +99,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 break;
             default:
                 holder.title.setTextColor(Color.BLACK);
-                holder.goButton.setVisibility(View.VISIBLE);
                 holder.goButton.setText("Go");
                 break;
         }
@@ -104,42 +108,8 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             String eventId = notification.getEventId();
             if (eventId != null) {
                 Context context = v.getContext();
-
-                if ("ACCEPTED".equals(notification.getType())) {
-                    new androidx.appcompat.app.AlertDialog.Builder(context)
-                            .setTitle("Congratulations!")
-                            .setMessage("You have been chosen for this event! Do you want to accept or decline the invitation?")
-                            .setPositiveButton("Accept", (dialog, which) -> {
-                                com.example.spiral_event_lottery_app.acceptanceHandling handler =
-                                        new com.example.spiral_event_lottery_app.acceptanceHandling();
-                                handler.invitation_accepted(context, eventId, notification.getRecipientId());
-                                holder.goButton.setText("Accepted");
-                                holder.goButton.setEnabled(false);
-                            })
-                            .setNegativeButton("Decline", (dialog, which) -> {
-                                com.example.spiral_event_lottery_app.acceptanceHandling handler =
-                                        new com.example.spiral_event_lottery_app.acceptanceHandling();
-                                handler.invitation_declined(context, eventId, notification.getRecipientId());
-                                holder.goButton.setText("Declined");
-                                holder.goButton.setEnabled(false);
-                            })
-                            .show();
-                    return;
-                }
-
                 AppCompatActivity activity = getActivity(context);
                 if (activity == null) return;
-
-                if ("CO_ORGANIZER_INVITE".equals(notification.getType())) {
-                    activity.getSupportFragmentManager().beginTransaction()
-                            .add(R.id.fragmentContainer, EventDetailsOFragment.Companion.newInstance(eventId), "details_screen")
-                            .addToBackStack("details")
-                            .commit();
-                    return;
-                }
-
-                // Special handling for ACCEPTED (Wins): Should navigate to where they can Accept/Decline
-                // Standard behavior: Go to EventDetailsLeaveFragment which contains the My Events context logic
 
                 EventRepository repository = new EventRepository(activity);
                 String myDeviceId = DeviceIdProvider.getDeviceId(context);
@@ -150,34 +120,65 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
                     if (canceledIds.contains(myDeviceId)) {
                         Toast.makeText(context, "You are not part of this event anymore.", Toast.LENGTH_LONG).show();
-                    } else {
-                        // Proceed with existing logic if not canceled
-                        repository.isJoined(eventId, joined -> {
-                            if (activity.isFinishing() || activity.isDestroyed()) return;
-
-                            activity.getSupportFragmentManager().beginTransaction()
-                                    .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
-                                    .addToBackStack("details")
-                                    .commit();
-                        }, e -> {
-                            // Fallback to standard details if check fails
-                            activity.getSupportFragmentManager().beginTransaction()
-                                    .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
-                                    .addToBackStack("details")
-                                    .commit();
-                        });
+                        return;
                     }
-                }, e -> {
-                    // Fallback to standard navigation if canceled check fails
-                    repository.isJoined(eventId, joined -> {
-                        if (activity.isFinishing() || activity.isDestroyed()) return;
+
+                    if ("CO_ORGANIZER_INVITE".equals(notification.getType())) {
+                        activity.getSupportFragmentManager().beginTransaction()
+                                .add(R.id.fragmentContainer, EventDetailsOFragment.Companion.newInstance(eventId), "details_screen")
+                                .addToBackStack("details")
+                                .commit();
+                    }
+                    else if ("INVITATION".equals(notification.getType()) || 
+                             "ACCEPTED".equals(notification.getType()) || 
+                             ("ORGANIZER".equals(notification.getType()) && "Private Invitation".equals(notification.getTitle()))) {
+                        // These always go to the "Leave/Accept" fragment
                         activity.getSupportFragmentManager().beginTransaction()
                                 .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
                                 .addToBackStack("details")
                                 .commit();
-                    }, err -> {});
+                    }
+                    else {
+                        // Fallback: check if joined/selected or go to general details
+                        repository.isSelected(eventId, isSelected -> {
+                            if (isSelected) {
+                                activity.getSupportFragmentManager().beginTransaction()
+                                        .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
+                                        .addToBackStack("details")
+                                        .commit();
+                            } else {
+                                repository.isJoined(eventId, isJoined -> {
+                                    if (activity.isFinishing() || activity.isDestroyed()) return;
+                                    
+                                    if (isJoined) {
+                                        activity.getSupportFragmentManager().beginTransaction()
+                                                .add(R.id.fragmentContainer, EventDetailsLeaveFragment.Companion.newInstance(eventId), "details_screen")
+                                                .addToBackStack("details")
+                                                .commit();
+                                    } else {
+                                        activity.getSupportFragmentManager().beginTransaction()
+                                                .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                                                .addToBackStack("details")
+                                                .commit();
+                                    }
+                                }, e -> {
+                                    activity.getSupportFragmentManager().beginTransaction()
+                                            .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                                            .addToBackStack("details")
+                                            .commit();
+                                });
+                            }
+                        }, e -> {});
+                    }
+                }, e -> {
+                    // Fallback if canceled check fails
+                    activity.getSupportFragmentManager().beginTransaction()
+                            .add(R.id.fragmentContainer, EventDetailsFragment.Companion.newInstance(eventId), "details_screen")
+                            .addToBackStack("details")
+                            .commit();
                 });
             }
+
         });
     }
 

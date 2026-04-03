@@ -34,6 +34,10 @@ public class EventManager {
         tagRepository = new TagRepository();
     }
 
+    /**
+     * Returns the singleton instance of EventManager.
+     * @return The EventManager instance.
+     */
     public static synchronized EventManager getInstance() {
         if (instance == null) {
             instance = new EventManager();
@@ -88,6 +92,11 @@ public class EventManager {
         }
     }
 
+    /**
+     * Uploads the event poster to Firebase Storage and then saves the event to Firestore.
+     * @param event The event object.
+     * @param docRef The Firestore document reference.
+     */
     private void uploadPosterAndSave(Event event, DocumentReference docRef) {
         Uri file = Uri.parse(event.getPosterUriString());
         StorageReference storageRef = storage.getReference().child("event_posters/" + UUID.randomUUID().toString());
@@ -103,12 +112,21 @@ public class EventManager {
                 });
     }
 
+    /**
+     * Saves the event data to Firestore.
+     * @param event The event object.
+     * @param docRef The Firestore document reference.
+     */
     private void saveToFirestore(Event event, DocumentReference docRef) {
         docRef.set(event)
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Event added with ID: " + event.getId()))
                 .addOnFailureListener(e -> Log.w(TAG, "Error adding event", e));
     }
 
+    /**
+     * Returns a copy of the current event list.
+     * @return List of Event objects.
+     */
     public List<Event> getEvents() {
         return new ArrayList<>(eventList);
     }

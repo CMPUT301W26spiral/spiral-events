@@ -28,6 +28,7 @@ import com.bumptech.glide.Glide;
 import com.example.spiral_event_lottery_app.R;
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider;
 import com.example.spiral_event_lottery_app.ui.LaunchActivity;
+import com.example.spiral_event_lottery_app.ui.admin.AdminFragment;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
@@ -55,13 +56,14 @@ public class ProfileFragment extends Fragment {
 
     private LinearLayout personalInfoViewGroup, personalInfoEditGroup, profileEditActions, notificationEditActions;
     private Button editProfileButton, cancelProfileEdit, saveProfileEdit, editNotificationsButton, cancelNotificationsEdit, saveNotificationsEdit, deleteProfileButton;
-    private Button logoutButton, changeInterestsButton;
+    private Button logoutButton, changeInterestsButton, adminDashboardButton;
     private CheckBox whenChosenCheck, whenNotChosenCheck, organizersAdminsCheck;
 
     private Uri selectedImageUri;
     private String currentPhotoUrl = "";
     private String currentName = "", currentEmail = "", currentPhone = "";
     private boolean currentNotifyWhenChosen = true, currentNotifyWhenNotChosen = true, currentNotifyOrganizersAdmins = true;
+    private boolean isAdmin = false;
 
     private final ActivityResultLauncher<String> pickImage =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
@@ -130,6 +132,7 @@ public class ProfileFragment extends Fragment {
         deleteProfileButton = view.findViewById(R.id.deleteProfileButton);
         logoutButton = view.findViewById(R.id.logoutButton);
         changeInterestsButton = view.findViewById(R.id.changeInterestsButton);
+        adminDashboardButton = view.findViewById(R.id.adminDashboardButton);
     }
 
     /**
@@ -144,6 +147,7 @@ public class ProfileFragment extends Fragment {
         setNotificationCheckboxesEnabled(false);
         editNotificationsButton.setVisibility(View.VISIBLE);
         notificationEditActions.setVisibility(View.GONE);
+        adminDashboardButton.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
     }
 
     /**
@@ -162,6 +166,14 @@ public class ProfileFragment extends Fragment {
         changeInterestsButton.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), InterestsActivity.class);
             startActivity(intent);
+        });
+        adminDashboardButton.setOnClickListener(v -> {
+            if (getActivity() != null) {
+                getActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragmentContainer, AdminFragment.newInstance())
+                        .addToBackStack(null)
+                        .commit();
+            }
         });
     }
 
@@ -208,11 +220,15 @@ public class ProfileFragment extends Fragment {
             
             Boolean notifyOrganizers = doc.getBoolean("notifyOrganizersAdmins");
             currentNotifyOrganizersAdmins = notifyOrganizers != null ? notifyOrganizers : true;
+
+            isAdmin = doc.getBoolean("isAdmin") != null && doc.getBoolean("isAdmin");
             
             updateProfileViews();
             if (!currentPhotoUrl.isEmpty()) {
                 Glide.with(this).load(currentPhotoUrl).into(profileImage);
             }
+            
+            adminDashboardButton.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -301,6 +317,7 @@ public class ProfileFragment extends Fragment {
         updates.put("notifyWhenChosen", whenChosenCheck.isChecked());
         updates.put("notifyWhenNotChosen", whenNotChosenCheck.isChecked());
         updates.put("notifyOrganizersAdmins", organizersAdminsCheck.isChecked());
+        updates.put("isAdmin", isAdmin);
 
         db.collection("users").document(uid).set(updates)
                 .addOnSuccessListener(unused -> {

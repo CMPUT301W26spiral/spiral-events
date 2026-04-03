@@ -157,10 +157,14 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         db.collection("events").document(eventId).collection("waitlist").get()
             .addOnSuccessListener { snapshot ->
                 val deviceIds = snapshot.documents.map { it.id }
+                val statusMap = snapshot.documents.associate { doc ->
+                    doc.id to (doc.getString("status") ?: "joined")
+                }
                 waitingCountText.text = "${deviceIds.size} People on Waiting List"
                 resolveUsers(deviceIds) { users ->
                     waitingRecycler.adapter = EntrantAdapter(
                         users,
+                        statusMap = statusMap,
                         onRemove = null,
                         onAssignCoOrganizer = { user ->
                             AssignCoOrganizerDialog(requireContext(), eventId, eventName).show(user)
@@ -202,7 +206,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
      * Implements US 02.06.02.
      */
     private fun loadCancelledEntrants() {
-        db.collection("events").document(eventId).collection("selected_list")
+        db.collection("events").document(eventId).collection("canceled_list")
             .whereIn("status", listOf("declined", "cancelled"))
             .get()
             .addOnSuccessListener { snapshot ->
@@ -224,7 +228,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     // -------------------------------------------------------------------------
 
     /**
-     * Cancels a specific entrant by setting their status to "cancelled" in selected_list.
+     * Cancels a specific entrant by moving them from selected_list to canceled_list.
      * Shows a confirmation dialog before cancelling.
      * Implements US 02.06.04.
      *
@@ -235,18 +239,28 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
             .setTitle("Cancel Entrant")
             .setMessage("Are you sure you want to cancel this entrant?")
             .setPositiveButton("Yes") { _, _ ->
-                db.collection("events").document(eventId)
-                    .collection("selected_list").document(deviceId)
-                    .update("status", "cancelled")
-                    .addOnSuccessListener {
-                        Toast.makeText(requireContext(), "Entrant cancelled.", Toast.LENGTH_SHORT).show()
-                        // Reload both tabs so entrant moves from Invited → Cancelled
-                        loadInvitedEntrants()
-                        loadCancelledEntrants()
+                val eventRef = db.collection("events").document(eventId)
+                val selectedRef = eventRef.collection("selected_list").document(deviceId)
+                val canceledRef = eventRef.collection("canceled_list").document(deviceId)
+
+                db.runTransaction { transaction ->
+                    val snapshot = transaction.get(selectedRef)
+                    if (snapshot.exists()) {
+                        val data = snapshot.data?.toMutableMap() ?: mutableMapOf()
+                        data["status"] = "cancelled"
+                        data["cancelledAt"] = Timestamp.now()
+
+                        transaction.set(canceledRef, data)
+                        transaction.delete(selectedRef)
                     }
-                    .addOnFailureListener {
-                        Toast.makeText(requireContext(), "Failed to cancel entrant.", Toast.LENGTH_SHORT).show()
-                    }
+                    null
+                }.addOnSuccessListener {
+                    Toast.makeText(requireContext(), "Entrant cancelled.", Toast.LENGTH_SHORT).show()
+                    loadInvitedEntrants()
+                    loadCancelledEntrants()
+                }.addOnFailureListener { e ->
+                    Toast.makeText(requireContext(), "Failed to cancel: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
             .setNegativeButton("No", null)
             .show()
@@ -359,12 +373,13 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                         Toast.makeText(requireContext(), "Message sent successfully!", Toast.LENGTH_SHORT).show()
                     }
             } else {
+                val collectionName = if (currentTab == "cancelled") "canceled_list" else "selected_list"
                 val statusFilters = when (currentTab) {
                     "invited"   -> listOf("pending", "accepted", "invited")
                     "cancelled" -> listOf("declined", "cancelled")
                     else        -> listOf("pending", "accepted")
                 }
-                db.collection("events").document(eventId).collection("selected_list")
+                db.collection("events").document(eventId).collection(collectionName)
                     .whereIn("status", statusFilters).get()
                     .addOnSuccessListener { snapshot ->
                         if (snapshot.isEmpty) {
@@ -465,7 +480,9 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         AlertDialog.Builder(requireContext())
             .setTitle("Confirm Invitation")
             .setMessage("Add ${user.name} to the waiting list for this event?")
-            .setPositiveButton("Invite") { _, _ -> inviteUserToWaitlist(user) }
+            .setPositiveButton("Invite") { _, _ ->
+                inviteUserToWaitlist(user)
+            }
             .setNegativeButton("Cancel", null)
             .show()
     }
@@ -488,14 +505,18 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
             val currentCount = eventDoc.getLong("waiting_count") ?: 0L
             transaction.set(
                 waitlistRef,
-                mapOf("device_id" to user.deviceId, "joined_at" to Timestamp.now())
+                mapOf(
+                    "device_id" to user.deviceId,
+                    "joined_at" to Timestamp.now(),
+                    "status" to "pending" // Private invitation starts as pending
+                )
             )
             transaction.update(eventRef, "waiting_count", currentCount + 1)
             eventDoc.getString("name") ?: "Private Event"
         }.addOnSuccessListener { name ->
             NotificationManager.sendNotification(
                 user.deviceId, "Private Invitation",
-                "You have been invited to join the waiting list for $name!",
+                "You have been invited to join the waiting list for $name! Please accept or decline the invitation.",
                 "ORGANIZER", name, eventId
             )
             Toast.makeText(requireContext(), "Invitation sent successfully!", Toast.LENGTH_SHORT).show()
