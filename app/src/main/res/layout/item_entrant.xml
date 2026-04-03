@@ -2,13 +2,16 @@
 <!--
     item_entrant.xml
     Layout for a single entrant row in the Manage Entrants RecyclerView.
-    Displays the entrant's name/device ID and an optional remove button.
+    Displays the entrant's name, status badge, co-organizer button, and remove button.
 
     Used by: EntrantAdapter
     User Stories:
     - US 02.02.01: View list of entrants on waiting list
     - US 02.06.01: View list of chosen entrants
-    - US 02.06.04: Cancel entrants (via remove button)
+    - US 02.06.02: View cancelled entrants
+    - US 02.06.03: View final enrolled entrants
+    - US 02.06.04: Cancel entrants via remove button
+    - US 02.09.01: Assign entrant as co-organizer
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -18,7 +21,7 @@
     android:gravity="center_vertical"
     android:padding="12dp">
 
-    <!-- Circular avatar placeholder for the entrant -->
+    <!-- Circular avatar placeholder -->
     <View
         android:layout_width="40dp"
         android:layout_height="40dp"
@@ -34,6 +37,21 @@
         android:textSize="16sp"
         android:textColor="#000000" />
 
+    <!-- Status badge: Pending (orange), Accepted (green), Declined/Cancelled (red) -->
+    <TextView
+        android:id="@+id/statusBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="4dp"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/bg_chip_selected"
+        android:visibility="gone" />
+
+    <!-- Co-organizer assignment button, shown only on Waiting tab -->
     <Button
         android:id="@+id/makeCoOrganizerButton"
         android:layout_width="wrap_content"
@@ -44,12 +62,12 @@
         android:textSize="12sp"
         android:visibility="gone" />
 
-    <!-- Remove button - only shown on Invited tab for organizer to cancel entrants -->
+    <!-- Remove button, shown only on Invited tab -->
     <ImageButton
         android:id="@+id/removeButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_back"
+        android:src="@drawable/baseline_close_24"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Remove entrant"
         android:visibility="gone" />

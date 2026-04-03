@@ -84,12 +84,19 @@ public class QRCodeActivity extends AppCompatActivity {
 
         ivQRCode = findViewById(R.id.iv_qr_code);
         tvEventName = findViewById(R.id.tv_event_name);
+        TextView tvSuccessMsg = findViewById(R.id.tv_success_msg);
 
         String eventName = getIntent().getStringExtra("EVENT_NAME");
         String eventId = getIntent().getStringExtra("EVENT_ID");
 
-        if (eventName != null && tvEventName != null) {
-            tvEventName.setText(eventName);
+        if (eventName != null) {
+            if (tvEventName != null) {
+                tvEventName.setText(eventName);
+            } else if (tvSuccessMsg != null) {
+                // If tv_event_name doesn't exist (like in activity_qr_code.xml),
+                // use the success message to show the event name.
+                tvSuccessMsg.setText("Successfully Created: " + eventName);
+            }
         }
 
         if (eventId != null) {
