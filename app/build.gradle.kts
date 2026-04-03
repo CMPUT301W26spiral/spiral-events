@@ -3,6 +3,10 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
+    // For general Dokka support
+    id("org.jetbrains.dokka") version "2.2.0"
+    // Specifically for Javadoc format
+    id("org.jetbrains.dokka-javadoc") version "2.2.0"
 }
 val properties = Properties()
 val localPropertiesFile = project.rootProject.file("local.properties")
@@ -89,4 +93,8 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.test:rules:1.5.0")
+
+    //javadoc
 }
+
+

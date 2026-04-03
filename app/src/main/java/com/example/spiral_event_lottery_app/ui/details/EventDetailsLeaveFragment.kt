@@ -19,6 +19,7 @@ import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.example.spiral_event_lottery_app.data.TagRepository
+import com.example.spiral_event_lottery_app.ui.event_creation.QRCodeActivity
 import com.example.spiral_event_lottery_app.ui.events.PosterAdapter
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -73,7 +74,7 @@ class EventDetailsLeaveFragment : Fragment() {
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
         viewQRBtn.setOnClickListener {
-            val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
+            val intent = Intent(requireContext(), QRCodeActivity::class.java)
             intent.putExtra("EVENT_ID", eventId)
             intent.putExtra("EVENT_NAME", title.text.toString())
             startActivity(intent)
