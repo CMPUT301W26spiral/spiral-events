@@ -16,7 +16,7 @@ import com.example.spiral_event_lottery_app.ui.oevent.EventDetailsOFragment
 import com.google.firebase.firestore.ListenerRegistration
 
 /**
- * Fragment that displays joined events, organized events, and past (declined) events.
+ * Fragment that displays joined events, organized events, and past (declined, cancelled, or accepted) events.
  */
 class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
 
@@ -52,7 +52,6 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
         // 2. Setup Organizer Events RecyclerView
         val organizerRv = view.findViewById<RecyclerView>(R.id.organizerEventsRecyclerView)
         organizerAdapter = MyEventsAdapter(emptyList()) { event ->
-            // Use instance method or specific Organizer Details fragment if available
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, EventDetailsOFragment.newInstance(event.id))
                 .addToBackStack(null)
@@ -95,30 +94,48 @@ class MyEventsFragment : Fragment(R.layout.fragment_my_events) {
                 var processed = 0
 
                 for (event in allEvents) {
+                    // Check if user is in canceled_list (declined or cancelled by organizer)
                     repository.getEntrantIds(event.id, "canceled_list", { canceledIds ->
+                        if (!isAdded) return@getEntrantIds
+                        
                         if (canceledIds.contains(myDeviceId)) {
                             pastEvents.add(event)
                         } else {
-                            currentEvents.add(event)
+                            // Check status in selected_list
+                            repository.getWinnerStatus(event.id) { status ->
+                                if (!isAdded) return@getWinnerStatus
+                                
+                                // Move to Past Events if the user has accepted, declined, or been cancelled
+                                if ("accepted".equals(status, ignoreCase = true) || 
+                                    "declined".equals(status, ignoreCase = true) || 
+                                    "cancelled".equals(status, ignoreCase = true)) {
+                                    pastEvents.add(event)
+                                } else {
+                                    // Otherwise (pending/waitlist), keep in Joined Events
+                                    currentEvents.add(event)
+                                }
+
+                                checkAndSubmit(allEvents.size, ++processed, currentEvents, pastEvents)
+                            }
+                            return@getEntrantIds // processed handled inside winnerStatus callback
                         }
 
-                        processed++
-                        if (processed == allEvents.size && isAdded) {
-                            joinedAdapter.submitList(currentEvents.sortedBy { it.name })
-                            pastAdapter.submitList(pastEvents.sortedBy { it.name })
-                            view?.let { updateJoinedCount(it, currentEvents.size) }
-                        }
+                        checkAndSubmit(allEvents.size, ++processed, currentEvents, pastEvents)
                     }, {
-                        processed++
-                        if (processed == allEvents.size && isAdded) {
-                            joinedAdapter.submitList(currentEvents.sortedBy { it.name })
-                            pastAdapter.submitList(pastEvents.sortedBy { it.name })
-                        }
+                        checkAndSubmit(allEvents.size, ++processed, currentEvents, pastEvents)
                     })
                 }
             },
             { }
         )
+    }
+
+    private fun checkAndSubmit(total: Int, processed: Int, current: List<com.example.spiral_event_lottery_app.model.Event>, past: List<com.example.spiral_event_lottery_app.model.Event>) {
+        if (processed == total && isAdded) {
+            joinedAdapter.submitList(current.distinctBy { it.id }.sortedBy { it.name })
+            pastAdapter.submitList(past.distinctBy { it.id }.sortedBy { it.name })
+            view?.let { updateJoinedCount(it, current.size) }
+        }
     }
 
     override fun onStop() {

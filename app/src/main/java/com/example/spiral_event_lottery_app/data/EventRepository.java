@@ -347,7 +347,7 @@ public class EventRepository {
                 .addOnFailureListener(onError::onError);
     }
 
-    public void joinWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onAlreadyJoined, final ErrorCallback onError) {
+    public void joinWaitlist(String eventId, Double latitude, Double longitude, final SuccessCallback onSuccess, final SuccessCallback onAlreadyJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
         DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
         DocumentReference selectedRef = eventRef.collection("selected_list").document(deviceId);
@@ -378,6 +378,12 @@ public class EventRepository {
                     Map<String, Object> waitlistData = new HashMap<>();
                     waitlistData.put("joined_at", Timestamp.now());
                     waitlistData.put("device_id", deviceId);
+                    
+                    if (latitude != null && longitude != null) {
+                        waitlistData.put("latitude", latitude);
+                        waitlistData.put("longitude", longitude);
+                    }
+                    
                     transaction.set(waitlistRef, waitlistData);
                     transaction.update(eventRef, "waiting_count", currentCount + 1);
                     return null;

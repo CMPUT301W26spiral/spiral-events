@@ -33,6 +33,7 @@ import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.example.spiral_event_lottery_app.model.User
 import com.example.spiral_event_lottery_app.ui.events.PosterAdapter
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
+import com.example.spiral_event_lottery_app.ui.admin.EntrantMapFragment
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.tabs.TabLayout
@@ -200,6 +201,14 @@ class EventDetailsOFragment : Fragment() {
         viewEntrantsBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
+
+        // Map View Navigation
+        viewLocationsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, EntrantMapFragment.newInstance(eventId))
                 .addToBackStack(null)
                 .commit()
         }

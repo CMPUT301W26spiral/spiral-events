@@ -1,4 +1,5 @@
 package com.example.spiral_event_lottery_app.ui.events
+
 import android.graphics.Color
 import android.text.Spannable
 import android.text.SpannableStringBuilder
@@ -14,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.model.Event
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * RecyclerView adapter used to display the list of events the current entrant has joined.
@@ -62,6 +65,7 @@ class MyEventsAdapter(
         private val waiting = itemView.findViewById<TextView>(R.id.eventWaiting)
         private val details = itemView.findViewById<Button>(R.id.detailsButton)
         private val poster = itemView.findViewById<ImageView>(R.id.eventPoster)
+        private val statusChip = itemView.findViewById<TextView>(R.id.statusChip)
 
         fun bind(event: Event, onDetails: (Event) -> Unit) {
             val builder = SpannableStringBuilder(event.name)
@@ -88,6 +92,12 @@ class MyEventsAdapter(
             location.text = event.locationName
             waiting.text = "${event.waitingCount} People on Waiting List"
             
+            if (event.lotteryDone) {
+                statusChip.text = "Draw Done"
+            } else {
+                statusChip.text = getTimeRemainingText(event.drawDate, event.drawStartTime)
+            }
+            
             // Load the event poster using Glide
             if (!event.posterUriString.isNullOrEmpty()) {
                 Glide.with(itemView.context)
@@ -100,6 +110,56 @@ class MyEventsAdapter(
             }
 
             details.setOnClickListener { onDetails(event) }
+        }
+
+        /**
+         * Calculates the time remaining until the lottery draw based on drawDate and drawStartTime.
+         * Returns years if > 0, months if > 0, otherwise days.
+         */
+        private fun getTimeRemainingText(drawDate: String, drawTime: String): String {
+            val dateStr = drawDate.trim()
+            val timeStr = drawTime.trim()
+            
+            if (dateStr.isEmpty() || timeStr.isEmpty()) return "N/A"
+            
+            try {
+                // Use lenient pattern 'd/M/yyyy' and 'H:m' to handle both 1 and 2 digit components
+                // Use Locale.US to ensure consistent parsing regardless of system locale
+                val sdf = SimpleDateFormat("d/M/yyyy H:m", Locale.US)
+                val targetDate = sdf.parse("$dateStr $timeStr") ?: return "N/A"
+                
+                val now = Date()
+                val diffMillis = targetDate.time - now.time
+                if (diffMillis <= 0) return "Draw Ended"
+
+                val calTarget = Calendar.getInstance().apply { time = targetDate }
+                val calNow = Calendar.getInstance().apply { time = now }
+                
+                var years = calTarget.get(Calendar.YEAR) - calNow.get(Calendar.YEAR)
+                var months = calTarget.get(Calendar.MONTH) - calNow.get(Calendar.MONTH)
+                
+                // Adjust if current day is past the target day in the month
+                if (calTarget.get(Calendar.DAY_OF_MONTH) < calNow.get(Calendar.DAY_OF_MONTH)) {
+                    months--
+                }
+                
+                // Adjust if months underflowed
+                if (months < 0) {
+                    years--
+                    months += 12
+                }
+
+                return when {
+                    years > 0 -> "$years ${if (years == 1) "Year" else "Years"}"
+                    months > 0 -> "$months ${if (months == 1) "Month" else "Months"}"
+                    else -> {
+                        val days = diffMillis / (1000 * 60 * 60 * 24)
+                        "$days ${if (days == 1L) "Day" else "Days"}"
+                    }
+                }
+            } catch (e: Exception) {
+                return "N/A"
+            }
         }
     }
 }
