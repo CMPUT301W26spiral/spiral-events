@@ -70,6 +70,7 @@ class EventDetailsLeaveFragment : Fragment() {
         val address = view.findViewById<TextView>(R.id.detailsLocationAddress)
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
+        val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterViewPager = view.findViewById<ViewPager2>(R.id.eventPosterViewPager)
         val posterIndicator = view.findViewById<TabLayout>(R.id.posterIndicator)
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
@@ -104,7 +105,15 @@ class EventDetailsLeaveFragment : Fragment() {
             location.text = event.locationName
             address.text = event.locationName
             time.text = event.timeText
-            waiting.text = "${event.waitingCount} People on Waiting List"
+
+            val openSpots = event.maxEntrants?.minus(event.waitingCount.toInt()) ?: 0
+            waiting.text = if (event.maxEntrants != null && !event.lotteryDone) {
+                "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+            } else {
+                "${event.waitingCount} People on Waiting List"
+            }
+
+            description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
             currentEventInterests = event.interests
             populateInterests(interestsChipGroup, currentEventInterests)

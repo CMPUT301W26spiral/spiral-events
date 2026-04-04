@@ -144,7 +144,6 @@ class EventDetailsOFragment : Fragment() {
         // Buttons
         val drawBtn = view.findViewById<Button>(R.id.drawButton)
         val viewEntrantsBtn = view.findViewById<Button>(R.id.viewEntrantsButton)
-        val notifyEntrantsBtn = view.findViewById<Button>(R.id.notifyEntrantsButton)
         val viewLocationsBtn = view.findViewById<Button>(R.id.viewLocButton)
         val deleteEventBtn = view.findViewById<Button>(R.id.deleteEventButton)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
