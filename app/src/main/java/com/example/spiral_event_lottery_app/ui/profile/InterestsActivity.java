@@ -24,8 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Activity that allows users to manage their interests using a multi-state selection interface.
+ * Users can mark categories as Interested, Not Interested, or Neutral.
+ */
 public class InterestsActivity extends AppCompatActivity {
 
+    /**
+     * Represents the selection state of a specific interest.
+     */
     private enum State {
         NEUTRAL, INTERESTED, NOT_INTERESTED
     }
@@ -45,6 +52,10 @@ public class InterestsActivity extends AppCompatActivity {
     private final Map<String, TextView> interestViews = new HashMap<>();
     private boolean isFirstTime = false;
 
+    /**
+     * Initializes the activity, sets up the UI components, and loads existing interests from Firestore.
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +81,9 @@ public class InterestsActivity extends AppCompatActivity {
         saveButton.setOnClickListener(v -> saveInterestsToFirebase());
     }
 
+    /**
+     * Populates the UI with the default list of interests in a neutral state.
+     */
     private void initializeInterests() {
         for (String name : INTEREST_NAMES) {
             interestStates.put(name, State.NEUTRAL);
@@ -79,6 +93,11 @@ public class InterestsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Creates a styled TextView for an interest category and sets up its click listener for state toggling.
+     * @param name The name of the interest category.
+     * @return The configured TextView.
+     */
     private TextView createInterestView(String name) {
         TextView tv = new TextView(this);
         tv.setText(name);
@@ -113,6 +132,11 @@ public class InterestsActivity extends AppCompatActivity {
         return tv;
     }
 
+    /**
+     * Updates the background and text color of an interest view based on its current state.
+     * @param tv The TextView to update.
+     * @param state The current state of the interest.
+     */
     private void updateViewStyle(TextView tv, State state) {
         switch (state) {
             case INTERESTED:
@@ -131,6 +155,9 @@ public class InterestsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Fetches the user's saved interests from Firestore and updates the UI.
+     */
     private void loadInterestsFromFirebase() {
         db.collection("users").document(uid).get().addOnSuccessListener(doc -> {
             if (doc.exists()) {
@@ -158,6 +185,11 @@ public class InterestsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Adds a new interest category or updates the state of an existing one.
+     * @param name The category name.
+     * @param state The new state to apply.
+     */
     private void addOrUpdateInterest(String name, State state) {
         if (interestStates.containsKey(name)) {
             // Only update if the new state is NOT neutral, or if we want to force reset
@@ -176,6 +208,9 @@ public class InterestsActivity extends AppCompatActivity {
         flexbox.addView(textView);
     }
 
+    /**
+     * Persists the current interest states to the user's document in Firestore.
+     */
     private void saveInterestsToFirebase() {
         List<String> interested = new ArrayList<>();
         List<String> notInterested = new ArrayList<>();
@@ -216,14 +251,14 @@ public class InterestsActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Handles navigation after successful interest synchronization.
+     * Redirects to MainActivity if it's the user's first time.
+     */
     private void onSaveComplete() {
         if (isFirstTime) {
             startActivity(new Intent(this, MainActivity.class));
-       } else {
-            // Re-trigger interest load in HomeFragment by sending a broadcast or just letting MainActivity handle it
-            // Sending a simple result might be enough if started with startActivityForResult, 
-            // but since we want it to update globally, we'll let MainActivity's refreshHomeFragment handle it
-        }
+       }
         finish();
     }
 }
