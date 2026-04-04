@@ -4,13 +4,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.spiral_event_lottery_app.R;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.List;
 
@@ -73,34 +76,57 @@ public class AdminAdapter extends RecyclerView.Adapter<AdminAdapter.ViewHolder> 
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         DocumentSnapshot doc = items.get(position);
 
+        // Reset views for recycling
+        holder.image.setVisibility(View.GONE);
+        holder.deleteBtn.setVisibility(View.VISIBLE);
+        holder.subtitle.setText("");
+
         // we display different fields depending on the current browse mode
         switch (currentMode) {
             case "EVENTS":
                 holder.title.setText(doc.getString("name") != null ? doc.getString("name") : "Unnamed Event");
                 holder.subtitle.setText("ID: " + doc.getId());
-                holder.deleteBtn.setVisibility(View.VISIBLE);
                 break;
             case "PROFILES":
-                // US 03.07.01 — organizers are profiles bremoving them revokes organizer access
                 holder.title.setText(doc.getString("name") != null ? doc.getString("name") : "Unnamed User");
                 holder.subtitle.setText("Device: " + doc.getId());
-                holder.deleteBtn.setVisibility(View.VISIBLE);
                 break;
             case "IMAGES":
                 holder.title.setText("Poster: " + (doc.getString("name") != null ? doc.getString("name") : "Event"));
-                holder.subtitle.setText(doc.getString("posterUriString") != null ? doc.getString("posterUriString") : "No URL");
-                holder.deleteBtn.setVisibility(View.VISIBLE);
+                String imageUrl = doc.getString("posterUriString");
+                holder.subtitle.setText(imageUrl != null ? imageUrl : "No URL");
+                if (imageUrl != null && !imageUrl.isEmpty()) {
+                    holder.image.setVisibility(View.VISIBLE);
+                    Glide.with(holder.itemView.getContext())
+                            .load(imageUrl)
+                            .placeholder(R.drawable.ic_event)
+                            .into(holder.image);
+                }
                 break;
             case "NOTIFICATIONS":
-                // US 03.08.01 this is onlyread-only log view, no delete button
                 holder.title.setText(doc.getString("title") != null ? doc.getString("title") : "Notification");
                 holder.subtitle.setText("To: " + doc.getString("recipientId"));
                 holder.deleteBtn.setVisibility(View.GONE);
                 break;
             case "COMMENTS":
-                holder.title.setText(doc.getString("text") != null ? doc.getString("text") : "Comment");
-                holder.subtitle.setText("Event: " + doc.getString("eventId"));
-                holder.deleteBtn.setVisibility(View.VISIBLE);
+                String author = doc.getString("authorName");
+                String text = doc.getString("text");
+                holder.title.setText((author != null ? author : "User") + ": " + (text != null ? text : ""));
+                
+                String eventId = doc.getString("eventId");
+                if (eventId != null) {
+                    holder.subtitle.setText("Event ID: " + eventId);
+                    // Attempt to fetch event name for better context
+                    FirebaseFirestore.getInstance().collection("events").document(eventId).get()
+                            .addOnSuccessListener(eventDoc -> {
+                                if (eventDoc.exists()) {
+                                    String eventName = eventDoc.getString("name");
+                                    holder.subtitle.setText("Event: " + (eventName != null ? eventName : "Unnamed"));
+                                }
+                            });
+                } else {
+                    holder.subtitle.setText("Unknown Event context");
+                }
                 break;
             default:
                 holder.title.setText(doc.getId());
@@ -120,12 +146,14 @@ public class AdminAdapter extends RecyclerView.Adapter<AdminAdapter.ViewHolder> 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView title, subtitle;
         Button deleteBtn;
+        ImageView image;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.tv_admin_title);
             subtitle = itemView.findViewById(R.id.tv_admin_subtitle);
             deleteBtn = itemView.findViewById(R.id.btn_admin_delete);
+            image = itemView.findViewById(R.id.iv_admin_image);
         }
     }
 }

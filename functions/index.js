@@ -11,7 +11,7 @@ setGlobalOptions({ maxInstances: 10, region: "us-central1" });
 exports.categorizeNewTag = onDocumentCreated(
     {
         document: "tags/{tagId}",
-        secrets: ["GEMINI_API_KEY"] // This gives the function access to your secret
+        secrets: ["GEMINI_API_KEY"] // This gives the function access to secret
     },
     async (event) => {
         const snapshot = event.data;

@@ -5,7 +5,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -18,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.spiral_event_lottery_app.R;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.ArrayList;
@@ -95,17 +95,35 @@ public class AdminFragment extends Fragment {
         view.findViewById(R.id.btn_admin_profiles).setOnClickListener(v -> loadCollection("users", "PROFILES"));
         view.findViewById(R.id.btn_admin_images).setOnClickListener(v -> loadImages());
         view.findViewById(R.id.btn_admin_notif_logs).setOnClickListener(v -> loadCollection("notifications", "NOTIFICATIONS"));
-        view.findViewById(R.id.btn_admin_comments).setOnClickListener(v ->
-                db.collectionGroup("comments").get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && task.getResult() != null) {
-                        currentList = task.getResult().getDocuments();
-                        currentMode = "COMMENTS";
-                        adapter.updateData(currentList, currentMode);
-                    }
-                }));
+        view.findViewById(R.id.btn_admin_comments).setOnClickListener(v -> loadAllComments());
 
         // Default view
         loadCollection("events", "EVENTS");
+    }
+
+    private void loadAllComments() {
+        currentMode = "COMMENTS";
+        db.collectionGroup("comments")
+                .limit(100)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (!isAdded()) return;
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        currentList = task.getResult().getDocuments();
+                        adapter.updateData(currentList, "COMMENTS");
+                        if (currentList.isEmpty()) {
+                            Toast.makeText(requireContext(), "No comments found", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Log.e(TAG, "Failed to load comments", task.getException());
+                        String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                        if (errorMsg.contains("Index")) {
+                            Toast.makeText(requireContext(), "Firestore Index required (check Logcat)", Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(requireContext(), "Failed to load comments: " + errorMsg, Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 
     /**
