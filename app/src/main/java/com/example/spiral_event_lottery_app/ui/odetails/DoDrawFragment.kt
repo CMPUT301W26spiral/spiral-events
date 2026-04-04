@@ -179,7 +179,7 @@ class DoDrawFragment : Fragment() {
                     selectedUsers.forEach { userId ->
                         NotificationManager.sendNotification(
                             userId,
-                            "Invitation Accepted",
+                            "Invitation",
                             "Congratulations! You have been selected for $eventName. Please confirm your attendance.",
                             "ACCEPTED",
                             eventName,
