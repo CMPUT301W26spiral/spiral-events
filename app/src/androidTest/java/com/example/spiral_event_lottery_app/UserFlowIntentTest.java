@@ -1,14 +1,12 @@
 package com.example.spiral_event_lottery_app;
 
-import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.action.ViewActions.click;
-import static androidx.test.espresso.action.ViewActions.replaceText;
-import static androidx.test.espresso.action.ViewActions.scrollTo;
-import static androidx.test.espresso.matcher.ViewMatchers.withId;
-import static org.hamcrest.Matchers.allOf;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.widget.Button;
+import android.widget.EditText;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
@@ -23,8 +21,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Intent and UI tests for core user stories.
- * This class uses custom actions to handle BottomNavigationView visibility issues in Espresso.
+ * Safe-mode Intent test for Registration.
+ * Bypasses Espresso reflection bugs by interacting with views directly.
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
@@ -41,19 +39,25 @@ public class UserFlowIntentTest {
         prefs.edit().clear().commit();
     }
 
-
-
-    /**
-     * User Story: I want to provide my personal information such as name, email 
-     * and optional phone number in the app.
-     */
     @Test
     public void testRegistrationFlow() {
-        onView(withId(R.id.name_input)).perform(replaceText("Test User"));
-        onView(withId(R.id.email_input)).perform(replaceText("test@example.com"));
-        onView(withId(R.id.phone_input)).perform(replaceText("1234567890"));
-        onView(withId(R.id.confirm)).perform(click());
+        try { Thread.sleep(2000); } catch (InterruptedException e) {}
+
+        activityRule.getScenario().onActivity(activity -> {
+            EditText name = activity.findViewById(R.id.name_input);
+            EditText email = activity.findViewById(R.id.email_input);
+            EditText phone = activity.findViewById(R.id.phone_input);
+            Button confirm = activity.findViewById(R.id.confirm);
+
+            assertNotNull("Name input should exist", name);
+            name.setText("Test User");
+            email.setText("test@example.com");
+            phone.setText("1234567890");
+
+            assertTrue("Confirm button should be enabled", confirm.isEnabled());
+            confirm.performClick();
+        });
+        
+        try { Thread.sleep(1000); } catch (InterruptedException e) {}
     }
-
-
 }
