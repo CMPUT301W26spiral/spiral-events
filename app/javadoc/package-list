@@ -1,0 +1,50 @@
+$dokka.format:javadoc-v1
+$dokka.linkExtension:html
+$dokka.location:com.example.spiral_event_lottery_app.data/CoOrganizerRepository.ErrorCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/CoOrganizerRepository.ErrorCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/CoOrganizerRepository.SuccessCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/CoOrganizerRepository.SuccessCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventCommentRepository.BooleanCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventCommentRepository.BooleanCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventCommentRepository.CommentsCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventCommentRepository.CommentsCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventCommentRepository.ErrorCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventCommentRepository.ErrorCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventCommentRepository.SuccessCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventCommentRepository.SuccessCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventRepository.BooleanCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventRepository.BooleanCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventRepository.ErrorCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventRepository.ErrorCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventRepository.EventCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventRepository.EventCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventRepository.EventsCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventRepository.EventsCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventRepository.StatusCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventRepository.StatusCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventRepository.SuccessCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventRepository.SuccessCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.data/EventRepository.UserIdsCallback///PointingToDeclaration/com/example/spiral_event_lottery_app/data/EventRepository.UserIdsCallback.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.admin/AdminAdapter.OnDeleteListener///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/admin/AdminAdapter.OnDeleteListener.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.admin/AdminAdapter.ViewHolder///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/admin/AdminAdapter.ViewHolder.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.comments/EventCommentsAdapter.CommentViewHolder///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/comments/EventCommentsAdapter.CommentViewHolder.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.comments/EventCommentsFragment.Companion///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/comments/EventCommentsFragment.Companion.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.details/EventDetailsFragment.Companion///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/details/EventDetailsFragment.Companion.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.details/EventDetailsLeaveFragment.Companion///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/details/EventDetailsLeaveFragment.Companion.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.events/MyEventsAdapter.VH///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/events/MyEventsAdapter.VH.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.events/PosterAdapter.PosterViewHolder///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/events/PosterAdapter.PosterViewHolder.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.home/EventAdapter.EventViewHolder///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/home/EventAdapter.EventViewHolder.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.home/EventAdapter.FilterStatus///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/home/EventAdapter.FilterStatus.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.notifications/NotificationAdapter.ViewHolder///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/notifications/NotificationAdapter.ViewHolder.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.odetails/DoDrawFragment.Companion///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/odetails/DoDrawFragment.Companion.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.odetails/DrawResultsFragment.Companion///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/odetails/DrawResultsFragment.Companion.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.odetails/SelectedUsersAdapter.VH///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/odetails/SelectedUsersAdapter.VH.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.oevent/EventDetailsOFragment.Companion///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/oevent/EventDetailsOFragment.Companion.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.oevent/UserSearchAdapter.ViewHolder///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/oevent/UserSearchAdapter.ViewHolder.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.organizer_view/EntrantAdapter.VH///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/organizer_view/EntrantAdapter.VH.html
+$dokka.location:com.example.spiral_event_lottery_app.ui.organizer_view/ManageEntrantsFragment.Companion///PointingToDeclaration/com/example/spiral_event_lottery_app/ui/organizer_view/ManageEntrantsFragment.Companion.html
+com.example.spiral_event_lottery_app
+com.example.spiral_event_lottery_app.data
+com.example.spiral_event_lottery_app.model
+com.example.spiral_event_lottery_app.ui
+com.example.spiral_event_lottery_app.ui.admin
+com.example.spiral_event_lottery_app.ui.comments
+com.example.spiral_event_lottery_app.ui.coorganizer
+com.example.spiral_event_lottery_app.ui.details
+com.example.spiral_event_lottery_app.ui.event_creation
+com.example.spiral_event_lottery_app.ui.events
+com.example.spiral_event_lottery_app.ui.home
+com.example.spiral_event_lottery_app.ui.notifications
+com.example.spiral_event_lottery_app.ui.odetails
+com.example.spiral_event_lottery_app.ui.oevent
+com.example.spiral_event_lottery_app.ui.organizer_view
+com.example.spiral_event_lottery_app.ui.profile
+com.example.spiral_event_lottery_app.ui.register
