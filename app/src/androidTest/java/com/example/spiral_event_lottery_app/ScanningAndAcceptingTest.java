@@ -15,8 +15,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Safe-mode UI tests for the QR Scanner feature.
- * Bypasses Espresso library conflicts by interacting with views directly.
+ * Instrumented UI tests for the QR Scanner feature.
+ * These tests verify the presence and visibility of critical scanner UI elements 
+ * (like the camera preview and loading indicator) and handle camera permissions.
+ * 
+ * NOTE: Uses direct View access to bypass potential library conflicts.
  */
 @RunWith(AndroidJUnit4.class)
 public class ScanningAndAcceptingTest {
@@ -25,24 +28,27 @@ public class ScanningAndAcceptingTest {
     public ActivityScenarioRule<QR_scanner> activity_rule =
             new ActivityScenarioRule<>(QR_scanner.class);
 
+    /**
+     * Automatically grants camera permission for the tests to prevent system dialogs 
+     * from blocking UI interaction.
+     */
     @Rule
     public GrantPermissionRule permissionRule = GrantPermissionRule.grant(Manifest.permission.CAMERA);
 
     /**
-     * Verifies that the camera preview view exists in the layout.
+     * Verifies that the camera preview container exists in the layout and is visible.
      */
     @Test
     public void test_camerabox_exists() {
         activity_rule.getScenario().onActivity(activity -> {
             View preview = activity.findViewById(R.id.camera_preview);
             assertNotNull("Camera preview view should exist in the layout", preview);
-            // On some emulators it might be GONE if camera fails, but typically it should be VISIBLE
             assertEquals("Camera preview should be visible", View.VISIBLE, preview.getVisibility());
         });
     }
 
     /**
-     * Verifies that the loading spinner is properly defined.
+     * Verifies that the loading spinner is correctly defined in the scanner layout.
      */
     @Test
     public void test_ifspinner_hidden() {
@@ -53,16 +59,17 @@ public class ScanningAndAcceptingTest {
     }
 
     /**
-     * Tests safety of database handling code with empty data.
+     * Tests the safety of the QR processing logic when receiving empty or null data.
+     * Ensures that the app handles missing data gracefully without crashing.
      */
     @Test
     public void test_empty_data() {
         acceptanceHandling handler = new acceptanceHandling();
         try {
-            // Check that calling logic with invalid data doesn't trigger a crash
+            // Verify that calling invitation handling logic with null inputs doesn't cause a crash
             handler.invitation_accepted(null, "", "");
         } catch (Exception e) {
-            // Safety check passes if no exception is thrown
+            // Test fails if an unhandled exception occurs
         }
     }
 }

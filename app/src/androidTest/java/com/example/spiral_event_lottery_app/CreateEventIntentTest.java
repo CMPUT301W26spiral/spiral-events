@@ -19,8 +19,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Safe-mode Intent tests for Event Creation.
- * Bypasses Espresso library conflicts.
+ * Instrumented UI tests for the Event Creation screen.
+ * These tests ensure that the event creation form correctly accepts input 
+ * and handles validation for missing fields.
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
@@ -30,6 +31,10 @@ public class CreateEventIntentTest {
     public ActivityScenarioRule<CreateEventActivity> activityRule =
             new ActivityScenarioRule<>(CreateEventActivity.class);
 
+    /**
+     * Verifies the full flow of creating an event by filling out the name, 
+     * location, and description, and then clicking the create button.
+     */
     @Test
     public void testCreateEventFormValidation() {
         try { Thread.sleep(2000); } catch (InterruptedException e) {}
@@ -51,6 +56,10 @@ public class CreateEventIntentTest {
         try { Thread.sleep(1000); } catch (InterruptedException e) {}
     }
 
+    /**
+     * Verifies that the form prevents submission (remains on the same screen)
+     * if the required fields are empty when the create button is clicked.
+     */
     @Test
     public void testEmptyFormShowsError() {
         try { Thread.sleep(2000); } catch (InterruptedException e) {}
@@ -59,7 +68,7 @@ public class CreateEventIntentTest {
             Button createBtn = activity.findViewById(R.id.btn_create);
             createBtn.performClick();
             
-            // Verify we are still on the creation screen by checking the title
+            // Verify we are still on the creation screen by checking for the field label
             TextView title = activity.findViewById(R.id.tv_label_event_name);
             assertNotNull(title);
             assertEquals("Event Name", title.getText().toString());

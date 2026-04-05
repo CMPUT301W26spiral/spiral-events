@@ -10,6 +10,9 @@ import org.junit.Test
  */
 class UserTest {
 
+    /**
+     * Verifies that a User object is correctly initialized with provided values.
+     */
     @Test
     fun testUserCreation() {
         val user = User(
@@ -27,6 +30,9 @@ class UserTest {
         assertEquals(false, user.isAdmin)
     }
 
+    /**
+     * Verifies that User properties can be updated correctly.
+     */
     @Test
     fun testUserUpdate() {
         val user = User()
@@ -39,6 +45,9 @@ class UserTest {
         assertEquals(true, user.isAdmin)
     }
 
+    /**
+     * Verifies that the user's event list correctly stores and retrieves event IDs.
+     */
     @Test
     fun testEventList() {
         val user = User()

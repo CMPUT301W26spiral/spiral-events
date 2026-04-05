@@ -14,9 +14,13 @@ import java.util.stream.Collectors;
 
 /**
  * Unit tests for the Manage Entrants feature.
+ * Covers event limits, waiting list logic, draw results filtering, and CSV exporting.
  */
 public class ManageEntrantsTest {
 
+    /**
+     * Verifies that an Event object correctly stores the maximum entrants limit.
+     */
     @Test
     public void testEventStoresMaxEntrantsLimit() {
         Event event = new Event(
@@ -26,6 +30,9 @@ public class ManageEntrantsTest {
         assertEquals(Integer.valueOf(10), event.getMaxEntrants());
     }
 
+    /**
+     * Verifies that an event with no limit has a null value for max entrants.
+     */
     @Test
     public void testEventWithNoLimitHasNullMaxEntrants() {
         Event event = new Event(
@@ -35,6 +42,9 @@ public class ManageEntrantsTest {
         assertNull(event.getMaxEntrants());
     }
 
+    /**
+     * Verifies that open spots are correctly calculated as (Max Entrants - Waiting Count).
+     */
     @Test
     public void testOpenSpotsCalculatedCorrectly() {
         Event event = new Event(
@@ -47,6 +57,9 @@ public class ManageEntrantsTest {
         assertEquals(7L, openSpots);
     }
 
+    /**
+     * Sanity check that the waiting count does not exceed the allowed maximum entrants.
+     */
     @Test
     public void testWaitingCountDoesNotExceedMaxEntrants() {
         Event event = new Event(
@@ -58,54 +71,81 @@ public class ManageEntrantsTest {
         assertTrue(event.getWaitingCount() <= max.longValue());
     }
 
+    /**
+     * Basic check to ensure a non-empty waiting list is initialized.
+     */
     @Test
     public void testWaitingListIsNotNull() {
         List<String> waitingList = Arrays.asList("Alice", "Bob", "Charlie");
         assertNotNull(waitingList);
     }
 
+    /**
+     * Verifies the size of the waiting list matches the number of entrants added.
+     */
     @Test
     public void testWaitingListSizeIsCorrect() {
         List<String> waitingList = Arrays.asList("Alice", "Bob", "Charlie");
         assertEquals(3, waitingList.size());
     }
 
+    /**
+     * Verifies that an empty waiting list has a size of zero.
+     */
     @Test
     public void testEmptyWaitingListHasSizeZero() {
         List<String> waitingList = Collections.emptyList();
         assertEquals(0, waitingList.size());
     }
 
+    /**
+     * Verifies that an entrant added to the waiting list is actually present in the list.
+     */
     @Test
     public void testEntrantExistsInWaitingList() {
         List<String> waitingList = Arrays.asList("Alice", "Bob", "Charlie");
         assertTrue(waitingList.contains("Alice"));
     }
 
+    /**
+     * Verifies that a user not in the waiting list returns false when searched.
+     */
     @Test
     public void testEntrantNotInWaitingListReturnsFalse() {
         List<String> waitingList = Arrays.asList("Alice", "Bob", "Charlie");
         assertFalse(waitingList.contains("Dave"));
     }
 
+    /**
+     * Basic check that the invited list (drawn users) contains entries.
+     */
     @Test
     public void testInvitedListIsNotEmpty() {
         List<String> invitedList = Arrays.asList("Alice", "Bob");
         assertFalse(invitedList.isEmpty());
     }
 
+    /**
+     * Verifies that the number of invited entrants matches the expected draw count.
+     */
     @Test
     public void testInvitedListSizeMatchesDrawCount() {
         List<String> invitedList = Arrays.asList("Alice", "Bob");
         assertEquals(2, invitedList.size());
     }
 
+    /**
+     * Verifies that a specific user selected in the draw appears in the invited list.
+     */
     @Test
     public void testDrawnEntrantAppearsInInvitedList() {
         List<String> invitedList = Arrays.asList("Alice", "Bob");
         assertTrue(invitedList.contains("Bob"));
     }
 
+    /**
+     * Ensures that entrants are moved correctly and do not exist in both waiting and invited lists simultaneously.
+     */
     @Test
     public void testEntrantNotInBothWaitingAndInvitedLists() {
         List<String> waitingList = Arrays.asList("Charlie", "Dave");
@@ -120,6 +160,9 @@ public class ManageEntrantsTest {
         assertFalse(overlap);
     }
 
+    /**
+     * Verifies that the invited list size does not exceed the event's max entrant capacity.
+     */
     @Test
     public void testInvitedListDoesNotExceedMaxEntrants() {
         int maxEntrants = 3;
@@ -127,6 +170,9 @@ public class ManageEntrantsTest {
         assertTrue(invitedList.size() <= maxEntrants);
     }
 
+    /**
+     * Tests the logic for the "Invited" UI tab: it should only display users who are "pending" or "accepted".
+     */
     @Test
     public void testInvitedTabShowsPendingAndAcceptedOnly() {
         Map<String, String> statusMap = new HashMap<>();
@@ -145,6 +191,9 @@ public class ManageEntrantsTest {
         assertTrue(invitedTab.contains("user2"));
     }
 
+    /**
+     * Tests the logic for the "Cancelled" UI tab: it should only display users who have "declined" or were "cancelled".
+     */
     @Test
     public void testCancelledTabShowsDeclinedAndCancelledOnly() {
         Map<String, String> statusMap = new HashMap<>();
@@ -163,6 +212,9 @@ public class ManageEntrantsTest {
         assertTrue(cancelledTab.contains("user4"));
     }
 
+    /**
+     * Tests the logic for the "Enrolled" UI tab: it should only display users who have officially "accepted" their invitation.
+     */
     @Test
     public void testEnrolledListContainsOnlyAcceptedEntrants() {
         Map<String, String> statusMap = new HashMap<>();
@@ -181,6 +233,9 @@ public class ManageEntrantsTest {
         assertTrue(enrolledList.contains("user4"));
     }
 
+    /**
+     * Verifies that canceling an entrant correctly updates their status string.
+     */
     @Test
     public void testCancelEntrantUpdatesStatusToCancelled() {
         Map<String, String> statusMap = new HashMap<>();
@@ -192,6 +247,9 @@ public class ManageEntrantsTest {
         assertEquals("cancelled", statusMap.get("user1"));
     }
 
+    /**
+     * Verifies that once an entrant's status changes to "cancelled", they no longer appear in the "Invited" tab.
+     */
     @Test
     public void testCancelledEntrantRemovedFromInvitedTab() {
         Map<String, String> statusMap = new HashMap<>();
@@ -209,6 +267,9 @@ public class ManageEntrantsTest {
         assertTrue(invitedTab.contains("user2"));
     }
 
+    /**
+     * Verifies that once an entrant's status changes to "cancelled", they appear in the "Cancelled" tab.
+     */
     @Test
     public void testCancelledEntrantAppearsInCancelledTab() {
         Map<String, String> statusMap = new HashMap<>();
@@ -224,6 +285,9 @@ public class ManageEntrantsTest {
         assertTrue(cancelledTab.contains("user1"));
     }
 
+    /**
+     * Verifies that the CSV export string starts with the correct column headers.
+     */
     @Test
     public void testCsvExportContainsHeader() {
         StringBuilder csv = new StringBuilder();
@@ -233,6 +297,9 @@ public class ManageEntrantsTest {
         assertTrue(csv.toString().startsWith("Name,Device ID,Status"));
     }
 
+    /**
+     * Verifies that the CSV export logic filters for and only includes "accepted" entrants.
+     */
     @Test
     public void testCsvExportOnlyIncludesAcceptedEntrants() {
         Map<String, String> statusMap = new HashMap<>();
@@ -250,6 +317,9 @@ public class ManageEntrantsTest {
         assertFalse(csv.toString().contains("Bob"));
     }
 
+    /**
+     * Verifies that if no entrants are accepted, the exported list of accepted names is empty.
+     */
     @Test
     public void testCsvExportIsEmptyWhenNoAcceptedEntrants() {
         Map<String, String> statusMap = new HashMap<>();
@@ -264,6 +334,9 @@ public class ManageEntrantsTest {
         assertTrue(accepted.isEmpty());
     }
 
+    /**
+     * Verifies the row formatting in the CSV export: "Name,DeviceID,Status".
+     */
     @Test
     public void testCsvExportRowFormat() {
         String name = "Alice";

@@ -12,11 +12,16 @@ import static org.junit.Assert.*;
 
 /**
  * Instrumented test, which will execute on an Android device.
+ * These tests have access to the Android Context and system services.
  *
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
 public class ExampleInstrumentedTest {
+    /**
+     * A simple smoke test to verify that the application context is correctly 
+     * provided by the instrumentation and matches the expected package name.
+     */
     @Test
     public void useAppContext() {
         // Context of the app under test.

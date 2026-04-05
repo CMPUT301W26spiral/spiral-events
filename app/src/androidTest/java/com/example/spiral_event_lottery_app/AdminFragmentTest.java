@@ -16,8 +16,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * UI tests for AdminFragment.
- * Bypasses Espresso reflection crashes by using direct View assertions.
+ * UI tests for the Admin Dashboard.
+ * These tests ensure that admin-specific controls (events, profiles, images) 
+ * are correctly displayed and accessible in the AdminFragment.
+ * 
+ * NOTE: This test uses direct View assertions to avoid potential Espresso reflection 
+ * issues in complex environments.
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
@@ -27,6 +31,9 @@ public class AdminFragmentTest {
     public ActivityScenarioRule<MainActivity> activityRule =
             new ActivityScenarioRule<>(MainActivity.class);
 
+    /**
+     * Set up the fragment manually in the container before each test.
+     */
     @Before
     public void setUp() {
         activityRule.getScenario().onActivity(activity -> {
@@ -36,6 +43,10 @@ public class AdminFragmentTest {
         });
     }
 
+    /**
+     * Verifies that the primary administrative buttons (Events, Profiles, Images)
+     * exist in the layout and are visible to the user.
+     */
     @Test
     public void testAdminPanelButtonsVisible() {
         activityRule.getScenario().onActivity(activity -> {
@@ -47,6 +58,9 @@ public class AdminFragmentTest {
         });
     }
 
+    /**
+     * Verifies that the notification logs and comment management buttons are present.
+     */
     @Test
     public void testAdminLogsAndCommentsTabs() {
         activityRule.getScenario().onActivity(activity -> {

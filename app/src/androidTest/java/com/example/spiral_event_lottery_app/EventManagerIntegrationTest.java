@@ -22,6 +22,10 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 public class EventManagerIntegrationTest {
 
+    /**
+     * Verifies that the EventManager follows the singleton pattern and
+     * always returns the same instance across multiple calls.
+     */
     @Test
     public void testSingleton() {
         // Runs on device, so Firebase initialization in constructor won't crash
@@ -30,6 +34,11 @@ public class EventManagerIntegrationTest {
         assertEquals("Both instances should be the same", instance1, instance2);
     }
 
+    /**
+     * Verifies the core functionality of adding an event to the local manager list.
+     * Ensures that the list size increases and that the added event's properties
+     * are correctly stored and searchable.
+     */
     @Test
     public void testAddEventLocal() {
         EventManager manager = EventManager.getInstance();

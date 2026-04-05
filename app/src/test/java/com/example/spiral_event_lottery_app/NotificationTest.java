@@ -13,6 +13,9 @@ import com.example.spiral_event_lottery_app.model.Notification;
  */
 public class NotificationTest {
 
+    /**
+     * Verifies that the full constructor correctly assigns all notification fields.
+     */
     @Test
     public void testNotificationFullConstruction() {
         String title = "Accepted";
@@ -32,24 +35,30 @@ public class NotificationTest {
         assertEquals("Event ID should match", eventId, notification.getEventId());
     }
 
+    /**
+     * Verifies the empty constructor exists (required for Firebase deserialization).
+     */
     @Test
     public void testDefaultConstructor() {
-        // Firebase requires an empty constructor
         Notification notification = new Notification();
         assertNotNull("Object should be created", notification);
         assertNull("Fields should be null by default", notification.getTitle());
     }
 
+    /**
+     * Verifies that the date formatting logic returns "Just now" when the timestamp is null.
+     */
     @Test
     public void testFormattedDateNull() {
         Notification notification = new Notification();
-        // Method should handle null timestamps gracefully
         assertEquals("Should return 'Just now' for null timestamp", "Just now", notification.getFormattedDate());
     }
 
+    /**
+     * Verifies that notifications can be created without being tied to a specific event.
+     */
     @Test
     public void testMissingEventId() {
-        // Edge case: A notification without an eventId (e.g. system alert)
         Notification notification = new Notification("Alert", "System update", "ORGANIZER", "user1", null, null);
         assertNull("Event ID should be null", notification.getEventId());
         assertNull("Event Name should be null", notification.getEventName());

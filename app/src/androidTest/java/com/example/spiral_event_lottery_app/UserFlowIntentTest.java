@@ -21,8 +21,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Safe-mode Intent test for Registration.
- * Bypasses Espresso reflection bugs by interacting with views directly.
+ * Instrumented UI test for the User Registration flow.
+ * Verifies that a new user can input their details and click the confirm button.
+ * 
+ * NOTE: Interacts with UI components directly to ensure stability across different 
+ * test environments.
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
@@ -32,6 +35,10 @@ public class UserFlowIntentTest {
     public ActivityScenarioRule<RegisterActivity> activityRule =
             new ActivityScenarioRule<>(RegisterActivity.class);
 
+    /**
+     * Clear shared preferences before each test to ensure the registration screen 
+     * is triggered as if it were a new user.
+     */
     @Before
     public void setUp() {
         Context context = ApplicationProvider.getApplicationContext();
@@ -39,6 +46,10 @@ public class UserFlowIntentTest {
         prefs.edit().clear().commit();
     }
 
+    /**
+     * Verifies that the registration form (Name, Email, Phone) can be filled 
+     * and that the confirm button becomes enabled for submission.
+     */
     @Test
     public void testRegistrationFlow() {
         try { Thread.sleep(2000); } catch (InterruptedException e) {}
@@ -49,11 +60,13 @@ public class UserFlowIntentTest {
             EditText phone = activity.findViewById(R.id.phone_input);
             Button confirm = activity.findViewById(R.id.confirm);
 
+            // Fill out the registration form
             assertNotNull("Name input should exist", name);
             name.setText("Test User");
             email.setText("test@example.com");
             phone.setText("1234567890");
 
+            // Confirm that the button is enabled and can be clicked
             assertTrue("Confirm button should be enabled", confirm.isEnabled());
             confirm.performClick();
         });

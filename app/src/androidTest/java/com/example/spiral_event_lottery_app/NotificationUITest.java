@@ -16,8 +16,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Instrumented tests for the Notifications screen.
- * Uses direct View access to bypass Espresso library conflicts in the project environment.
+ * Instrumented UI tests for the Notifications screen.
+ * These tests verify that the notification center is accessible and contains 
+ * the necessary management controls.
+ * 
+ * NOTE: Uses direct View access to avoid potential library conflicts with Espresso 
+ * in certain project environments.
  */
 @RunWith(AndroidJUnit4.class)
 public class NotificationUITest {
@@ -26,6 +30,10 @@ public class NotificationUITest {
     public ActivityScenarioRule<MainActivity> activityRule =
             new ActivityScenarioRule<>(MainActivity.class);
 
+    /**
+     * Verifies that the Notifications tab can be opened via the bottom navigation
+     * and that the screen title is correctly displayed.
+     */
     @Test
     public void testNotificationTabOpens() {
         // 1. Navigate to Notifications tab directly
@@ -37,7 +45,7 @@ public class NotificationUITest {
         // 2. Wait for fragment transition
         try { Thread.sleep(2000); } catch (InterruptedException e) {}
 
-        // 3. Verify the title is displayed
+        // 3. Verify the title "Notifications" is displayed
         activityRule.getScenario().onActivity(activity -> {
             TextView title = activity.findViewById(R.id.notifications_title);
             assertNotNull("Notifications title view should exist", title);
@@ -46,6 +54,9 @@ public class NotificationUITest {
         });
     }
 
+    /**
+     * Verifies that the "Clear All" button exists on the notifications screen.
+     */
     @Test
     public void testClearAllButtonExists() {
         activityRule.getScenario().onActivity(activity -> {
