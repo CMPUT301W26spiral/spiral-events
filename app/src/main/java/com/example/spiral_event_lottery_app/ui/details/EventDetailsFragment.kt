@@ -183,8 +183,10 @@ class EventDetailsFragment : Fragment() {
 
                 description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
-                currentEventInterests = event.interests
-                populateInterests(interestsChipGroup, currentEventInterests)
+                if (currentEventInterests != event.interests) {
+                    currentEventInterests = event.interests
+                    populateInterests(interestsChipGroup, currentEventInterests)
+                }
 
                 val currentUserId = DeviceIdProvider.getDeviceId(requireContext())
                 editPosterBtn?.let { btn ->
@@ -299,25 +301,45 @@ class EventDetailsFragment : Fragment() {
             .show()
     }
 
+    /**
+     * Populates the ChipGroup with tags.
+     * Uses a coroutine to fetch tag details and highlight them if they match user interests.
+     */
     private fun populateInterests(chipGroup: ChipGroup, interests: String) {
+        if (interests.isEmpty()) {
+            chipGroup.removeAllViews()
+            return
+        }
+
         val tags = interests.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-        chipGroup.removeAllViews()
-        if (interests.isEmpty()) return
-        for (tag in tags) {
-            val chip = Chip(requireContext())
-            chip.text = tag
-            chip.isCheckable = true
-            chip.isClickable = false
-            chip.chipBackgroundColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_state_list)
-            chip.chipStrokeColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_stroke_state_list)
-            chip.chipStrokeWidth = resources.getDimension(R.dimen.chip_stroke_width_custom)
-            lifecycleScope.launch {
-                val tagInfo = tagRepository.getTag(tag)
-                val isDirectInterested = userInterested.contains(tag)
-                val isParentInterested = tagInfo?.parents?.any { userInterested.contains(it) } ?: false
-                if (isAdded) chip.isChecked = isDirectInterested || isParentInterested
+        
+        // Use a set of tags to fetch to avoid redundant network calls via TagRepository cache
+        lifecycleScope.launch {
+            tagRepository.fetchAndCacheTags(tags)
+            
+            if (!isAdded) return@launch
+            chipGroup.removeAllViews()
+            
+            for (tag in tags) {
+                val chip = Chip(requireContext())
+                chip.text = tag
+                chip.isCheckable = true
+                chip.isClickable = false
+                chip.chipBackgroundColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_state_list)
+                chip.chipStrokeColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_stroke_state_list)
+                chip.chipStrokeWidth = resources.getDimension(R.dimen.chip_stroke_width_custom)
+
+                val tagInfo = tagRepository.getTagImmediate(tag)
+                
+                // HIGHLIGHT LOGIC: Highlight if user is interested in the tag directly OR its parent categories
+                val isDirectInterested = userInterested.any { it.equals(tag, ignoreCase = true) }
+                val isParentInterested = tagInfo.parents.any { parent -> 
+                    userInterested.any { it.equals(parent, ignoreCase = true) }
+                }
+                
+                chip.isChecked = isDirectInterested || isParentInterested
+                chipGroup.addView(chip)
             }
-            chipGroup.addView(chip)
         }
     }
 
