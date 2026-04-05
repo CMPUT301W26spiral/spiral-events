@@ -78,6 +78,10 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 holder.goButton.setVisibility(View.GONE);
                 break;
             case "REQUESTED":
+                holder.title.setTextColor(Color.parseColor("#FF8F00")); // Amber
+                holder.goButton.setVisibility(View.VISIBLE);
+                holder.goButton.setText("Go");
+                break;
             case "INVITATION": // Lottery Win
                 holder.title.setTextColor(Color.parseColor("#FF8F00")); // Amber
                 holder.goButton.setVisibility(View.VISIBLE);
@@ -95,7 +99,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             case "CO_ORGANIZER_INVITE":
                 holder.title.setTextColor(Color.parseColor("#1565C0"));
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("Go");
+                holder.goButton.setText("View Invite");
                 break;
             default:
                 holder.title.setTextColor(Color.BLACK);
