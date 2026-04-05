@@ -14,7 +14,13 @@ import java.util.stream.Collectors;
 
 /**
  * Unit tests for the Manage Entrants feature.
- * Covers event limits, waiting list logic, draw results filtering, and CSV exporting.
+ * Covers:
+ * - US 02.03.01: Waiting list limit
+ * - US 02.06.01: Invited/selected list
+ * - US 02.06.02: Cancelled entrants
+ * - US 02.06.03: Enrolled (accepted) entrants
+ * - US 02.06.04: Cancel entrant status logic
+ * - US 02.06.05: CSV export content
  */
 public class ManageEntrantsTest {
 
@@ -171,7 +177,8 @@ public class ManageEntrantsTest {
     }
 
     /**
-     * Tests the logic for the "Invited" UI tab: it should only display users who are "pending" or "accepted".
+     * Verifies that only "pending" and "accepted" entrants appear in the invited tab.
+     * Implements US 02.06.01.
      */
     @Test
     public void testInvitedTabShowsPendingAndAcceptedOnly() {
@@ -192,7 +199,8 @@ public class ManageEntrantsTest {
     }
 
     /**
-     * Tests the logic for the "Cancelled" UI tab: it should only display users who have "declined" or were "cancelled".
+     * Verifies that only "declined" and "cancelled" entrants appear in the cancelled tab.
+     * Implements US 02.06.02.
      */
     @Test
     public void testCancelledTabShowsDeclinedAndCancelledOnly() {
@@ -213,8 +221,9 @@ public class ManageEntrantsTest {
     }
 
     /**
-     * Tests the logic for the "Enrolled" UI tab: it should only display users who have officially "accepted" their invitation.
-     */
+     * Verifies that only "accepted" entrants appear in the final enrolled list.
+     * Implements US 02.06.03.
+     * */
     @Test
     public void testEnrolledListContainsOnlyAcceptedEntrants() {
         Map<String, String> statusMap = new HashMap<>();
@@ -234,7 +243,9 @@ public class ManageEntrantsTest {
     }
 
     /**
-     * Verifies that canceling an entrant correctly updates their status string.
+     * Verifies that updating an entrant's status to "cancelled" moves them
+     * from the invited tab to the cancelled tab.
+     * Implements US 02.06.04.
      */
     @Test
     public void testCancelEntrantUpdatesStatusToCancelled() {
@@ -286,7 +297,8 @@ public class ManageEntrantsTest {
     }
 
     /**
-     * Verifies that the CSV export string starts with the correct column headers.
+     * Verifies that only accepted entrants are included in the CSV export.
+     * Implements US 02.06.05.
      */
     @Test
     public void testCsvExportContainsHeader() {

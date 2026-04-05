@@ -19,9 +19,7 @@ import org.junit.runner.RunWith;
  * UI tests for the Admin Dashboard.
  * These tests ensure that admin-specific controls (events, profiles, images) 
  * are correctly displayed and accessible in the AdminFragment.
- * 
- * NOTE: This test uses direct View assertions to avoid potential Espresso reflection 
- * issues in complex environments.
+ * Tests US 03.04.01 (Browse Events), US 03.05.01 (Browse Profiles), US 03.06.01 (Browse Images).
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
@@ -33,6 +31,7 @@ public class AdminFragmentTest {
 
     /**
      * Set up the fragment manually in the container before each test.
+     * Tests that the admin panel loads and all browse buttons are visible and clickable.
      */
     @Before
     public void setUp() {

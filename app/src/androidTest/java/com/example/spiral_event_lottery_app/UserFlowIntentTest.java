@@ -23,9 +23,6 @@ import org.junit.runner.RunWith;
 /**
  * Instrumented UI test for the User Registration flow.
  * Verifies that a new user can input their details and click the confirm button.
- * 
- * NOTE: Interacts with UI components directly to ensure stability across different 
- * test environments.
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
