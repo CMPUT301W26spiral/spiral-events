@@ -71,7 +71,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             case "ACCEPTED":
                 holder.title.setTextColor(Color.parseColor("#2E5A27")); // Green
                 holder.goButton.setVisibility(View.VISIBLE);
-                holder.goButton.setText("View Details"); // Leads to My Events logic
+                holder.goButton.setText("View Invite"); // Leads to My Events logic
                 break;
             case "DENIED":
                 holder.title.setTextColor(Color.parseColor("#B71C1C")); // Red
