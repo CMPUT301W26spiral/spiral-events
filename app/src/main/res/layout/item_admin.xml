@@ -2,50 +2,70 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:padding="12dp"
     android:layout_marginBottom="6dp"
-    android:gravity="center_vertical"
     android:background="@android:color/white">
 
-    <ImageView
-        android:id="@+id/iv_admin_image"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_marginEnd="12dp"
-        android:scaleType="centerCrop"
-        android:visibility="gone"
-        android:src="@drawable/ic_event"/>
-
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/tv_admin_title"
+        <ImageView
+            android:id="@+id/iv_admin_image"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginEnd="12dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:src="@drawable/ic_event"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_admin_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#1B1B1B"/>
+
+            <TextView
+                android:id="@+id/tv_admin_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#888888"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_admin_delete"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#1B1B1B"/>
-
-        <TextView
-            android:id="@+id/tv_admin_subtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="#888888"/>
+            android:text="Remove"
+            android:backgroundTint="#B71C1C"
+            android:textColor="@android:color/white"
+            android:textSize="11sp"/>
     </LinearLayout>
 
-    <Button
-        android:id="@+id/btn_admin_delete"
-        android:layout_width="wrap_content"
+    <HorizontalScrollView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Remove"
-        android:backgroundTint="#B71C1C"
-        android:textColor="@android:color/white"
-        android:textSize="11sp"/>
+        android:layout_marginTop="8dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/ll_admin_images_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"/>
+    </HorizontalScrollView>
 
 </LinearLayout>
