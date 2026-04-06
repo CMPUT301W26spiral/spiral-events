@@ -9,6 +9,9 @@ import org.junit.Test
  */
 class EventTest {
 
+    /**
+     * Verifies that an Event object is correctly initialized with provided values.
+     */
     @Test
     fun testEventCreation() {
         val event = Event(
@@ -26,6 +29,9 @@ class EventTest {
         assertEquals("org_123", event.organizerId)
     }
 
+    /**
+     * Verifies that Event properties can be updated correctly.
+     */
     @Test
     fun testEventUpdate() {
         val event = Event()

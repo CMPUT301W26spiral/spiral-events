@@ -1,5 +1,7 @@
 package com.example.spiral_event_lottery_app.ui.admin;
 
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -11,6 +13,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -27,18 +30,6 @@ import java.util.List;
  * AdminFragment is the central control panel for admin operations.
  * It is only reachable when the signed-in user has isAdmin=true in Firestore.
  *
- * Fulfils:
- *   US 03.01.01 – Remove events
- *   US 03.02.01 – Remove profiles
- *   US 03.03.01 – Remove images
- *   US 03.04.01 – Browse events
- *   US 03.05.01 – Browse profiles
- *   US 03.06.01 – Browse images
- *   US 03.07.01 – Remove organizers (profiles)
- *   US 03.08.01 – Review notification logs
- *   US 03.09.01 – Admin retains normal bottom nav (organizer/entrant access)
- *   US 03.10.01 – Remove event comments
- *
  * @author Abdul Haq Bin Abdul Rehman
  */
 public class AdminFragment extends Fragment {
@@ -51,15 +42,10 @@ public class AdminFragment extends Fragment {
     private List<DocumentSnapshot> currentList;
     private String currentMode = "EVENTS";
 
-    /**
-     * Required empty constructor for fragment instantiation.
-     */
+    private Button btnEvents, btnProfiles, btnImages, btnNotifLogs, btnComments;
+
     public AdminFragment() {}
 
-    /**
-     * Factory method — use this instead of the constructor.
-     * @return A new AdminFragment instance.
-     */
     public static AdminFragment newInstance() {
         return new AdminFragment();
     }
@@ -72,10 +58,6 @@ public class AdminFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_admin, container, false);
     }
 
-    /**
-     * Sets up the RecyclerView, adapter, and button click listeners.
-     * Loads the events list by default when the fragment opens.
-     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -90,32 +72,72 @@ public class AdminFragment extends Fragment {
         adapter = new AdminAdapter(currentList, currentMode, this::confirmAndDelete);
         recyclerView.setAdapter(adapter);
 
+        // Find buttons
+        btnEvents = view.findViewById(R.id.btn_admin_events);
+        btnProfiles = view.findViewById(R.id.btn_admin_profiles);
+        btnImages = view.findViewById(R.id.btn_admin_images);
+        btnNotifLogs = view.findViewById(R.id.btn_admin_notif_logs);
+        btnComments = view.findViewById(R.id.btn_admin_comments);
+
         // Wire up browse buttons
-        view.findViewById(R.id.btn_admin_events).setOnClickListener(v -> loadCollection("events", "EVENTS"));
-        view.findViewById(R.id.btn_admin_profiles).setOnClickListener(v -> loadCollection("users", "PROFILES"));
-        view.findViewById(R.id.btn_admin_images).setOnClickListener(v -> loadImages());
-        view.findViewById(R.id.btn_admin_notif_logs).setOnClickListener(v -> loadCollection("notifications", "NOTIFICATIONS"));
-        view.findViewById(R.id.btn_admin_comments).setOnClickListener(v ->
-                db.collectionGroup("comments").get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && task.getResult() != null) {
-                        currentList = task.getResult().getDocuments();
-                        currentMode = "COMMENTS";
-                        adapter.updateData(currentList, currentMode);
-                    }
-                }));
+        btnEvents.setOnClickListener(v -> loadCollection("events", "EVENTS"));
+        btnProfiles.setOnClickListener(v -> loadCollection("users", "PROFILES"));
+        btnImages.setOnClickListener(v -> loadImages());
+        btnNotifLogs.setOnClickListener(v -> loadCollection("notifications", "NOTIFICATIONS"));
+        btnComments.setOnClickListener(v -> loadAllComments());
 
         // Default view
         loadCollection("events", "EVENTS");
     }
 
     /**
-     * Fetches all documents from a root-level Firestore collection and updates the list.
-     *
-     * @param collectionName Firestore collection name (e.g. "events", "users").
-     * @param mode           Display mode string passed to the adapter.
+     * Highlights the active navigation button to indicate the current view mode.
+     * @param mode The current display mode.
      */
+    private void highlightButton(String mode) {
+        int selectedColor = ContextCompat.getColor(requireContext(), R.color.primary_green);
+        int defaultColor = Color.parseColor("#E0E0E0"); // Neutral light gray
+
+        btnEvents.setBackgroundTintList(ColorStateList.valueOf(mode.equals("EVENTS") ? selectedColor : defaultColor));
+        btnProfiles.setBackgroundTintList(ColorStateList.valueOf(mode.equals("PROFILES") ? selectedColor : defaultColor));
+        btnImages.setBackgroundTintList(ColorStateList.valueOf(mode.equals("IMAGES") ? selectedColor : defaultColor));
+        btnNotifLogs.setBackgroundTintList(ColorStateList.valueOf(mode.equals("NOTIFICATIONS") ? selectedColor : defaultColor));
+        btnComments.setBackgroundTintList(ColorStateList.valueOf(mode.equals("COMMENTS") ? selectedColor : defaultColor));
+
+        // Adjust text color for contrast
+        int white = Color.WHITE;
+        int black = Color.BLACK;
+        btnEvents.setTextColor(mode.equals("EVENTS") ? white : black);
+        btnProfiles.setTextColor(mode.equals("PROFILES") ? white : black);
+        btnImages.setTextColor(mode.equals("IMAGES") ? white : black);
+        btnNotifLogs.setTextColor(mode.equals("NOTIFICATIONS") ? white : black);
+        btnComments.setTextColor(mode.equals("COMMENTS") ? white : black);
+    }
+
+    private void loadAllComments() {
+        currentMode = "COMMENTS";
+        highlightButton(currentMode);
+        db.collectionGroup("comments")
+                .limit(100)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (!isAdded()) return;
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        currentList = task.getResult().getDocuments();
+                        adapter.updateData(currentList, "COMMENTS");
+                        if (currentList.isEmpty()) {
+                            Toast.makeText(requireContext(), "No comments found", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Log.e(TAG, "Failed to load comments", task.getException());
+                        Toast.makeText(requireContext(), "Failed to load comments", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
     private void loadCollection(String collectionName, String mode) {
         currentMode = mode;
+        highlightButton(currentMode);
         db.collection(collectionName).get().addOnCompleteListener(task -> {
             if (!isAdded()) return;
             if (task.isSuccessful() && task.getResult() != null) {
@@ -128,12 +150,9 @@ public class AdminFragment extends Fragment {
         });
     }
 
-    /**
-     * Loads events that have a posterUriString field for the image browsing view.
-     * Fulfils US 03.06.01.
-     */
     private void loadImages() {
         currentMode = "IMAGES";
+        highlightButton(currentMode);
         db.collection("events")
                 .whereNotEqualTo("posterUriString", null)
                 .get()
@@ -146,14 +165,6 @@ public class AdminFragment extends Fragment {
                 });
     }
 
-    /**
-     * Shows a confirmation dialog before permanently deleting an item.
-     * Prevents accidental removals.
-     *
-     * @param document The Firestore document to remove.
-     * @param mode     Current display mode.
-     * @param position Adapter position of the item.
-     */
     private void confirmAndDelete(DocumentSnapshot document, String mode, int position) {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Confirm Removal")
@@ -163,22 +174,8 @@ public class AdminFragment extends Fragment {
                 .show();
     }
 
-    /**
-     * Deletes a Firestore document based on the current display mode.
-     *
-     * For IMAGES: removes the posterUriString field from the event document
-     *             and deletes the file from Firebase Storage.
-     * For PROFILES/ORGANIZERS: deletes the user document (US 03.02.01, US 03.07.01).
-     * For EVENTS: deletes the event document (US 03.01.01).
-     * For COMMENTS: deletes the comment document (US 03.10.01).
-     *
-     * @param document The Firestore document to remove.
-     * @param mode     Current display mode.
-     * @param position Adapter position of the item.
-     */
     private void deleteItem(DocumentSnapshot document, String mode, int position) {
         if (mode.equals("IMAGES")) {
-            // Remove poster from Storage then clear the field in Firestore
             String imageUrl = document.getString("posterUriString");
             if (imageUrl != null && !imageUrl.isEmpty()) {
                 try {
@@ -197,7 +194,6 @@ public class AdminFragment extends Fragment {
         switch (mode) {
             case "PROFILES": collection = "users"; break;
             case "COMMENTS":
-                // Comments are a subcollection — use the document's own reference
                 document.getReference().delete()
                         .addOnSuccessListener(v -> onDeleteSuccess(position))
                         .addOnFailureListener(e -> Toast.makeText(requireContext(), "Delete failed", Toast.LENGTH_SHORT).show());
@@ -210,10 +206,6 @@ public class AdminFragment extends Fragment {
                 .addOnFailureListener(e -> Toast.makeText(requireContext(), "Delete failed", Toast.LENGTH_SHORT).show());
     }
 
-    /**
-     * Removes the item from the local list and notifies the adapter.
-     * @param position Adapter position of the deleted item.
-     */
     private void onDeleteSuccess(int position) {
         if (!isAdded()) return;
         Toast.makeText(requireContext(), "Removed successfully", Toast.LENGTH_SHORT).show();

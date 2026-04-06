@@ -14,7 +14,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -29,9 +28,12 @@ import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
 import com.example.spiral_event_lottery_app.data.TagRepository
+import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.example.spiral_event_lottery_app.model.User
+import com.example.spiral_event_lottery_app.ui.event_creation.QRCodeActivity
 import com.example.spiral_event_lottery_app.ui.events.PosterAdapter
 import com.example.spiral_event_lottery_app.ui.odetails.DoDrawFragment
+import com.example.spiral_event_lottery_app.ui.admin.EntrantMapFragment
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.tabs.TabLayout
@@ -74,6 +76,7 @@ class EventDetailsOFragment : Fragment() {
     // UI elements
     private lateinit var title: TextView
     private lateinit var locationName: TextView
+    private lateinit var address: TextView
     private lateinit var time: TextView
     private lateinit var waiting: TextView
     private lateinit var description: TextView
@@ -110,6 +113,7 @@ class EventDetailsOFragment : Fragment() {
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
         title = view.findViewById(R.id.detailsTitle)
         locationName = view.findViewById(R.id.detailsLocation)
+        address = view.findViewById(R.id.detailsLocationAddress)
         time = view.findViewById(R.id.detailsTime)
         waiting = view.findViewById(R.id.detailsWaiting)
         description = view.findViewById(R.id.detailsDescription)
@@ -140,7 +144,6 @@ class EventDetailsOFragment : Fragment() {
         // Buttons
         val drawBtn = view.findViewById<Button>(R.id.drawButton)
         val viewEntrantsBtn = view.findViewById<Button>(R.id.viewEntrantsButton)
-        val notifyEntrantsBtn = view.findViewById<Button>(R.id.notifyEntrantsButton)
         val viewLocationsBtn = view.findViewById<Button>(R.id.viewLocButton)
         val deleteEventBtn = view.findViewById<Button>(R.id.deleteEventButton)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
@@ -157,7 +160,7 @@ class EventDetailsOFragment : Fragment() {
         }
 
         viewQRBtn.setOnClickListener {
-            val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
+            val intent = Intent(requireContext(), QRCodeActivity::class.java)
             intent.putExtra("EVENT_ID", eventId)
             intent.putExtra("EVENT_NAME", title.text.toString().removeSuffix(" (Private)"))
             startActivity(intent)
@@ -185,6 +188,7 @@ class EventDetailsOFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
+        // Draw Navigation
         drawBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, DoDrawFragment.newInstance(eventId))
@@ -192,9 +196,18 @@ class EventDetailsOFragment : Fragment() {
                 .commit()
         }
 
+        // Entrants List Navigation
         viewEntrantsBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, com.example.spiral_event_lottery_app.ui.organizer_view.ManageEntrantsFragment.newInstance(eventId))
+                .addToBackStack(null)
+                .commit()
+        }
+
+        // Map View Navigation
+        viewLocationsBtn.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, EntrantMapFragment.newInstance(eventId))
                 .addToBackStack(null)
                 .commit()
         }
@@ -243,11 +256,12 @@ class EventDetailsOFragment : Fragment() {
                 }
 
                 locationName.text = event.locationName
+                address.text = event.locationName
                 time.text = event.timeText
                 
                 // Logic for open spots calculation
-                val openSpots = event.maxEntrants?.minus(event.waitingCount) ?: 0
-                waiting.text = if (event.maxEntrants != null) {
+                val openSpots = event.maxEntrants?.minus(event.waitingCount.toInt()) ?: 0
+                waiting.text = if (event.maxEntrants != null && !event.lotteryDone) {
                     "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
                 } else {
                     "${event.waitingCount} People on Waiting List"
@@ -280,32 +294,32 @@ class EventDetailsOFragment : Fragment() {
 
     private fun populateInterests(chipGroup: ChipGroup, interests: String) {
         val tags = interests.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-        
+
         chipGroup.removeAllViews()
         if (interests.isEmpty()) return
-        
+
         for (tag in tags) {
             val chip = Chip(requireContext())
             chip.text = tag
             chip.isCheckable = true
             chip.isClickable = false // User cannot toggle from here
-            
+
             // Set styles to match green theme when checked
             chip.chipBackgroundColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_state_list)
             chip.chipStrokeColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_stroke_state_list)
             chip.chipStrokeWidth = resources.getDimension(R.dimen.chip_stroke_width_custom)
-            
+
             // If the interest or any of its parents are in the user's list, it shows as selected
             lifecycleScope.launch {
                 val tagInfo = tagRepository.getTag(tag)
                 val isDirectInterested = userInterested.contains(tag)
                 val isParentInterested = tagInfo?.parents?.any { userInterested.contains(it) } ?: false
-                
+
                 if (isAdded) {
                     chip.isChecked = isDirectInterested || isParentInterested
                 }
             }
-            
+
             chipGroup.addView(chip)
         }
     }
@@ -357,6 +371,7 @@ class EventDetailsOFragment : Fragment() {
     /**
      * Adds a user to the event's waitlist in Firestore.
      * Uses a transaction to ensure waitlist count accuracy.
+     * Sends a notification to the invited user.
      * @param user The user to add to the waitlist.
      */
     private fun inviteUserToEvent(user: User) {
@@ -375,23 +390,39 @@ class EventDetailsOFragment : Fragment() {
             
             val eventRef = db.collection("events").document(eventId)
             val eventDoc = transaction.get(eventRef)
-            val currentCount = eventDoc.getLong("waiting_count") ?: 0
-            
+            val currentCount = eventDoc.getLong("waiting_count") ?: 0L
+            val eventName = eventDoc.getString("name") ?: "Private Event"
+
             transaction.set(waitlistRef, waitlistData)
             transaction.update(eventRef, "waiting_count", currentCount + 1)
-        }
-        .addOnSuccessListener {
-            Toast.makeText(requireContext(), "User invited successfully", Toast.LENGTH_SHORT).show()
-        }
-        .addOnFailureListener { e ->
-            if (e.message == "ALREADY_IN_WAITLIST") {
-                Toast.makeText(requireContext(), "User is already on waitlist", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(requireContext(), "Failed to invite: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+            eventName
+        }.addOnSuccessListener { eventName ->
+            Toast.makeText(requireContext(), "${user.name} has been added to the waiting list!", Toast.LENGTH_SHORT).show()
+
+            // Send notification to the invited user
+            NotificationManager.sendNotification(
+                user.deviceId,
+                "Private Invitation",
+                "You have been invited to join the waiting list for $eventName!",
+                "ORGANIZER",
+                eventName as String,
+                eventId
+            )
+
+            inviteSearchInput.text.clear()
+            searchAdapter.submitList(emptyList())
+            searchResultRecycler.visibility = View.GONE
+        }.addOnFailureListener { e ->
+            val msg = if (e.message == "ALREADY_IN_WAITLIST") "User is already on the waitlist." else "Failed to invite: ${e.message}"
+            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
         }
     }
 
+    /**
+     * Performs a Firestore search for users matching the query string.
+     * Limits search results to the first 5 matches.
+     * @param query The search string (name, email, or phone).
+     */
     private fun performUserSearch(query: String) {
         val category = inviteCategorySpinner.selectedItem.toString()
         val field = when(category) {
@@ -412,6 +443,11 @@ class EventDetailsOFragment : Fragment() {
             }
     }
 
+    /**
+     * Uploads a local image file to Firebase Storage.
+     * On success, updates the Firestore document with the new image URL.
+     * @param uri The local URI of the image to upload.
+     */
     private fun uploadPoster(uri: Uri) {
         val storageRef = FirebaseStorage.getInstance().reference.child("event_posters/$eventId.jpg")
         storageRef.putFile(uri)
@@ -433,5 +469,37 @@ class EventDetailsOFragment : Fragment() {
         super.onDestroyView()
         eventListener?.remove()
         userListener?.remove()
+    }
+
+    /**
+     * Adapter for displaying matching entrants in the search dropdown.
+     */
+    private inner class UserSearchAdapter(private val onItemClick: (User) -> Unit) :
+        RecyclerView.Adapter<UserSearchAdapter.VH>() {
+        private var users = listOf<User>()
+
+        fun submitList(newList: List<User>) {
+            users = newList
+            notifyDataSetChanged()
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val v = LayoutInflater.from(parent.context).inflate(R.layout.item_user_search_result, parent, false)
+            return VH(v)
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val user = users[position]
+            holder.userName.text = user.name
+            holder.userDetail.text = user.email
+            holder.itemView.setOnClickListener { onItemClick(user) }
+        }
+
+        override fun getItemCount() = users.size
+        
+        inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val userName: TextView = itemView.findViewById(R.id.userName)
+            val userDetail: TextView = itemView.findViewById(R.id.userDetail)
+        }
     }
 }

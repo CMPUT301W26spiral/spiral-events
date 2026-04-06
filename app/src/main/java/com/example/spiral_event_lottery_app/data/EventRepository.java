@@ -235,7 +235,9 @@ public class EventRepository {
      * If the waitlist is empty, no one is drawn.
      */
     public void triggerAutomaticRedraw(String eventId, String eventName) {
-        db.collection("events").document(eventId).collection("waitlist").get()
+        db.collection("events").document(eventId).collection("waitlist")
+                .whereEqualTo("status", "joined") // Only draw those who have joined/accepted
+                .get()
                 .addOnSuccessListener(snapshot -> {
                     if (snapshot.isEmpty()) {
                         // No more people in waitlist, do not redraw.
@@ -337,6 +339,11 @@ public class EventRepository {
                 .addOnSuccessListener(doc -> callback.onStatus(doc.exists() ? doc.getString("status") : null));
     }
 
+    public void getWaitlistStatus(String eventId, final StatusCallback callback) {
+        db.collection("events").document(eventId).collection("waitlist").document(deviceId).get()
+                .addOnSuccessListener(doc -> callback.onStatus(doc.exists() ? doc.getString("status") : null));
+    }
+
     public void isSelected(String eventId, final BooleanCallback onResult, final ErrorCallback onError) {
         db.collection("events")
                 .document(eventId)
@@ -347,7 +354,7 @@ public class EventRepository {
                 .addOnFailureListener(onError::onError);
     }
 
-    public void joinWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onAlreadyJoined, final ErrorCallback onError) {
+    public void joinWaitlist(String eventId, Double latitude, Double longitude, final SuccessCallback onSuccess, final SuccessCallback onAlreadyJoined, final ErrorCallback onError) {
         DocumentReference eventRef = db.collection("events").document(eventId);
         DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
         DocumentReference selectedRef = eventRef.collection("selected_list").document(deviceId);
@@ -378,6 +385,13 @@ public class EventRepository {
                     Map<String, Object> waitlistData = new HashMap<>();
                     waitlistData.put("joined_at", Timestamp.now());
                     waitlistData.put("device_id", deviceId);
+                    waitlistData.put("status", "joined");
+                    
+                    if (latitude != null && longitude != null) {
+                        waitlistData.put("latitude", latitude);
+                        waitlistData.put("longitude", longitude);
+                    }
+                    
                     transaction.set(waitlistRef, waitlistData);
                     transaction.update(eventRef, "waiting_count", currentCount + 1);
                     return null;
@@ -389,6 +403,48 @@ public class EventRepository {
                         onError.onError(new Exception("You have already been selected for this event."));
                     } else if ("CO_ORGANIZER".equals(e.getMessage())) {
                         onError.onError(new Exception("You are a co-organizer and cannot join this event."));
+                    } else {
+                        onError.onError(e);
+                    }
+                });
+    }
+
+    public void acceptPrivateInvitation(String eventId, final SuccessCallback onSuccess, final ErrorCallback onError) {
+        db.collection("events").document(eventId).collection("waitlist").document(deviceId)
+                .update("status", "joined")
+                .addOnSuccessListener(aVoid -> onSuccess.onSuccess())
+                .addOnFailureListener(onError::onError);
+    }
+
+    public void declinePrivateInvitation(String eventId, final SuccessCallback onSuccess, final ErrorCallback onError) {
+        DocumentReference eventRef = db.collection("events").document(eventId);
+        DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
+        DocumentReference canceledRef = eventRef.collection("canceled_list").document(deviceId);
+
+        db.runTransaction(transaction -> {
+            DocumentSnapshot waitlistDoc = transaction.get(waitlistRef);
+            if (!waitlistDoc.exists()) {
+                throw new IllegalStateException("NOT_JOINED");
+            }
+            DocumentSnapshot eventDoc = transaction.get(eventRef);
+            Long currentCount = eventDoc.getLong("waiting_count");
+            if (currentCount == null) currentCount = 0L;
+
+            // Move to canceled_list
+            Map<String, Object> data = new HashMap<>();
+            data.put("status", "declined");
+            data.put("deviceId", deviceId);
+            data.put("declinedAt", Timestamp.now());
+            transaction.set(canceledRef, data);
+
+            // Remove from waitlist
+            transaction.delete(waitlistRef);
+            transaction.update(eventRef, "waiting_count", Math.max(0L, currentCount - 1));
+            return null;
+        }).addOnSuccessListener(unused -> onSuccess.onSuccess())
+                .addOnFailureListener(e -> {
+                    if ("NOT_JOINED".equals(e.getMessage())) {
+                        onSuccess.onSuccess();
                     } else {
                         onError.onError(e);
                     }
@@ -450,6 +506,8 @@ public class EventRepository {
             });
         }).addOnFailureListener(onError::onError);
     }
+
+
 
     /**
      * Fetches the list of device IDs from a specific sub-collection of an event.

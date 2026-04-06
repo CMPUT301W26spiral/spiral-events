@@ -11,9 +11,15 @@ import com.example.spiral_event_lottery_app.ui.profile.ProfileFragment;
 import com.example.spiral_event_lottery_app.ui.events.MyEventsFragment;
 import com.example.spiral_event_lottery_app.ui.home.HomeFragment;
 import com.example.spiral_event_lottery_app.ui.notifications.NotificationFragment;
-import com.example.event_creation.CreateEventActivity;
+import com.example.spiral_event_lottery_app.ui.event_creation.CreateEventActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+/**
+ * MainActivity serves as the primary container for the application's main navigation.
+ * It manages the bottom navigation bar and handles fragment transitions between the 
+ * Home, My Events, Notifications, and Profile screens. It also handles incoming 
+ * intents, such as those from QR code scans.
+ */
 public class MainActivity extends AppCompatActivity {
 
     private final HomeFragment homeFragment = new HomeFragment();
@@ -23,6 +29,16 @@ public class MainActivity extends AppCompatActivity {
     private final FragmentManager fm = getSupportFragmentManager();
     private Fragment activeTab = homeFragment;
 
+    /**
+     * Initializes the activity, sets up the bottom navigation, and handles the initial 
+     * fragment setup. It also adds a listener for backstack changes to trigger data 
+     * refreshes on visible fragments.
+     * 
+     * @param savedInstanceState If the activity is being re-initialized after 
+     *                           previously being shut down then this Bundle contains 
+     *                           the data it most recently supplied in 
+     *                           onSaveInstanceState. Otherwise it is null.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,6 +100,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Called when the activity is already running and receives a new intent.
+     * 
+     * @param intent The new intent that was started for the activity.
+     */
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -91,6 +112,12 @@ public class MainActivity extends AppCompatActivity {
         handleIntent(intent);
     }
 
+    /**
+     * Processes incoming intents, specifically handling QR code scan results by 
+     * navigating to the corresponding event details screen based on the user's role.
+     * 
+     * @param intent The intent to process.
+     */
     private void handleIntent(Intent intent) {
         if (intent == null) return;
         String scannedId = intent.getStringExtra("SCAN_RESULT_ID");
@@ -134,6 +161,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Switches the active fragment based on the user's selection in the bottom 
+     * navigation bar. Handles backstack management and ensures that the 
+     * appropriate data refreshes are triggered.
+     * 
+     * @param targetTab The fragment to switch to.
+     */
     private void switchTab(Fragment targetTab) {
         FragmentTransaction ft = fm.beginTransaction();
         ft.hide(activeTab);

@@ -15,27 +15,42 @@ class TagRepository {
         private val cachedTags = mutableMapOf<String, Tag>()
     }
 
-    // Fallback defaults
+    // Fallback defaults for common tags to ensure UI responsiveness
     private val defaultTags = mapOf(
         "Baking" to listOf("Culinary", "Hobbies"),
         "Photography" to listOf("Arts", "Tech"),
-        "Gaming" to listOf("Social", "Hobbies")
+        "Gaming" to listOf("Social", "Hobbies"),
+        "Baseball" to listOf("Sports", "Outdoors"),
+        "Cycling" to listOf("Sports", "Outdoors", "Health"),
+        "Race" to listOf("Sports", "Social", "Community"),
+        "Team" to listOf("Sports", "Social"),
+        "Home run" to listOf("Sports", "Career")
     )
 
+    /**
+     * Returns a tag from the cache immediately. 
+     * If not in cache, returns a dummy tag with default parents if known.
+     */
     fun getTagImmediate(tagId: String): Tag {
-        return cachedTags[tagId] ?: Tag(id = tagId, name = tagId, parents = defaultTags[tagId] ?: emptyList())
+        return cachedTags[tagId] ?: Tag(
+            id = tagId, 
+            name = tagId, 
+            parents = defaultTags.entries.find { it.key.equals(tagId, ignoreCase = true) }?.value ?: emptyList()
+        )
     }
 
     /**
      * Pre-fetches a list of tags and caches them for immediate use in sorting.
      */
     suspend fun fetchAndCacheTags(tagIds: List<String>) {
-        val tagsToFetch = tagIds.filter { !cachedTags.containsKey(it) }.distinct()
+        val tagsToFetch = tagIds.filter { id -> 
+            !cachedTags.keys.any { it.equals(id, ignoreCase = true) } 
+        }.distinct()
+        
         if (tagsToFetch.isEmpty()) return
 
         try {
-            // Firestore 'in' query has a limit of 30 items. 
-            // If tagIds is large, we might need to chunk it, but for a single screen it's usually fine.
+            // Firestore 'in' query has a limit of 30 items.
             val chunks = tagsToFetch.chunked(30)
             for (chunk in chunks) {
                 val snapshot = tagsCollection.whereIn("id", chunk).get().await()
@@ -46,11 +61,12 @@ class TagRepository {
                     }
                 }
             }
-            // For tags not found in DB, we still mark them as checked (cached with empty parents or defaults)
-            // to avoid repeated network attempts.
+            
+            // For tags not found in DB, mark them as checked (cached with defaults)
             for (id in tagsToFetch) {
-                if (!cachedTags.containsKey(id)) {
-                    cachedTags[id] = Tag(id = id, name = id, parents = defaultTags[id] ?: emptyList())
+                if (!cachedTags.keys.any { it.equals(id, ignoreCase = true) }) {
+                    val parents = defaultTags.entries.find { it.key.equals(id, ignoreCase = true) }?.value ?: emptyList()
+                    cachedTags[id] = Tag(id = id, name = id, parents = parents)
                 }
             }
         } catch (e: Exception) {
@@ -75,16 +91,19 @@ class TagRepository {
     }
 
     suspend fun getTag(tagId: String): Tag? {
-        if (cachedTags.containsKey(tagId)) return cachedTags[tagId]
+        val existing = cachedTags.entries.find { it.key.equals(tagId, ignoreCase = true) }?.value
+        if (existing != null) return existing
         
         return try {
             val doc = tagsCollection.document(tagId).get().await()
             if (doc.exists()) {
                 val tag = doc.toObject(Tag::class.java)
-                if (tag != null) cachedTags[tagId] = tag
-                tag
+                if (tag != null) {
+                    cachedTags[tag.id] = tag
+                    tag
+                } else null
             } else {
-                val parents = defaultTags[tagId] ?: emptyList()
+                val parents = defaultTags.entries.find { it.key.equals(tagId, ignoreCase = true) }?.value ?: emptyList()
                 val newTag = Tag(id = tagId, name = tagId, parents = parents)
                 saveTag(newTag)
                 cachedTags[tagId] = newTag
@@ -97,26 +116,21 @@ class TagRepository {
 
     suspend fun saveTag(tag: Tag) {
         try {
-            Log.d(TAG, "DEBUG: Attempting to save tag: ${tag.id}")
             tagsCollection.document(tag.id)
                 .set(tag, SetOptions.merge())
                 .await()
             cachedTags[tag.id] = tag
-            Log.d(TAG, "DEBUG: Successfully saved tag: ${tag.id}")
         } catch (e: Exception) {
-            Log.e(TAG, "DEBUG: Failed to save tag: ${e.message}")
-            e.printStackTrace()
+            Log.e(TAG, "Failed to save tag: ${e.message}")
         }
     }
 
     fun saveTagAsync(tag: Tag) {
-        Log.d(TAG, "DEBUG: Attempting to save tag (Async): ${tag.id}")
         tagsCollection.document(tag.id)
             .set(tag, SetOptions.merge())
             .addOnSuccessListener { 
                 cachedTags[tag.id] = tag
-                Log.d(TAG, "DEBUG: Successfully saved tag (Async): ${tag.id}") 
             }
-            .addOnFailureListener { e -> Log.e(TAG, "DEBUG: Failed to save tag (Async): ${e.message}") }
+            .addOnFailureListener { e -> Log.e(TAG, "Failed to save tag: ${e.message}") }
     }
 }

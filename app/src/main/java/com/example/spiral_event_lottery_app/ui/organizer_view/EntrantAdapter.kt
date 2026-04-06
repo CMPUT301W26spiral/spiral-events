@@ -13,7 +13,7 @@ import com.example.spiral_event_lottery_app.model.User
 
 /**
  * EntrantAdapter is a RecyclerView adapter that displays a list of entrants
- * for a specific tab (Invited, Waiting, or Cancelled) in the ManageEntrantsFragment.
+ * for a specific tab (Waiting or Cancelled) in the ManageEntrantsFragment.
  *
  * Each item displays the entrant's name, an optional status badge
  * (pending, accepted, declined, cancelled), a remove button for the organizer
@@ -31,12 +31,14 @@ import com.example.spiral_event_lottery_app.model.User
  *
  * @param entrants            List of entrant User objects to display
  * @param statusMap           Optional map of deviceId to status string for badge display
+ * @param isPrivateEvent      Whether the current event is private (to show invited label)
  * @param onRemove            Optional callback when the remove button is tapped
  * @param onAssignCoOrganizer Optional callback when the co-organizer button is tapped
  */
 class EntrantAdapter(
     private var entrants: List<User>,
     private val statusMap: Map<String, String> = emptyMap(),
+    private val isPrivateEvent: Boolean = false,
     private val onRemove: ((User) -> Unit)? = null,
     private val onAssignCoOrganizer: ((User) -> Unit)? = null
 ) : RecyclerView.Adapter<EntrantAdapter.VH>() {
@@ -73,7 +75,7 @@ class EntrantAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val user = entrants[position]
         val status = statusMap[user.deviceId] ?: ""
-        holder.bind(user, status, onRemove, onAssignCoOrganizer)
+        holder.bind(user, status, isPrivateEvent, onRemove, onAssignCoOrganizer)
     }
 
     /**
@@ -108,17 +110,26 @@ class EntrantAdapter(
          *
          * @param user                The entrant User object to display
          * @param status              The entrant's current status string (empty = no badge)
+         * @param isPrivateEvent      True if this is a private event
          * @param onRemove            Callback for the remove button, or null to hide it
          * @param onAssignCoOrganizer Callback for the co-organizer button, or null to hide it
          */
         fun bind(
             user: User,
             status: String,
+            isPrivateEvent: Boolean,
             onRemove: ((User) -> Unit)?,
             onAssignCoOrganizer: ((User) -> Unit)?
         ) {
             // Display name or fall back to device ID
-            nameText.text = if (user.name.isNotBlank()) user.name else user.deviceId
+            val baseName = if (user.name.isNotBlank()) user.name else user.deviceId
+            
+            // If it's a private event, anyone on the waitlist (status joined/pending/invited) has "invited" label
+            if (isPrivateEvent && (status.lowercase() == "invited" || status.lowercase() == "pending" || status.lowercase() == "joined")) {
+                nameText.text = "$baseName (invited)"
+            } else {
+                nameText.text = baseName
+            }
 
             // Show status badge only when a status is provided
             if (status.isNotEmpty()) {
@@ -131,6 +142,7 @@ class EntrantAdapter(
                     "pending"   -> Color.parseColor("#F57C00") // orange
                     "declined"  -> Color.parseColor("#C62828") // red
                     "cancelled" -> Color.parseColor("#C62828") // red
+                    "invited"   -> Color.parseColor("#1976D2") // blue
                     else        -> Color.parseColor("#757575") // grey fallback
                 }
                 statusBadge.background.setTint(bgColor)
@@ -138,7 +150,7 @@ class EntrantAdapter(
                 statusBadge.visibility = View.GONE
             }
 
-            // Show remove button only on Invited tab when callback is provided
+            // Show remove button when callback is provided
             if (onRemove != null) {
                 removeBtn.visibility = View.VISIBLE
                 removeBtn.setOnClickListener { onRemove(user) }

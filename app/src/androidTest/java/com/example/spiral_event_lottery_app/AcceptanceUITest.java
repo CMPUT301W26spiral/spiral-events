@@ -8,11 +8,14 @@ import org.junit.runner.RunWith;
 
 /**
  * Instrumented tests for acceptanceHandling.
- * These tests run on a real device/emulator where Firebase is available.
+ * These tests run on a real device/emulator where Firebase and Android context are available.
  */
 @RunWith(AndroidJUnit4.class)
 public class AcceptanceUITest {
 
+    /**
+     * Verifies that the acceptanceHandling class can be initialized in an Android environment.
+     */
     @Test
     public void testInitializationOnAndroid() {
         // This will now pass because it's running on Android
@@ -20,6 +23,10 @@ public class AcceptanceUITest {
         assertNotNull(handler);
     }
 
+    /**
+     * Verifies that calling acceptance and decline methods with null or empty inputs 
+     * does not cause a crash in the Android environment.
+     */
     @Test
     public void testInputValidationOnAndroid() {
         acceptanceHandling handler = new acceptanceHandling();

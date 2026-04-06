@@ -104,18 +104,31 @@ class EventStoreO(private val context: Context) {
         }
 
         val waitingCount = (data["waiting_count"] as? Number)?.toLong() ?: 0L
+        
+        val posterUriStrings = data["posterUriStrings"] as? List<String> ?: emptyList()
 
         return Event(
             id = documentId,
             name = name,
             locationName = location,
+            isPublic = data["isPublic"] as? Boolean ?: (data["public"] as? Boolean ?: true),
+            interests = data["interests"] as? String ?: "",
+            description = data["description"] as? String ?: "",
+            geolocation = data["geolocation"] as? String ?: "",
+            maxEntrants = (data["maxEntrants"] as? Number)?.toInt(),
+            eventDate = data["eventDate"] as? String ?: "",
+            eventStartTime = data["eventStartTime"] as? String ?: "",
+            eventEndTime = data["eventEndTime"] as? String ?: "",
+            drawDate = data["drawDate"] as? String ?: "",
+            drawStartTime = data["drawStartTime"] as? String ?: "",
+            drawEndTime = data["drawEndTime"] as? String ?: "",
+            posterUriString = data["posterUriString"] as? String ?: data["posterUrl"] as? String,
+            posterUriStrings = posterUriStrings,
+            eventCreated = data["eventCreated"] as? String ?: "",
             timeText = timeText,
             waitingCount = waitingCount,
-            eventCreated = data["eventCreated"] as? String ?: "",
             organizerId = data["organizerId"] as? String ?: "",
-            description = data["description"] as? String ?: "",
-            posterUriString = data["posterUriString"] as? String ?: data["posterUrl"] as? String,
-            isPublic = data["isPublic"] as? Boolean ?: true
+            lotteryDone = data["lottery_done"] as? Boolean ?: false
         )
     }
 

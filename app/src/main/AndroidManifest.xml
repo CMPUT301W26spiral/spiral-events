@@ -39,20 +39,20 @@
         <activity android:name=".MainActivity" />
         <activity android:name=".ui.profile.InterestsActivity" android:exported="false" />
         <activity
-            android:name="com.example.event_creation.CreateEventActivity"
+            android:name=".ui.event_creation.CreateEventActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustPan" />
 
         <activity
-            android:name="com.example.event_creation.QRCodeActivity"
+            android:name=".ui.event_creation.QRCodeActivity"
             android:exported="false" />
 
         <activity
-            android:name="com.example.event_creation.OrganizerActivity"
+            android:name=".ui.event_creation.OrganizerActivity"
             android:exported="false" />
 
         <activity
-            android:name="com.example.event_creation.PrivateEventSuccessActivity"
+            android:name=".ui.event_creation.PrivateEventSuccessActivity"
             android:exported="false" />
 
         <provider

@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -17,8 +18,10 @@ import androidx.viewpager2.widget.ViewPager2
 import com.example.spiral_event_lottery_app.R
 import com.example.spiral_event_lottery_app.data.DeviceIdProvider
 import com.example.spiral_event_lottery_app.data.EventRepository
+import com.example.spiral_event_lottery_app.acceptanceHandling
 import com.example.spiral_event_lottery_app.data.NotificationManager
 import com.example.spiral_event_lottery_app.data.TagRepository
+import com.example.spiral_event_lottery_app.ui.event_creation.QRCodeActivity
 import com.example.spiral_event_lottery_app.ui.events.PosterAdapter
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -28,6 +31,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
 
+/**
+ * Fragment that displays event details for joined entrants and winners.
+ * Hides action buttons if the invitation has already been accepted or declined.
+ */
 class EventDetailsLeaveFragment : Fragment() {
     companion object {
         private const val ARG_EVENT_ID = "event_id"
@@ -43,7 +50,7 @@ class EventDetailsLeaveFragment : Fragment() {
     private val tagRepository = TagRepository()
     private var eventListener: ListenerRegistration? = null
     private var userListener: ListenerRegistration? = null
-    
+
     private var userInterested: List<String> = emptyList()
     private var currentEventInterests: String = ""
 
@@ -60,11 +67,15 @@ class EventDetailsLeaveFragment : Fragment() {
         val backBtn = view.findViewById<ImageButton>(R.id.backButton)
         val title = view.findViewById<TextView>(R.id.detailsTitle)
         val location = view.findViewById<TextView>(R.id.detailsLocation)
+        val address = view.findViewById<TextView>(R.id.detailsLocationAddress)
         val time = view.findViewById<TextView>(R.id.detailsTime)
         val waiting = view.findViewById<TextView>(R.id.detailsWaiting)
+        val description = view.findViewById<TextView>(R.id.detailsDescription)
         val posterViewPager = view.findViewById<ViewPager2>(R.id.eventPosterViewPager)
         val posterIndicator = view.findViewById<TabLayout>(R.id.posterIndicator)
         val actionBtn = view.findViewById<Button>(R.id.joinLeaveButton)
+        val acceptBtn = view.findViewById<Button>(R.id.acceptInvitationButton)
+        val joinedText = view.findViewById<TextView>(R.id.successfullyJoinedText)
         val viewQRBtn = view.findViewById<ImageButton>(R.id.viewQRButtonIcon)
         val commentsBtn = view.findViewById<Button>(R.id.commentsButton)
         val interestsChipGroup = view.findViewById<ChipGroup>(R.id.detailsInterestsChipGroup)
@@ -73,7 +84,7 @@ class EventDetailsLeaveFragment : Fragment() {
         backBtn.setOnClickListener { parentFragmentManager.popBackStack() }
 
         viewQRBtn.setOnClickListener {
-            val intent = Intent(requireContext(), com.example.event_creation.QRCodeActivity::class.java)
+            val intent = Intent(requireContext(), QRCodeActivity::class.java)
             intent.putExtra("EVENT_ID", eventId)
             intent.putExtra("EVENT_NAME", title.text.toString())
             startActivity(intent)
@@ -87,13 +98,22 @@ class EventDetailsLeaveFragment : Fragment() {
         }
 
         startUserListening(interestsChipGroup)
-        
+
         eventListener = repository.listenToEvent(eventId, { event ->
             if (event == null || !isAdded) return@listenToEvent
             title.text = event.name
             location.text = event.locationName
+            address.text = event.locationName
             time.text = event.timeText
-            waiting.text = "${event.waitingCount} People on Waiting List"
+
+            val openSpots = event.maxEntrants?.minus(event.waitingCount.toInt()) ?: 0
+            waiting.text = if (event.maxEntrants != null && !event.lotteryDone) {
+                "${event.waitingCount} People on Waiting List, $openSpots Open Spots"
+            } else {
+                "${event.waitingCount} People on Waiting List"
+            }
+
+            description.text = if (event.description.isNullOrEmpty()) "No description available" else event.description
 
             currentEventInterests = event.interests
             populateInterests(interestsChipGroup, currentEventInterests)
@@ -111,23 +131,112 @@ class EventDetailsLeaveFragment : Fragment() {
                 posterIndicator.visibility = View.GONE
             }
 
-            actionBtn.setOnClickListener {
-                repository.isJoined(eventId, { joined ->
-                    if (!joined) {
-                        AlertDialog.Builder(requireContext()).setTitle("Not registered").setMessage("You're not on the waiting list for\n${event.name}.").setPositiveButton("OK", null).show()
-                    } else {
-                        AlertDialog.Builder(requireContext()).setTitle("You have successfully left the waiting list for ${event.name}").setPositiveButton("Confirm") { _, _ ->
-                            repository.leaveWaitlist(eventId, {
-                                NotificationManager.sendNotification(DeviceIdProvider.getDeviceId(requireContext()), "Cancelled", "You have left the waiting list.", "DENIED", event.name, eventId)
-                                parentFragmentManager.popBackStack()
-                            }, {}, { e -> Toast.makeText(requireContext(), e.message ?: "Leave failed", Toast.LENGTH_LONG).show() })
-                        }.setNegativeButton("Cancel", null).show()
+            val myId = DeviceIdProvider.getDeviceId(requireContext())
+
+            // Real-time check for entrant status
+            repository.getWinnerStatus(eventId) { status ->
+                if (!isAdded) return@getWinnerStatus
+
+                if ("accepted".equals(status, ignoreCase = true)) {
+                    joinedText.visibility = View.VISIBLE
+                    joinedText.text = "You have accepted the invitation! \uD83C\uDF89"
+                    joinedText.setTextColor(resources.getColor(R.color.primary_green, null))
+                    acceptBtn.visibility = View.GONE
+                    actionBtn.visibility = View.GONE
+                } else if ("declined".equals(status, ignoreCase = true)) {
+                    joinedText.visibility = View.VISIBLE
+                    joinedText.text = "You declined this invitation"
+                    joinedText.setTextColor(android.graphics.Color.RED)
+                    acceptBtn.visibility = View.GONE
+                    actionBtn.visibility = View.GONE
+                } else if (status != null) {
+                    // This means they are in selected_list but haven't accepted/declined yet
+                    acceptBtn.visibility = View.VISIBLE
+                    actionBtn.visibility = View.VISIBLE
+                    actionBtn.text = "Decline Invitation"
+
+                    acceptBtn.setOnClickListener {
+                        val handler = acceptanceHandling()
+                        handler.invitation_accepted(requireContext(), eventId, myId)
                     }
-                }, {})
+
+                    actionBtn.setOnClickListener {
+                        AlertDialog.Builder(requireContext())
+                            .setTitle("Decline Invitation")
+                            .setMessage("Are you sure you want to decline? You will not be able to join again.")
+                            .setPositiveButton("Decline") { _, _ ->
+                                repository.declineInvitation(eventId, {
+                                    // Status update will trigger UI refresh
+                                }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                    }
+                } else {
+                    // Check if they are in the canceled_list
+                    repository.getEntrantIds(eventId, "canceled_list", { canceledIds ->
+                        if (!isAdded) return@getEntrantIds
+                        if (canceledIds.contains(myId)) {
+                            joinedText.visibility = View.VISIBLE
+                            joinedText.text = "You declined this invitation"
+                            joinedText.setTextColor(android.graphics.Color.RED)
+                            acceptBtn.visibility = View.GONE
+                            actionBtn.visibility = View.GONE
+                        } else {
+                            // Check waitlist status (could be pending for private event)
+                            repository.getWaitlistStatus(eventId) { waitlistStatus ->
+                                if (!isAdded) return@getWaitlistStatus
+                                
+                                if ("pending".equals(waitlistStatus, ignoreCase = true)) {
+                                    joinedText.visibility = View.GONE
+                                    acceptBtn.visibility = View.VISIBLE
+                                    actionBtn.visibility = View.VISIBLE
+                                    actionBtn.text = "Decline Private Invitation"
+                                    
+                                    acceptBtn.setOnClickListener {
+                                        repository.acceptPrivateInvitation(eventId, {
+                                            Toast.makeText(requireContext(), "Invitation accepted!", Toast.LENGTH_SHORT).show()
+                                        }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
+                                    }
+                                    
+                                    actionBtn.setOnClickListener {
+                                        AlertDialog.Builder(requireContext())
+                                            .setTitle("Decline Invitation")
+                                            .setMessage("Are you sure you want to decline this private invitation?")
+                                            .setPositiveButton("Decline") { _, _ ->
+                                                repository.declinePrivateInvitation(eventId, {
+                                                    parentFragmentManager.popBackStack()
+                                                }, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
+                                            }
+                                            .setNegativeButton("Cancel", null)
+                                            .show()
+                                    }
+                                } else {
+                                    // Normal waitlist behavior
+                                    joinedText.visibility = View.GONE
+                                    acceptBtn.visibility = View.GONE
+                                    actionBtn.visibility = View.VISIBLE
+                                    actionBtn.text = "Leave Waiting List"
+                                    actionBtn.setOnClickListener {
+                                        AlertDialog.Builder(requireContext())
+                                            .setTitle("Leave Waiting List")
+                                            .setMessage("Are you sure you want to leave the waiting list?")
+                                            .setPositiveButton("Confirm") { _, _ ->
+                                                repository.leaveWaitlist(eventId, {
+                                                    parentFragmentManager.popBackStack()
+                                                }, {}, { e -> Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show() })
+                                            }
+                                            .setNegativeButton("Cancel", null)
+                                            .show()
+                                    }
+                                }
+                            }
+                        }
+                    }, {})
+                }
             }
         }, {})
     }
-
     private fun startUserListening(chipGroup: ChipGroup) {
         val uid = DeviceIdProvider.getDeviceId(requireContext())
         userListener = FirebaseFirestore.getInstance().collection("users").document(uid)
@@ -139,21 +248,22 @@ class EventDetailsLeaveFragment : Fragment() {
             }
     }
 
+
     private fun populateInterests(chipGroup: ChipGroup, interests: String) {
         val tags = interests.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         chipGroup.removeAllViews()
         if (interests.isEmpty()) return
-        
+
         for (tag in tags) {
             val chip = Chip(requireContext())
             chip.text = tag
             chip.isCheckable = true
             chip.isClickable = false
-            
+
             chip.chipBackgroundColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_state_list)
             chip.chipStrokeColor = ContextCompat.getColorStateList(requireContext(), R.color.chip_interest_stroke_state_list)
             chip.chipStrokeWidth = resources.getDimension(R.dimen.chip_stroke_width_custom)
-            
+
             lifecycleScope.launch {
                 val tagInfo = tagRepository.getTag(tag)
                 val isDirectInterested = userInterested.contains(tag)
