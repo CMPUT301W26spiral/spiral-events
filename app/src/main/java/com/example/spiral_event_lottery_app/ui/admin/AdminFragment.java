@@ -154,12 +154,20 @@ public class AdminFragment extends Fragment {
         currentMode = "IMAGES";
         highlightButton(currentMode);
         db.collection("events")
-                .whereNotEqualTo("posterUriString", null)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (!isAdded()) return;
                     if (task.isSuccessful() && task.getResult() != null) {
-                        currentList = task.getResult().getDocuments();
+                        List<DocumentSnapshot> allDocs = task.getResult().getDocuments();
+                        List<DocumentSnapshot> withImages = new ArrayList<>();
+                        for (DocumentSnapshot doc : allDocs) {
+                            String single = doc.getString("posterUriString");
+                            List<String> multi = (List<String>) doc.get("posterUriStrings");
+                            if (single != null || (multi != null && !multi.isEmpty())) {
+                                withImages.add(doc);
+                            }
+                        }
+                        currentList = withImages;
                         adapter.updateData(currentList, "IMAGES");
                     }
                 });
@@ -176,16 +184,32 @@ public class AdminFragment extends Fragment {
 
     private void deleteItem(DocumentSnapshot document, String mode, int position) {
         if (mode.equals("IMAGES")) {
-            String imageUrl = document.getString("posterUriString");
-            if (imageUrl != null && !imageUrl.isEmpty()) {
+            String singleUrl = document.getString("posterUriString");
+            List<String> multiUrls = (List<String>) document.get("posterUriStrings");
+
+            // Delete single poster from storage
+            if (singleUrl != null && !singleUrl.isEmpty()) {
                 try {
-                    storage.getReferenceFromUrl(imageUrl).delete();
+                    storage.getReferenceFromUrl(singleUrl).delete();
                 } catch (Exception e) {
-                    Log.e(TAG, "Could not delete from storage", e);
+                    Log.e(TAG, "Could not delete single image from storage", e);
                 }
             }
+
+            // Delete multiple posters from storage
+            if (multiUrls != null) {
+                for (String url : multiUrls) {
+                    try {
+                        storage.getReferenceFromUrl(url).delete();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Could not delete image in multi-list from storage", e);
+                    }
+                }
+            }
+
+            // Update Firestore to clear the references
             db.collection("events").document(document.getId())
-                    .update("posterUriString", null)
+                    .update("posterUriString", null, "posterUriStrings", new ArrayList<>())
                     .addOnSuccessListener(v -> onDeleteSuccess(position));
             return;
         }
