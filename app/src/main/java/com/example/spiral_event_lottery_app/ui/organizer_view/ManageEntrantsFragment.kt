@@ -30,13 +30,17 @@ import com.google.firebase.firestore.FirebaseFirestore
 /**
  * ManageEntrantsFragment displays and manages entrants for a specific event.
  *
- * Shows two tabs:
+ * Shows three tabs:
  * - Waiting: entrants on the waitlist, not yet drawn
+ * - Invited: entrants drawn from the lottery, with pending or accepted status
  * - Cancelled: entrants who declined or were cancelled by the organizer
  *
  * User Stories covered:
  * - US 02.02.01: View waiting list
+ * - US 02.06.01: View invited/chosen entrants
  * - US 02.06.02: View cancelled entrants
+ * - US 02.06.03: View final enrolled entrants (accepted)
+ * - US 02.06.04: Cancel entrants who did not sign up
  * - US 02.06.05: Export final entrant list as CSV
  * - US 02.07.01/02/03: Send notifications to entrants by tab
  * - US 01.05.06: Invite specific entrant to private event
@@ -47,8 +51,10 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     private lateinit var eventId: String
     private val db = FirebaseFirestore.getInstance()
 
+    private lateinit var invitedRecycler: RecyclerView
     private lateinit var waitingRecycler: RecyclerView
     private lateinit var cancelledRecycler: RecyclerView
+    private lateinit var btnInvited: Button
     private lateinit var btnWaiting: Button
     private lateinit var btnCancelled: Button
     private lateinit var waitingCountText: TextView
@@ -61,9 +67,6 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
 
     /** Cached event name used for notifications */
     private var eventName = "Event"
-
-    /** Whether the event is public or private */
-    private var isPublic = true
 
     companion object {
         /**
@@ -86,13 +89,16 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
 
         btnInvitePrivate = view.findViewById(R.id.btnInvitePrivate)
         btnNotifyAll     = view.findViewById(R.id.btnNotifyAll)
+        btnInvited       = view.findViewById(R.id.btnInvited)
         btnWaiting       = view.findViewById(R.id.btnWaiting)
         btnCancelled     = view.findViewById(R.id.btnCancelled)
+        invitedRecycler  = view.findViewById(R.id.invitedRecycler)
         waitingRecycler  = view.findViewById(R.id.waitingRecycler)
         cancelledRecycler = view.findViewById(R.id.cancelledRecycler)
         waitingCountText = view.findViewById(R.id.waitingCountText)
         btnExportCsv     = view.findViewById(R.id.btnExportCsv)
 
+        invitedRecycler.layoutManager   = LinearLayoutManager(requireContext())
         waitingRecycler.layoutManager   = LinearLayoutManager(requireContext())
         cancelledRecycler.layoutManager = LinearLayoutManager(requireContext())
 
@@ -100,6 +106,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
             parentFragmentManager.popBackStack()
         }
 
+        btnInvited.setOnClickListener   { showTab("invited") }
         btnWaiting.setOnClickListener   { showTab("waiting") }
         btnCancelled.setOnClickListener { showTab("cancelled") }
 
@@ -112,7 +119,20 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         // US 02.06.05
         btnExportCsv.setOnClickListener { exportEnrolledAsCsv() }
 
-        loadEventDetails()
+        loadEventName()
+
+        // Hide invite button if event is public
+        db.collection("events").document(eventId).get().addOnSuccessListener { doc ->
+            if (isAdded) {
+                val isPublic = doc.getBoolean("isPublic") ?: true
+                btnInvitePrivate.visibility = if (isPublic) View.GONE else View.VISIBLE
+            }
+        }
+
+        showTab("waiting")
+        loadWaitingEntrants()
+        loadInvitedEntrants()
+        loadCancelledEntrants()
     }
 
     // -------------------------------------------------------------------------
@@ -120,20 +140,12 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     // -------------------------------------------------------------------------
 
     /**
-     * Fetches the event details from Firestore.
+     * Fetches the event name from Firestore and caches it for use in notifications.
      */
-    private fun loadEventDetails() {
+    private fun loadEventName() {
         db.collection("events").document(eventId).get()
             .addOnSuccessListener { doc ->
-                if (isAdded) {
-                    eventName = doc.getString("name") ?: "Event"
-                    isPublic = doc.getBoolean("isPublic") ?: true
-                    btnInvitePrivate.visibility = if (isPublic) View.GONE else View.VISIBLE
-
-                    showTab("waiting")
-                    loadWaitingEntrants()
-                    loadCancelledEntrants()
-                }
+                eventName = doc.getString("name") ?: "Event"
             }
     }
 
@@ -144,7 +156,6 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     private fun loadWaitingEntrants() {
         db.collection("events").document(eventId).collection("waitlist").get()
             .addOnSuccessListener { snapshot ->
-                if (!isAdded) return@addOnSuccessListener
                 val deviceIds = snapshot.documents.map { it.id }
                 val statusMap = snapshot.documents.associate { doc ->
                     doc.id to (doc.getString("status") ?: "joined")
@@ -154,8 +165,34 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                     waitingRecycler.adapter = EntrantAdapter(
                         users,
                         statusMap = statusMap,
-                        isPrivateEvent = !isPublic,
-                        onRemove = { user -> removeUserFromWaitlist(user.deviceId) },
+                        onRemove = null,
+                        onAssignCoOrganizer = { user ->
+                            AssignCoOrganizerDialog(requireContext(), eventId, eventName).show(user)
+                        }
+                    )
+                }
+            }
+    }
+
+    /**
+     * Loads entrants from selected_list with status "pending", "accepted", or "invited".
+     * The remove button allows the organizer to cancel a pending entrant (US 02.06.04).
+     * Implements US 02.06.01 and US 02.06.03.
+     */
+    private fun loadInvitedEntrants() {
+        db.collection("events").document(eventId).collection("selected_list")
+            .whereIn("status", listOf("pending", "accepted", "invited"))
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val deviceIds = snapshot.documents.map { it.id }
+                val statusMap = snapshot.documents.associate { doc ->
+                    doc.id to (doc.getString("status") ?: "pending")
+                }
+                resolveUsers(deviceIds) { users ->
+                    invitedRecycler.adapter = EntrantAdapter(
+                        users,
+                        statusMap = statusMap,
+                        onRemove = { user -> cancelEntrant(user.deviceId) },
                         onAssignCoOrganizer = { user ->
                             AssignCoOrganizerDialog(requireContext(), eventId, eventName).show(user)
                         }
@@ -173,7 +210,6 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
             .whereIn("status", listOf("declined", "cancelled"))
             .get()
             .addOnSuccessListener { snapshot ->
-                if (!isAdded) return@addOnSuccessListener
                 val deviceIds = snapshot.documents.map { it.id }
                 val statusMap = snapshot.documents.associate { doc ->
                     doc.id to (doc.getString("status") ?: "cancelled")
@@ -181,8 +217,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                 resolveUsers(deviceIds) { users ->
                     cancelledRecycler.adapter = EntrantAdapter(
                         users,
-                        statusMap = statusMap,
-                        isPrivateEvent = !isPublic
+                        statusMap = statusMap
                     )
                 }
             }
@@ -193,40 +228,38 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     // -------------------------------------------------------------------------
 
     /**
-     * Removes a user from the waitlist and moves them to the cancelled list.
+     * Cancels a specific entrant by moving them from selected_list to canceled_list.
+     * Shows a confirmation dialog before cancelling.
+     * Implements US 02.06.04.
      *
-     * @param deviceId The device ID of the entrant to remove
+     * @param deviceId The device ID of the entrant to cancel
      */
-    private fun removeUserFromWaitlist(deviceId: String) {
+    private fun cancelEntrant(deviceId: String) {
         AlertDialog.Builder(requireContext())
-            .setTitle("Remove Entrant")
-            .setMessage("Are you sure you want to remove this entrant from the waitlist?")
+            .setTitle("Cancel Entrant")
+            .setMessage("Are you sure you want to cancel this entrant?")
             .setPositiveButton("Yes") { _, _ ->
                 val eventRef = db.collection("events").document(eventId)
-                val waitlistRef = eventRef.collection("waitlist").document(deviceId)
+                val selectedRef = eventRef.collection("selected_list").document(deviceId)
                 val canceledRef = eventRef.collection("canceled_list").document(deviceId)
 
                 db.runTransaction { transaction ->
-                    val snapshot = transaction.get(waitlistRef)
+                    val snapshot = transaction.get(selectedRef)
                     if (snapshot.exists()) {
                         val data = snapshot.data?.toMutableMap() ?: mutableMapOf()
                         data["status"] = "cancelled"
                         data["cancelledAt"] = Timestamp.now()
 
                         transaction.set(canceledRef, data)
-                        transaction.delete(waitlistRef)
-
-                        val eventDoc = transaction.get(eventRef)
-                        val currentCount = eventDoc.getLong("waiting_count") ?: 0L
-                        transaction.update(eventRef, "waiting_count", if (currentCount > 0) currentCount - 1 else 0)
+                        transaction.delete(selectedRef)
                     }
                     null
                 }.addOnSuccessListener {
-                    Toast.makeText(requireContext(), "Entrant removed.", Toast.LENGTH_SHORT).show()
-                    loadWaitingEntrants()
+                    Toast.makeText(requireContext(), "Entrant cancelled.", Toast.LENGTH_SHORT).show()
+                    loadInvitedEntrants()
                     loadCancelledEntrants()
                 }.addOnFailureListener { e ->
-                    Toast.makeText(requireContext(), "Failed to remove: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Failed to cancel: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("No", null)
@@ -340,9 +373,14 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
                         Toast.makeText(requireContext(), "Message sent successfully!", Toast.LENGTH_SHORT).show()
                     }
             } else {
-                // For cancelled tab, we only notify people in canceled_list
-                db.collection("events").document(eventId).collection("canceled_list")
-                    .whereIn("status", listOf("declined", "cancelled")).get()
+                val collectionName = if (currentTab == "cancelled") "canceled_list" else "selected_list"
+                val statusFilters = when (currentTab) {
+                    "invited"   -> listOf("pending", "accepted", "invited")
+                    "cancelled" -> listOf("declined", "cancelled")
+                    else        -> listOf("pending", "accepted")
+                }
+                db.collection("events").document(eventId).collection(collectionName)
+                    .whereIn("status", statusFilters).get()
                     .addOnSuccessListener { snapshot ->
                         if (snapshot.isEmpty) {
                             Toast.makeText(requireContext(), "List is empty.", Toast.LENGTH_SHORT).show()
@@ -410,7 +448,7 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
      * Searches Firestore users collection by the given field and query string.
      *
      * @param query    The search string entered by the organizer
-     * @param category The field to search by: \"name\", \"email\", or \"phone\"
+     * @param category The field to search by: "name", "email", or "phone"
      * @param adapter  The adapter to update with search results
      */
     private fun performUserSearch(query: String, category: String, adapter: UserSearchAdapter) {
@@ -499,10 +537,11 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
     /**
      * Switches the visible RecyclerView to the selected tab and updates button styling.
      *
-     * @param tab One of \"waiting\", or \"cancelled\"
+     * @param tab One of "invited", "waiting", or "cancelled"
      */
     private fun showTab(tab: String) {
         currentTab = tab
+        invitedRecycler.visibility   = if (tab == "invited")   View.VISIBLE else View.GONE
         waitingRecycler.visibility   = if (tab == "waiting")   View.VISIBLE else View.GONE
         cancelledRecycler.visibility = if (tab == "cancelled") View.VISIBLE else View.GONE
 
@@ -513,11 +552,12 @@ class ManageEntrantsFragment : Fragment(R.layout.fragment_manage_entrants) {
         val activeText    = ContextCompat.getColor(requireContext(), android.R.color.white)
         val inactiveText  = ContextCompat.getColor(requireContext(), R.color.primary_green)
 
-        listOf(btnWaiting, btnCancelled).forEach { btn ->
+        listOf(btnInvited, btnWaiting, btnCancelled).forEach { btn ->
             btn.setBackgroundColor(inactiveColor)
             btn.setTextColor(inactiveText)
         }
         val activeBtn = when (tab) {
+            "invited"   -> btnInvited
             "waiting"   -> btnWaiting
             else        -> btnCancelled
         }
