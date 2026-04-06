@@ -417,7 +417,38 @@ public class EventRepository {
     }
 
     public void declinePrivateInvitation(String eventId, final SuccessCallback onSuccess, final ErrorCallback onError) {
-        leaveWaitlist(eventId, onSuccess, onSuccess, onError);
+        DocumentReference eventRef = db.collection("events").document(eventId);
+        DocumentReference waitlistRef = eventRef.collection("waitlist").document(deviceId);
+        DocumentReference canceledRef = eventRef.collection("canceled_list").document(deviceId);
+
+        db.runTransaction(transaction -> {
+            DocumentSnapshot waitlistDoc = transaction.get(waitlistRef);
+            if (!waitlistDoc.exists()) {
+                throw new IllegalStateException("NOT_JOINED");
+            }
+            DocumentSnapshot eventDoc = transaction.get(eventRef);
+            Long currentCount = eventDoc.getLong("waiting_count");
+            if (currentCount == null) currentCount = 0L;
+
+            // Move to canceled_list
+            Map<String, Object> data = new HashMap<>();
+            data.put("status", "declined");
+            data.put("deviceId", deviceId);
+            data.put("declinedAt", Timestamp.now());
+            transaction.set(canceledRef, data);
+
+            // Remove from waitlist
+            transaction.delete(waitlistRef);
+            transaction.update(eventRef, "waiting_count", Math.max(0L, currentCount - 1));
+            return null;
+        }).addOnSuccessListener(unused -> onSuccess.onSuccess())
+                .addOnFailureListener(e -> {
+                    if ("NOT_JOINED".equals(e.getMessage())) {
+                        onSuccess.onSuccess();
+                    } else {
+                        onError.onError(e);
+                    }
+                });
     }
 
     public void leaveWaitlist(String eventId, final SuccessCallback onSuccess, final SuccessCallback onNotJoined, final ErrorCallback onError) {

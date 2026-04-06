@@ -53,7 +53,8 @@ public class acceptanceHandling {
     /**
      * Updates an entrant's status to "Declined" in Firebase.
      * Implements US 01.05.03 - declining an invitation.
-     * 
+     * Moves the user to the canceled_list so they appear in the organizer's cancelled tab.
+     *
      * @param context   Activity context for Toasts
      * @param event_id  Firebase document ID for the event
      * @param device_id Unique ID of the entrant/user device
@@ -63,21 +64,23 @@ public class acceptanceHandling {
             return; // Don't hit firebase with garbage data
         }
         
-        DocumentReference doc_path = db_identify.collection("events").document(event_id)
-                .collection("selected_list").document(device_id);
+        DocumentReference eventRef = db_identify.collection("events").document(event_id);
+        DocumentReference selectedDoc = eventRef.collection("selected_list").document(device_id);
+        DocumentReference canceledDoc = eventRef.collection("canceled_list").document(device_id);
         
         Map<String, Object> data = new HashMap<>();
         data.put("status", "declined");
-        data.put("device_id", device_id);
-        data.put("declined_at", com.google.firebase.Timestamp.now());
+        data.put("deviceId", device_id);
+        data.put("declinedAt", com.google.firebase.Timestamp.now());
         
-        // Use set with merge to create document if needed
-        doc_path.set(data, SetOptions.merge())
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(context, "Invitation declined.", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(context, "Failed to decline invitation", Toast.LENGTH_SHORT).show();
-                });
+        db_identify.runTransaction(transaction -> {
+            transaction.delete(selectedDoc);
+            transaction.set(canceledDoc, data, SetOptions.merge());
+            return null;
+        }).addOnSuccessListener(aVoid -> {
+            Toast.makeText(context, "Invitation declined.", Toast.LENGTH_SHORT).show();
+        }).addOnFailureListener(e -> {
+            Toast.makeText(context, "Failed to decline invitation", Toast.LENGTH_SHORT).show();
+        });
     }
 }
