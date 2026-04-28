@@ -13,27 +13,28 @@
         android:id="@+id/locationRow"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toStartOf="@id/avatarCircle">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Location:"
-            android:textColor="#6B6B6B"
-            android:textSize="12sp"/>
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_spiral"
+            android:padding="4dp"
+            android:contentDescription="Spiral Logo"/>
 
         <TextView
             android:id="@+id/locationText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Garneau, Edmonton, AB ▼"
+            android:text="Spiral Event app"
             android:textStyle="bold"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textColor="#1F1F1F"
-            android:layout_marginTop="2dp"/>
+            android:layout_marginStart="8dp"/>
     </LinearLayout>
 
     <View
@@ -42,6 +43,7 @@
         android:layout_height="42dp"
         android:background="@drawable/bg_chip_unselected"
         app:layout_constraintTop_toTopOf="@id/locationRow"
+        app:layout_constraintBottom_toBottomOf="@id/locationRow"
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <LinearLayout
